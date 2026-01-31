@@ -8,6 +8,8 @@
 (define-constant err-insufficient-balance (err u102))
 (define-constant err-transfer-failed (err u103))
 (define-constant err-not-found (err u104))
+(define-constant err-invalid-profile (err u105))
+(define-constant err-user-blocked (err u106))
 (define-constant err-contract-paused (err u107))
 
 (define-constant basis-points-divisor u10000)
@@ -36,9 +38,24 @@
 (define-map user-total-sent principal uint)
 (define-map user-total-received principal uint)
 
+(define-map user-profiles
+    principal
+    {
+        display-name: (string-utf8 50),
+        bio: (string-utf8 280),
+        avatar-url: (string-utf8 256)
+    }
+)
+
+(define-map blocked-users { blocker: principal, blocked: principal } bool)
+
 ;; Private Functions
 (define-private (calculate-fee (amount uint))
     (/ (* amount (var-get current-fee-basis-points)) basis-points-divisor)
+)
+
+(define-private (send-tip-tuple (tip-data { recipient: principal, amount: uint, message: (string-utf8 280) }))
+    (send-tip (get recipient tip-data) (get amount tip-data) (get message tip-data))
 )
 
 ;; Public Functions
@@ -56,6 +73,7 @@
         (asserts! (not (var-get is-paused)) err-contract-paused)
         (asserts! (> amount u0) err-invalid-amount)
         (asserts! (not (is-eq tx-sender recipient)) err-invalid-amount)
+        (asserts! (not (default-to false (map-get? blocked-users { blocker: recipient, blocked: tx-sender }))) err-user-blocked)
         
         (try! (stx-transfer? net-amount tx-sender recipient))
         (try! (stx-transfer? fee tx-sender contract-owner))
@@ -84,6 +102,43 @@
     )
 )
 
+;; Profile Functions
+(define-public (update-profile (display-name (string-utf8 50)) (bio (string-utf8 280)) (avatar-url (string-utf8 256)))
+    (begin
+        (asserts! (> (len display-name) u0) err-invalid-profile)
+        (map-set user-profiles
+            tx-sender
+            {
+                display-name: display-name,
+                bio: bio,
+                avatar-url: avatar-url
+            }
+        )
+        (ok true)
+    )
+)
+
+(define-public (tip-a-tip (target-tip-id uint) (amount uint) (message (string-utf8 280)))
+    (let
+        (
+            (target-tip (unwrap! (map-get? tips { tip-id: target-tip-id }) err-not-found))
+            (original-sender (get sender target-tip))
+        )
+        (send-tip original-sender amount message)
+    )
+)
+
+;; Privacy Functions
+(define-public (toggle-block-user (user principal))
+    (let
+        (
+            (is-blocked (default-to false (map-get? blocked-users { blocker: tx-sender, blocked: user })))
+        )
+        (map-set blocked-users { blocker: tx-sender, blocked: user } (not is-blocked))
+        (ok (not is-blocked))
+    )
+)
+
 ;; Admin Functions
 (define-public (set-paused (paused bool))
     (begin
@@ -102,9 +157,21 @@
     )
 )
 
+(define-public (send-batch-tips (tips-list (list 50 { recipient: principal, amount: uint, message: (string-utf8 280) })))
+    (ok (map send-tip-tuple tips-list))
+)
+
 ;; Read-only Functions
 (define-read-only (get-tip (tip-id uint))
     (map-get? tips { tip-id: tip-id })
+)
+
+(define-read-only (get-profile (user principal))
+    (map-get? user-profiles user)
+)
+
+(define-read-only (is-user-blocked (blocker principal) (user principal))
+    (default-to false (map-get? blocked-users { blocker: blocker, blocked: user }))
 )
 
 (define-read-only (get-user-stats (user principal))
