@@ -26,8 +26,7 @@
         recipient: principal,
         amount: uint,
         message: (string-utf8 280),
-        block-height: uint,
-        timestamp: uint
+        block-height: uint
     }
 )
 
@@ -66,8 +65,7 @@
                 recipient: recipient,
                 amount: amount,
                 message: message,
-                block-height: block-height,
-                timestamp: (unwrap-panic (get-block-info? time block-height))
+                block-height: block-height
             }
         )
         
