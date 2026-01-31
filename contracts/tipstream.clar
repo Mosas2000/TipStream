@@ -26,7 +26,7 @@
         recipient: principal,
         amount: uint,
         message: (string-utf8 280),
-        block-height: uint
+        tip-height: uint
     }
 )
 
@@ -65,7 +65,7 @@
                 recipient: recipient,
                 amount: amount,
                 message: message,
-                block-height: block-height
+                tip-height: block-height
             }
         )
         

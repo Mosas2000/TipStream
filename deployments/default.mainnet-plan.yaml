@@ -14,5 +14,5 @@ plan:
             cost: 734164
             path: contracts/tipstream.clar
             anchor-block-only: true
-            clarity-version: 1
-      epoch: "2.05"
+            clarity-version: 2
+      epoch: "2.4"
