@@ -54,6 +54,10 @@
     (/ (* amount (var-get current-fee-basis-points)) basis-points-divisor)
 )
 
+(define-private (send-tip-tuple (tip-data { recipient: principal, amount: uint, message: (string-utf8 280) }))
+    (send-tip (get recipient tip-data) (get amount tip-data) (get message tip-data))
+)
+
 ;; Public Functions
 (define-public (send-tip (recipient principal) (amount uint) (message (string-utf8 280)))
     (let
@@ -151,6 +155,10 @@
         (var-set current-fee-basis-points new-fee)
         (ok true)
     )
+)
+
+(define-public (send-batch-tips (tips-list (list 50 { recipient: principal, amount: uint, message: (string-utf8 280) })))
+    (ok (map send-tip-tuple tips-list))
 )
 
 ;; Read-only Functions

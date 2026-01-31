@@ -102,8 +102,6 @@ describe("TipStream Contract Tests", () => {
         });
     });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     describe("User Profiles", () => {
         it("can set and get user profile", () => {
             const { result } = simnet.callPublicFn(
@@ -302,6 +300,40 @@ describe("TipStream Contract Tests", () => {
             expect(result).toBeOk(Cl.uint(20000));
         });
     });
-});
+
+    describe("Batch Tipping", () => {
+        it("can send multiple tips in one transaction", () => {
+            const tips = [
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(1000000), message: Cl.stringUtf8("Tip A") }),
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(2000000), message: Cl.stringUtf8("Tip B") })
+            ];
+
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "send-batch-tips",
+                [Cl.list(tips)],
+                wallet1
+            );
+
+            expect(result).toBeOk(Cl.list([Cl.ok(Cl.uint(0)), Cl.ok(Cl.uint(1))]));
+
+            // Should have 4 transfer events (2 tips + 2 fees)
+            const transferEvents = events.filter(e => e.event === "stx_transfer_event");
+            expect(transferEvents).toHaveLength(4);
+
+            const { result: stats } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-user-stats",
+                [Cl.principal(wallet1)],
+                wallet1
+            );
+
+            expect(stats).toBeTuple({
+                "tips-sent": Cl.uint(2),
+                "tips-received": Cl.uint(0),
+                "total-sent": Cl.uint(3000000),
+                "total-received": Cl.uint(0)
+            });
+        });
     });
 });
