@@ -103,6 +103,7 @@ describe("TipStream Contract Tests", () => {
     });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     describe("User Profiles", () => {
         it("can set and get user profile", () => {
             const { result } = simnet.callPublicFn(
@@ -243,5 +244,64 @@ describe("TipStream Contract Tests", () => {
             );
             expect(retryTipResult).toBeOk(Cl.uint(0));
         });
+    });
+
+    describe("Admin Controls", () => {
+        it("only owner can pause and unpause", () => {
+            // Non-owner fails
+            const { result: failPause } = simnet.callPublicFn(
+                "tipstream",
+                "set-paused",
+                [Cl.bool(true)],
+                wallet1
+            );
+            expect(failPause).toBeErr(Cl.uint(100));
+
+            // Owner succeeds
+            const { result: successPause } = simnet.callPublicFn(
+                "tipstream",
+                "set-paused",
+                [Cl.bool(true)],
+                deployer
+            );
+            expect(successPause).toBeOk(Cl.bool(true));
+
+            // Tipping fails while paused
+            const { result: tipFail } = simnet.callPublicFn(
+                "tipstream",
+                "send-tip",
+                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Fail!")],
+                wallet1
+            );
+            expect(tipFail).toBeErr(Cl.uint(107));
+
+            // Owner unpauses
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+
+            // Tipping works again
+            const { result: tipSuccess } = simnet.callPublicFn(
+                "tipstream",
+                "send-tip",
+                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Works!")],
+                wallet1
+            );
+            expect(tipSuccess).toBeOk(Cl.uint(0));
+        });
+
+        it("owner can update fee", () => {
+            // Update fee to 2% (200 basis points)
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(200)], deployer);
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1000000)],
+                wallet1
+            );
+
+            expect(result).toBeOk(Cl.uint(20000));
+        });
+    });
+});
     });
 });

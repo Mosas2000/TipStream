@@ -10,15 +10,16 @@
 (define-constant err-not-found (err u104))
 (define-constant err-invalid-profile (err u105))
 (define-constant err-user-blocked (err u106))
+(define-constant err-contract-paused (err u107))
 
-;; Fee percentage (0.5% = 50 basis points)
-(define-constant fee-basis-points u50)
 (define-constant basis-points-divisor u10000)
 
 ;; Data Variables
 (define-data-var total-tips-sent uint u0)
 (define-data-var total-volume uint u0)
 (define-data-var platform-fees uint u0)
+(define-data-var is-paused bool false)
+(define-data-var current-fee-basis-points uint u50)
 
 ;; Data Maps
 (define-map tips
@@ -50,7 +51,7 @@
 
 ;; Private Functions
 (define-private (calculate-fee (amount uint))
-    (/ (* amount fee-basis-points) basis-points-divisor)
+    (/ (* amount (var-get current-fee-basis-points)) basis-points-divisor)
 )
 
 ;; Public Functions
@@ -65,6 +66,7 @@
             (sender-count (default-to u0 (map-get? user-tip-count tx-sender)))
             (recipient-count (default-to u0 (map-get? user-received-count recipient)))
         )
+        (asserts! (not (var-get is-paused)) err-contract-paused)
         (asserts! (> amount u0) err-invalid-amount)
         (asserts! (not (is-eq tx-sender recipient)) err-invalid-amount)
         (asserts! (not (default-to false (map-get? blocked-users { blocker: recipient, blocked: tx-sender }))) err-user-blocked)
@@ -130,6 +132,24 @@
         )
         (map-set blocked-users { blocker: tx-sender, blocked: user } (not is-blocked))
         (ok (not is-blocked))
+    )
+)
+
+;; Admin Functions
+(define-public (set-paused (paused bool))
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (var-set is-paused paused)
+        (ok true)
+    )
+)
+
+(define-public (set-fee-basis-points (new-fee uint))
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (asserts! (<= new-fee u1000) err-invalid-amount) ;; Max 10%
+        (var-set current-fee-basis-points new-fee)
+        (ok true)
     )
 )
 
