@@ -82,6 +82,16 @@
     )
 )
 
+(define-public (tip-a-tip (target-tip-id uint) (amount uint) (message (string-utf8 280)))
+    (let
+        (
+            (target-tip (unwrap! (map-get? tips { tip-id: target-tip-id }) err-not-found))
+            (original-sender (get sender target-tip))
+        )
+        (send-tip original-sender amount message)
+    )
+)
+
 ;; Read-only Functions
 (define-read-only (get-tip (tip-id uint))
     (map-get? tips { tip-id: tip-id })
