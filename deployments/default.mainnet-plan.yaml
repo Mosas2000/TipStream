@@ -1,0 +1,18 @@
+---
+id: 0
+name: Mainnet deployment
+network: mainnet
+stacks-node: "https://api.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: tipstream
+            expected-sender: SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T
+            cost: 734164
+            path: contracts/tipstream.clar
+            anchor-block-only: true
+            clarity-version: 1
+      epoch: "2.05"
