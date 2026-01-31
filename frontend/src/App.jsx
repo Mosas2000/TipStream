@@ -3,6 +3,9 @@ import { userSession, authenticate, disconnect } from './utils/stacks';
 import Header from './components/Header';
 import SendTip from './components/SendTip';
 import TipHistory from './components/TipHistory';
+import PlatformStats from './components/PlatformStats';
+import RecentTips from './components/RecentTips';
+import Leaderboard from './components/Leaderboard';
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -23,6 +26,14 @@ function App() {
     }
   };
 
+  const tabs = [
+    { id: 'send', label: 'Send Tip', icon: '⚡' },
+    { id: 'history', label: 'My Activity', icon: '👤' },
+    { id: 'recent', label: 'Recent Tips', icon: '📡' },
+    { id: 'stats', label: 'Platform Stats', icon: '📊' },
+    { id: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
+  ];
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <Header userData={userData} onAuth={handleAuth} />
@@ -30,26 +41,21 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {userData ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex justify-center mb-12">
-              <div className="inline-flex p-1.5 bg-gray-100 rounded-2xl shadow-inner border border-gray-200/50">
-                <button
-                  onClick={() => setActiveTab('send')}
-                  className={`px-8 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'send'
-                      ? 'bg-white text-blue-700 shadow-md ring-1 ring-black/5'
-                      : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  Send Tip
-                </button>
-                <button
-                  onClick={() => setActiveTab('history')}
-                  className={`px-8 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === 'history'
-                      ? 'bg-white text-blue-700 shadow-md ring-1 ring-black/5'
-                      : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  My Activity
-                </button>
+            <div className="flex flex-wrap justify-center gap-3 mb-16">
+              <div className="inline-flex p-1.5 bg-white/80 backdrop-blur-md rounded-[2rem] shadow-xl shadow-blue-500/5 border border-gray-100">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-2 px-6 py-3 rounded-[1.5rem] text-sm font-bold transition-all duration-300 ${activeTab === tab.id
+                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
+                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span className={activeTab === tab.id ? 'block' : 'hidden sm:block'}>{tab.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -58,6 +64,9 @@ function App() {
               {activeTab === 'history' && (
                 <TipHistory userAddress={userData.profile.stxAddress.mainnet} />
               )}
+              {activeTab === 'stats' && <PlatformStats />}
+              {activeTab === 'recent' && <RecentTips />}
+              {activeTab === 'leaderboard' && <Leaderboard />}
             </div>
           </div>
         ) : (
