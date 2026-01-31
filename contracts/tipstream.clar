@@ -8,6 +8,7 @@
 (define-constant err-insufficient-balance (err u102))
 (define-constant err-transfer-failed (err u103))
 (define-constant err-not-found (err u104))
+(define-constant err-invalid-profile (err u105))
 
 ;; Fee percentage (0.5% = 50 basis points)
 (define-constant fee-basis-points u50)
@@ -34,6 +35,15 @@
 (define-map user-received-count principal uint)
 (define-map user-total-sent principal uint)
 (define-map user-total-received principal uint)
+
+(define-map user-profiles
+    principal
+    {
+        display-name: (string-utf8 50),
+        bio: (string-utf8 280),
+        avatar-url: (string-utf8 256)
+    }
+)
 
 ;; Private Functions
 (define-private (calculate-fee (amount uint))
@@ -82,9 +92,29 @@
     )
 )
 
+;; Profile Functions
+(define-public (update-profile (display-name (string-utf8 50)) (bio (string-utf8 280)) (avatar-url (string-utf8 256)))
+    (begin
+        (asserts! (> (len display-name) u0) err-invalid-profile)
+        (map-set user-profiles
+            tx-sender
+            {
+                display-name: display-name,
+                bio: bio,
+                avatar-url: avatar-url
+            }
+        )
+        (ok true)
+    )
+)
+
 ;; Read-only Functions
 (define-read-only (get-tip (tip-id uint))
     (map-get? tips { tip-id: tip-id })
+)
+
+(define-read-only (get-profile (user principal))
+    (map-get? user-profiles user)
 )
 
 (define-read-only (get-user-stats (user principal))

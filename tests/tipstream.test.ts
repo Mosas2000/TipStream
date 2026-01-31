@@ -101,4 +101,49 @@ describe("TipStream Contract Tests", () => {
             "platform-fees": Cl.uint(5000)
         });
     });
+
+    describe("User Profiles", () => {
+        it("can set and get user profile", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "update-profile",
+                [
+                    Cl.stringUtf8("Alice"),
+                    Cl.stringUtf8("Software Engineer & Crypto Enthusiast"),
+                    Cl.stringUtf8("https://example.com/avatar.png")
+                ],
+                wallet1
+            );
+
+            expect(result).toBeOk(Cl.bool(true));
+
+            const { result: profileResult } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-profile",
+                [Cl.principal(wallet1)],
+                wallet1
+            );
+
+            expect(profileResult).toBeSome(Cl.tuple({
+                "display-name": Cl.stringUtf8("Alice"),
+                "bio": Cl.stringUtf8("Software Engineer & Crypto Enthusiast"),
+                "avatar-url": Cl.stringUtf8("https://example.com/avatar.png")
+            }));
+        });
+
+        it("cannot set profile with empty display name", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "update-profile",
+                [
+                    Cl.stringUtf8(""),
+                    Cl.stringUtf8("No name"),
+                    Cl.stringUtf8("")
+                ],
+                wallet1
+            );
+
+            expect(result).toBeErr(Cl.uint(105));
+        });
+    });
 });
