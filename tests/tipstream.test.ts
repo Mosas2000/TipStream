@@ -146,4 +146,52 @@ describe("TipStream Contract Tests", () => {
             expect(result).toBeErr(Cl.uint(105));
         });
     });
+
+    describe("Recursive Tipping", () => {
+        it("can tip a previous tip sender", () => {
+            // Wallet 1 tips Wallet 2
+            simnet.callPublicFn(
+                "tipstream",
+                "send-tip",
+                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("First Tip")],
+                wallet1
+            );
+
+            // Wallet 2 tips back Wallet 1 for their generous tip (tip-id 0)
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "tip-a-tip",
+                [Cl.uint(0), Cl.uint(500000), Cl.stringUtf8("Supporting your tip!")],
+                wallet2
+            );
+
+            expect(result).toBeOk(Cl.uint(1));
+
+            const { result: tipResult } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-tip",
+                [Cl.uint(1)],
+                wallet1
+            );
+
+            expect(tipResult).toBeSome(Cl.tuple({
+                sender: Cl.principal(wallet2),
+                recipient: Cl.principal(wallet1),
+                amount: Cl.uint(500000),
+                message: Cl.stringUtf8("Supporting your tip!"),
+                "tip-height": Cl.uint(simnet.blockHeight)
+            }));
+        });
+
+        it("fails if target tip doesn't exist", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "tip-a-tip",
+                [Cl.uint(99), Cl.uint(500000), Cl.stringUtf8("Ghost tip")],
+                wallet2
+            );
+
+            expect(result).toBeErr(Cl.uint(104));
+        });
+    });
 });
