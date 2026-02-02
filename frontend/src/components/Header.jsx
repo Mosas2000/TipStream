@@ -5,9 +5,11 @@ export default function Header({ userData, onAuth }) {
                 <div className="flex justify-between items-center h-20">
                     <div className="flex items-center space-x-3">
                         <div className="bg-white p-2 rounded-xl shadow-inner">
-                            <svg className="h-8 w-8 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                            </svg>
+                            <img
+                                src="/logo.png"
+                                alt="TipStream Logo"
+                                className="h-16 w-16 object-contain"
+                            />
                         </div>
                         <div>
                             <h1 className="text-2xl font-black text-white tracking-tight">TipStream</h1>
