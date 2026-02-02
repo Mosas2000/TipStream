@@ -8,7 +8,7 @@ export const network = STACKS_MAINNET;
 
 export const appDetails = {
     name: 'TipStream',
-    icon: window.location.origin + '/logo.svg',
+    icon: window.location.origin + '/logo.png',
 };
 
 export function authenticate() {
