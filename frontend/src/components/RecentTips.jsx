@@ -1,19 +1,17 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { openContractCall } from '@stacks/connect';
 import { uintCV, stringUtf8CV, PostConditionMode, Pc } from '@stacks/transactions';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { network, appDetails, userSession } from '../utils/stacks';
+import { parseTipEvent } from '../lib/parseTipEvent';
 import { useTipContext } from '../context/TipContext';
-import { useDemoMode } from '../context/DemoContext';
 import CopyButton from './ui/copy-button';
 
-const API_BASE = 'https://api.hiro.so';
 const PAGE_SIZE = 10;
 
 export default function RecentTips({ addToast }) {
     const { refreshCounter } = useTipContext();
-    const { isDemo, demoTips } = useDemoMode();
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -28,432 +26,215 @@ export default function RecentTips({ addToast }) {
     const [sortBy, setSortBy] = useState('newest');
     const [showFilters, setShowFilters] = useState(false);
     const [offset, setOffset] = useState(0);
-    const [totalResults, setTotalResults] = useState(0);
 
     const fetchRecentTips = useCallback(async () => {
-        if (isDemo) {
-            const mapped = demoTips.map(t => ({
-                event: 'tip-sent',
-                sender: t.sender,
-                recipient: t.recipient,
-                amount: t.amount,
-                message: t.message,
-            }));
-            setTips(mapped);
-            setTotalResults(mapped.length);
-            setLoading(false);
-            setLastRefresh(new Date());
-            return;
-        }
         try {
             setError(null);
             const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-            const response = await fetch(
-                `${API_BASE}/extended/v1/contract/${contractId}/events?limit=50&offset=0`
-            );
-
-            if (!response.ok) {
-                throw new Error(`API returned ${response.status}`);
-            }
+            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=50&offset=0`);
+            if (!response.ok) throw new Error(`API returned ${response.status}`);
 
             const data = await response.json();
             const tipEvents = data.results
-                .filter(e => e.contract_log && e.contract_log.value && e.contract_log.value.repr)
-                .map(e => {
-                    const repr = e.contract_log.value.repr;
-                    return parseTipEvent(repr);
-                })
+                .filter(e => e.contract_log?.value?.repr)
+                .map(e => parseTipEvent(e.contract_log.value.repr))
                 .filter(t => t !== null && t.event === 'tip-sent');
 
             setTips(tipEvents);
-            setTotalResults(tipEvents.length);
             setLoading(false);
             setLastRefresh(new Date());
         } catch (err) {
             console.error('Failed to fetch recent tips:', err.message || err);
-            const isNetworkError = err.message?.includes('fetch') || err.message?.includes('network') || err.name === 'TypeError';
-            setError(
-                isNetworkError
-                    ? 'Unable to reach the Stacks API. Check your connection and try again.'
-                    : `Failed to load tips: ${err.message || 'Unknown error'}`
-            );
+            const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
+            setError(isNet ? 'Unable to reach the Stacks API. Check your connection.' : `Failed to load tips: ${err.message}`);
             setLoading(false);
         }
     }, []);
 
-    useEffect(() => {
-        fetchRecentTips();
-    }, [fetchRecentTips, refreshCounter]);
-
-    useEffect(() => {
-        const interval = setInterval(fetchRecentTips, 60000);
-        return () => clearInterval(interval);
-    }, [fetchRecentTips]);
-
-    const parseTipEvent = (repr) => {
-        try {
-            const eventMatch = repr.match(/event\s+u?"([^"]+)"/);
-            if (!eventMatch) return null;
-
-            const senderMatch = repr.match(/sender\s+'([A-Z0-9]+)/);
-            const recipientMatch = repr.match(/recipient\s+'([A-Z0-9]+)/);
-            const amountMatch = repr.match(/amount\s+u(\d+)/);
-            const feeMatch = repr.match(/fee\s+u(\d+)/);
-            const messageMatch = repr.match(/message\s+u"([^"]*)"/);
-            const tipIdMatch = repr.match(/tip-id\s+u(\d+)/);
-
-            return {
-                event: eventMatch[1],
-                sender: senderMatch ? senderMatch[1] : '',
-                recipient: recipientMatch ? recipientMatch[1] : '',
-                amount: amountMatch ? amountMatch[1] : '0',
-                fee: feeMatch ? feeMatch[1] : '0',
-                message: messageMatch ? messageMatch[1] : '',
-                tipId: tipIdMatch ? tipIdMatch[1] : '0',
-            };
-        } catch {
-            return null;
-        }
-    };
-
-    const truncateAddress = (address) => {
-        const addrStr = typeof address === 'string' ? address : (address.value || '');
-        return formatAddress(addrStr, 8, 6);
-    };
-
-    const fullAddress = (address) => {
-        return typeof address === 'string' ? address : (address.value || '');
-    };
+    useEffect(() => { fetchRecentTips(); }, [fetchRecentTips, refreshCounter]);
+    useEffect(() => { const i = setInterval(fetchRecentTips, 60000); return () => clearInterval(i); }, [fetchRecentTips]);
 
     const handleTipBack = async (tip) => {
         if (!userSession.isUserSignedIn()) return;
         const microSTX = toMicroSTX(tipBackAmount);
         const senderAddress = userSession.loadUserData().profile.stxAddress.mainnet;
-
         setSending(true);
         try {
             await openContractCall({
-                network,
-                appDetails,
-                contractAddress: CONTRACT_ADDRESS,
-                contractName: CONTRACT_NAME,
+                network, appDetails,
+                contractAddress: CONTRACT_ADDRESS, contractName: CONTRACT_NAME,
                 functionName: 'tip-a-tip',
-                functionArgs: [
-                    uintCV(parseInt(tip.tipId)),
-                    uintCV(microSTX),
-                    stringUtf8CV(tipBackMessage || 'Tipping back!'),
-                ],
+                functionArgs: [uintCV(parseInt(tip.tipId)), uintCV(microSTX), stringUtf8CV(tipBackMessage || 'Tipping back!')],
                 postConditions: [Pc.principal(senderAddress).willSendLte(microSTX).ustx()],
                 postConditionMode: PostConditionMode.Deny,
-                onFinish: (data) => {
-                    setSending(false);
-                    setTipBackTarget(null);
-                    setTipBackMessage('');
-                    if (addToast) addToast('Tip-a-tip sent! Tx: ' + data.txId, 'success');
-                },
-                onCancel: () => {
-                    setSending(false);
-                    if (addToast) addToast('Tip-a-tip cancelled', 'info');
-                },
+                onFinish: (data) => { setSending(false); setTipBackTarget(null); setTipBackMessage(''); addToast?.('Tip-a-tip sent! Tx: ' + data.txId, 'success'); },
+                onCancel: () => { setSending(false); addToast?.('Tip-a-tip cancelled', 'info'); },
             });
         } catch (err) {
             console.error('Tip-a-tip failed:', err.message || err);
-            if (addToast) addToast('Failed to send tip-a-tip', 'error');
+            addToast?.('Failed to send tip-a-tip', 'error');
             setSending(false);
         }
     };
 
     const filteredTips = useMemo(() => {
         let result = [...tips];
-
         if (searchQuery.trim()) {
-            const query = searchQuery.trim().toLowerCase();
-            result = result.filter(tip => {
-                const sender = (typeof tip.sender === 'string' ? tip.sender : '').toLowerCase();
-                const recipient = (typeof tip.recipient === 'string' ? tip.recipient : '').toLowerCase();
-                const message = (tip.message || '').toLowerCase();
-                return sender.includes(query) || recipient.includes(query) || message.includes(query);
-            });
+            const q = searchQuery.trim().toLowerCase();
+            result = result.filter(t => [t.sender, t.recipient, t.message || ''].some(s => s.toLowerCase().includes(q)));
         }
-
-        if (minAmount) {
-            const minMicro = toMicroSTX(minAmount);
-            result = result.filter(tip => parseInt(tip.amount) >= minMicro);
-        }
-
-        if (maxAmount) {
-            const maxMicro = toMicroSTX(maxAmount);
-            result = result.filter(tip => parseInt(tip.amount) <= maxMicro);
-        }
-
-        if (sortBy === 'newest') {
-            // already sorted by newest from API
-        } else if (sortBy === 'oldest') {
-            result.reverse();
-        } else if (sortBy === 'amount-high') {
-            result.sort((a, b) => parseInt(b.amount) - parseInt(a.amount));
-        } else if (sortBy === 'amount-low') {
-            result.sort((a, b) => parseInt(a.amount) - parseInt(b.amount));
-        }
-
+        if (minAmount) { const m = toMicroSTX(minAmount); result = result.filter(t => parseInt(t.amount) >= m); }
+        if (maxAmount) { const m = toMicroSTX(maxAmount); result = result.filter(t => parseInt(t.amount) <= m); }
+        if (sortBy === 'oldest') result.reverse();
+        else if (sortBy === 'amount-high') result.sort((a, b) => parseInt(b.amount) - parseInt(a.amount));
+        else if (sortBy === 'amount-low') result.sort((a, b) => parseInt(a.amount) - parseInt(b.amount));
         return result;
     }, [tips, searchQuery, minAmount, maxAmount, sortBy]);
 
-    const paginatedTips = useMemo(() => {
-        return filteredTips.slice(offset, offset + PAGE_SIZE);
-    }, [filteredTips, offset]);
-
+    const paginatedTips = useMemo(() => filteredTips.slice(offset, offset + PAGE_SIZE), [filteredTips, offset]);
     const totalPages = Math.max(1, Math.ceil(filteredTips.length / PAGE_SIZE));
     const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
-
-    const clearFilters = () => {
-        setSearchQuery('');
-        setMinAmount('');
-        setMaxAmount('');
-        setSortBy('newest');
-        setOffset(0);
-    };
-
     const hasActiveFilters = searchQuery || minAmount || maxAmount || sortBy !== 'newest';
+    const clearFilters = () => { setSearchQuery(''); setMinAmount(''); setMaxAmount(''); setSortBy('newest'); setOffset(0); };
 
-    if (loading) {
-        return (
-            <div className="space-y-4 animate-pulse">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-24 bg-gray-100 rounded-2xl"></div>
-                ))}
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="space-y-4 animate-pulse">
+            {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl" />)}
+        </div>
+    );
 
-    if (error) {
-        return (
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-8">Live Feed</h2>
-                <div className="text-center py-20 bg-red-50 rounded-3xl border-2 border-dashed border-red-200">
-                    <p className="text-red-500 font-medium mb-4">{error}</p>
-                    <button
-                        onClick={fetchRecentTips}
-                        className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors"
-                    >
-                        Retry
-                    </button>
-                </div>
+    if (error) return (
+        <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Live Feed</h2>
+            <div className="text-center py-12 bg-red-50 dark:bg-red-900/10 rounded-xl border-2 border-dashed border-red-200 dark:border-red-900/30">
+                <p className="text-red-500 text-sm mb-4">{error}</p>
+                <button onClick={fetchRecentTips} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
             </div>
-        );
-    }
+        </div>
+    );
 
     return (
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Live Feed</h2>
+        <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Live Feed</h2>
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />Live
+                    </span>
+                </div>
                 <div className="flex items-center gap-3">
-                    {lastRefresh && (
-                        <span className="text-xs text-gray-400">
-                            Updated {lastRefresh.toLocaleTimeString()}
-                        </span>
-                    )}
-                    <button
-                        onClick={fetchRecentTips}
-                        className="px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors"
-                    >
-                        Refresh
-                    </button>
+                    {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
+                    <button onClick={fetchRecentTips} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
-            <div className="mb-6 space-y-3">
+            {/* Search & Filters */}
+            <div className="mb-5 space-y-3">
                 <div className="flex gap-2">
                     <div className="relative flex-1">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => { setSearchQuery(e.target.value); setOffset(0); }}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
-                            placeholder="Search by address or message..."
-                        />
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <input type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setOffset(0); }}
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
+                            placeholder="Search by address or message..." />
                     </div>
-                    <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`px-4 py-2 text-sm font-medium rounded-xl border transition-colors ${showFilters ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
-                    >
+                    <button onClick={() => setShowFilters(!showFilters)}
+                        className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-colors ${showFilters ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black border-gray-900 dark:border-amber-500' : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                         Filters
                     </button>
-                    {hasActiveFilters && (
-                        <button
-                            onClick={clearFilters}
-                            className="px-3 py-2 text-sm text-red-600 hover:text-red-700 font-medium"
-                        >
-                            Clear
-                        </button>
-                    )}
+                    {hasActiveFilters && <button onClick={clearFilters} className="px-2 py-2 text-xs text-red-500 hover:text-red-600 font-semibold">Clear</button>}
                 </div>
-
                 {showFilters && (
-                    <div className="flex flex-wrap gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                        {[['Min STX', minAmount, setMinAmount, '0'], ['Max STX', maxAmount, setMaxAmount, 'any']].map(([label, val, setter, ph]) => (
+                            <div key={label} className="flex items-center gap-2">
+                                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+                                <input type="number" value={val} onChange={(e) => { setter(e.target.value); setOffset(0); }}
+                                    className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder={ph} step="0.001" min="0" />
+                            </div>
+                        ))}
                         <div className="flex items-center gap-2">
-                            <label className="text-xs font-medium text-gray-500">Min STX</label>
-                            <input
-                                type="number"
-                                value={minAmount}
-                                onChange={(e) => { setMinAmount(e.target.value); setOffset(0); }}
-                                className="w-24 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900"
-                                placeholder="0"
-                                step="0.001"
-                                min="0"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className="text-xs font-medium text-gray-500">Max STX</label>
-                            <input
-                                type="number"
-                                value={maxAmount}
-                                onChange={(e) => { setMaxAmount(e.target.value); setOffset(0); }}
-                                className="w-24 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900"
-                                placeholder="any"
-                                step="0.001"
-                                min="0"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className="text-xs font-medium text-gray-500">Sort</label>
-                            <select
-                                value={sortBy}
-                                onChange={(e) => { setSortBy(e.target.value); setOffset(0); }}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                            >
-                                <option value="newest">Newest first</option>
-                                <option value="oldest">Oldest first</option>
-                                <option value="amount-high">Highest amount</option>
-                                <option value="amount-low">Lowest amount</option>
+                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Sort</label>
+                            <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setOffset(0); }}
+                                className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
+                                <option value="amount-high">Highest amount</option><option value="amount-low">Lowest amount</option>
                             </select>
                         </div>
                     </div>
                 )}
+                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {tips.length} tips</p>}
+            </div>
 
-                {hasActiveFilters && (
-                    <p className="text-xs text-gray-500">
-                        Showing {filteredTips.length} of {tips.length} tips
-                    </p>
+            {/* Tip cards */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                {paginatedTips.length === 0 ? (
+                    <div className="text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                        <p className="text-gray-400">{hasActiveFilters ? 'No tips match your filters' : 'No tips in the stream yet. Be the first!'}</p>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {paginatedTips.map((tip, i) => (
+                            <div key={tip.tipId || i} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold shrink-0">⚡</div>
+                                    <div>
+                                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 font-semibold">
+                                            <span>{formatAddress(tip.sender, 8, 6)}</span>
+                                            <CopyButton text={tip.sender} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                                            <span className="text-gray-300 dark:text-gray-600">→</span>
+                                            <span>{formatAddress(tip.recipient, 8, 6)}</span>
+                                            <CopyButton text={tip.recipient} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                                        </div>
+                                        <p className="text-lg font-black text-gray-900 dark:text-white">{formatSTX(tip.amount, 4)} <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">STX</span></p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {tip.message && (
+                                        <span className="text-xs text-gray-400 italic max-w-[200px] truncate">"{tip.message}"</span>
+                                    )}
+                                    {userSession.isUserSignedIn() && (
+                                        <button onClick={() => setTipBackTarget(tip)}
+                                            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-lg transition-all sm:opacity-0 sm:group-hover:opacity-100">
+                                            Tip Back
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
 
-            {paginatedTips.length === 0 ? (
-                <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                    <p className="text-slate-400 font-medium">
-                        {hasActiveFilters ? 'No tips match your filters' : 'No tips in the stream yet. Be the first!'}
-                    </p>
-                </div>
-            ) : (
-                <div className="space-y-6">
-                    {paginatedTips.map((tip, index) => (
-                        <div key={tip.tipId || index} className="group p-6 bg-slate-50/50 hover:bg-white hover:shadow-xl hover:shadow-gray-500/5 rounded-3xl border border-transparent hover:border-gray-100 transition-all duration-300">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex items-center space-x-4">
-                                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-gray-900 to-black flex items-center justify-center text-white shadow-lg shadow-gray-500/20">
-                                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center space-x-2 text-sm text-slate-400 font-bold uppercase tracking-tighter">
-                                            <span>{truncateAddress(tip.sender)}</span>
-                                            <CopyButton text={fullAddress(tip.sender)} className="text-slate-400 hover:text-slate-600" />
-                                            <svg className="h-3 w-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                            </svg>
-                                            <span>{truncateAddress(tip.recipient)}</span>
-                                            <CopyButton text={fullAddress(tip.recipient)} className="text-slate-400 hover:text-slate-600" />
-                                        </div>
-                                        <p className="text-2xl font-black text-slate-900 mt-1">
-                                            {formatSTX(tip.amount, 4)} <span className="text-gray-900 text-lg">STX</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                {tip.message && (
-                                    <div className="flex-1 md:max-w-md bg-white p-4 rounded-2xl border border-slate-100 shadow-inner">
-                                        <p className="text-slate-600 italic text-sm leading-relaxed">
-                                            "{tip.message}"
-                                        </p>
-                                    </div>
-                                )}
-                                {userSession.isUserSignedIn() && (
-                                    <button
-                                        onClick={() => setTipBackTarget(tip)}
-                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                                    >
-                                        Tip Back
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
+            {/* Pagination */}
             {filteredTips.length > PAGE_SIZE && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
-                    <button
-                        onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-                        disabled={offset === 0}
-                        className="px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        Previous
-                    </button>
-                    <span className="text-sm text-gray-500">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                        onClick={() => setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE))}
-                        disabled={currentPage >= totalPages}
-                        className="px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        Next
-                    </button>
+                <div className="flex items-center justify-between mt-4 pt-4">
+                    <button onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} disabled={offset === 0}
+                        className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors disabled:opacity-40">Previous</button>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Page {currentPage} of {totalPages}</span>
+                    <button onClick={() => setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE))} disabled={currentPage >= totalPages}
+                        className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors disabled:opacity-40">Next</button>
                 </div>
             )}
 
+            {/* Tip-back modal */}
             {tipBackTarget && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Tip Back</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Send a tip to the original sender of tip #{tipBackTarget.tipId}
-                        </p>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Send a tip to the original sender of tip #{tipBackTarget.tipId}</p>
                         <div className="space-y-3 mb-4">
-                            <input
-                                type="number"
-                                value={tipBackAmount}
-                                onChange={(e) => setTipBackAmount(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
-                                placeholder="Amount (STX)"
-                                step="0.001"
-                                min="0.001"
-                            />
-                            <input
-                                type="text"
-                                value={tipBackMessage}
-                                onChange={(e) => setTipBackMessage(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
-                                placeholder="Message (optional)"
-                                maxLength={280}
-                            />
+                            <input type="number" value={tipBackAmount} onChange={(e) => setTipBackAmount(e.target.value)}
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                                placeholder="Amount (STX)" step="0.001" min="0.001" />
+                            <input type="text" value={tipBackMessage} onChange={(e) => setTipBackMessage(e.target.value)}
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                                placeholder="Message (optional)" maxLength={280} />
                         </div>
                         <div className="flex gap-3">
-                            <button
-                                onClick={() => setTipBackTarget(null)}
-                                className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleTipBack(tipBackTarget)}
-                                disabled={sending}
-                                className="flex-1 px-4 py-2 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all disabled:opacity-50"
-                            >
+                            <button onClick={() => setTipBackTarget(null)}
+                                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                            <button onClick={() => handleTipBack(tipBackTarget)} disabled={sending}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                                 {sending ? 'Sending...' : 'Send'}
                             </button>
                         </div>

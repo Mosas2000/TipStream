@@ -9,31 +9,31 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'logo.png'],
+      includeAssets: ['favicon.svg', 'logo.svg'],
       manifest: {
         name: 'TipStream',
         short_name: 'TipStream',
         description: 'Send micro-tips to your favorite creators on the Stacks blockchain',
         theme_color: '#0f172a',
-        background_color: '#f8fafc',
+        background_color: '#0a0a0a',
         display: 'standalone',
         scope: '/',
         start_url: '/',
         icons: [
           {
-            src: '/logo.png',
+            src: '/logo.svg',
             sizes: '192x192',
-            type: 'image/png',
+            type: 'image/svg+xml',
           },
           {
-            src: '/logo.png',
+            src: '/logo.svg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
           },
           {
-            src: '/logo.png',
+            src: '/logo.svg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'maskable',
           },
         ],
@@ -60,6 +60,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  optimizeDeps: {
+    include: ['@stacks/connect', '@stacks/network', '@stacks/transactions'],
   },
   test: {
     environment: 'jsdom',

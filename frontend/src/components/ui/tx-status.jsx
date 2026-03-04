@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { STACKS_API_BASE } from '../../config/contracts';
 
-const API_BASE = 'https://api.hiro.so';
+const API_BASE = STACKS_API_BASE;
 const POLL_INTERVAL = 8000;
 const MAX_POLLS = 60;
 

@@ -16,51 +16,6 @@ path = "contracts/tipstream-traits.clar"
 clarity_version = 2
 epoch = 3.0
 
-[contracts.tipstream-token]
-path = "contracts/tipstream-token.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-escrow]
-path = "contracts/tipstream-escrow.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-subscription]
-path = "contracts/tipstream-subscription.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-vault]
-path = "contracts/tipstream-vault.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-referral]
-path = "contracts/tipstream-referral.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-multisig]
-path = "contracts/tipstream-multisig.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-rewards]
-path = "contracts/tipstream-rewards.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-badges]
-path = "contracts/tipstream-badges.clar"
-clarity_version = 2
-epoch = 3.0
-
-[contracts.tipstream-dao]
-path = "contracts/tipstream-dao.clar"
-clarity_version = 2
-epoch = 3.0
-
 [repl]
 costs_version = 3
 parser_version = 2

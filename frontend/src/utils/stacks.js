@@ -1,5 +1,8 @@
-import { AppConfig, UserSession } from '@stacks/connect';
+import * as StacksConnect from '@stacks/connect';
 import { STACKS_MAINNET, STACKS_TESTNET, STACKS_DEVNET } from '@stacks/network';
+
+const { AppConfig, UserSession } = StacksConnect;
+const showConnect = StacksConnect.showConnect || StacksConnect.authenticate;
 
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 export const userSession = new UserSession({ appConfig });
@@ -15,7 +18,7 @@ export const network = networks[networkName] || STACKS_MAINNET;
 
 export const appDetails = {
     name: 'TipStream',
-    icon: window.location.origin + '/logo.png',
+    icon: window.location.origin + '/logo.svg',
 };
 
 export function isWalletInstalled() {
@@ -27,15 +30,16 @@ export async function authenticate() {
         throw new Error('No Stacks wallet found. Please install Leather or Xverse.');
     }
 
-    const { connect } = await import('@stacks/connect');
-
-    await connect({
-        appDetails,
-        redirectTo: '/',
-        onFinish: () => {
-            window.location.reload();
-        },
-        userSession,
+    return new Promise((resolve, reject) => {
+        showConnect({
+            userSession,
+            onFinish: ({ authResponsePayload }) => {
+                resolve(authResponsePayload || userSession.loadUserData());
+            },
+            onCancel: () => {
+                reject(new Error('User cancelled wallet connection.'));
+            },
+        });
     });
 }
 
@@ -44,5 +48,5 @@ export function getUserData() {
 }
 
 export function disconnect() {
-    userSession.signUserOut('/');
+    StacksConnect.disconnect();
 }

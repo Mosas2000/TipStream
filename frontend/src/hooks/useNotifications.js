@@ -1,30 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
+import { parseTipEvent } from '../lib/parseTipEvent';
 
 const STORAGE_KEY = 'tipstream_last_seen_tip_ts';
-const POLL_INTERVAL = 30000; // 30 seconds
-
-function parseTipEvent(repr) {
-    try {
-        const eventMatch = repr.match(/event\s+u?"([^"]+)"/);
-        if (!eventMatch) return null;
-        const senderMatch = repr.match(/sender\s+'([A-Z0-9]+)/i);
-        const recipientMatch = repr.match(/recipient\s+'([A-Z0-9]+)/i);
-        const amountMatch = repr.match(/amount\s+u(\d+)/);
-        const messageMatch = repr.match(/message\s+u"([^"]*)"/);
-        const tipIdMatch = repr.match(/tip-id\s+u(\d+)/);
-        return {
-            event: eventMatch[1],
-            sender: senderMatch ? senderMatch[1] : '',
-            recipient: recipientMatch ? recipientMatch[1] : '',
-            amount: amountMatch ? amountMatch[1] : '0',
-            message: messageMatch ? messageMatch[1] : '',
-            tipId: tipIdMatch ? tipIdMatch[1] : '0',
-        };
-    } catch {
-        return null;
-    }
-}
+const POLL_INTERVAL = 30000;
 
 export function useNotifications(userAddress) {
     const [notifications, setNotifications] = useState([]);

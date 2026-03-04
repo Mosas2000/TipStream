@@ -6,7 +6,6 @@ import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { TipProvider } from './context/TipContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
-import { DemoProvider } from './context/DemoContext.jsx'
 import { reportWebVitals } from './lib/web-vitals.js'
 
 createRoot(document.getElementById('root')).render(
@@ -14,11 +13,9 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <BrowserRouter>
         <ThemeProvider>
-          <DemoProvider>
-            <TipProvider>
-              <App />
-            </TipProvider>
-          </DemoProvider>
+          <TipProvider>
+            <App />
+          </TipProvider>
         </ThemeProvider>
       </BrowserRouter>
     </ErrorBoundary>

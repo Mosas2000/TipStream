@@ -9,8 +9,6 @@ const DEFAULT_METRICS = {
   tipsConfirmed: 0,
   tipsCancelled: 0,
   tipsFailed: 0,
-  batchTipsStarted: 0,
-  batchTipsSubmitted: 0,
   tabNavigations: {},
   errors: {},
   sessions: 0,
@@ -87,14 +85,6 @@ export const analytics = {
     increment('tipsFailed');
   },
 
-  trackBatchTipStarted() {
-    increment('batchTipsStarted');
-  },
-
-  trackBatchTipSubmitted() {
-    increment('batchTipsSubmitted');
-  },
-
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
@@ -151,8 +141,6 @@ export const analytics = {
       tipsFailed: m.tipsFailed,
       tipCompletionRate,
       tipDropOffRate,
-      batchTipsStarted: m.batchTipsStarted,
-      batchTipsSubmitted: m.batchTipsSubmitted,
       sortedTabs,
       sortedPages,
       sortedErrors,

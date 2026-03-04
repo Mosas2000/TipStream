@@ -10,8 +10,7 @@
     "test:report": "vitest run -- --coverage --costs",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\""
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Mosas2000",
   "dependencies": {
     "@hirosystems/clarinet-sdk": "^3.6.0",
     "@stacks/transactions": "^7.2.0",

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const COINGECKO_URL =
-  "https://api.coingecko.com/api/v3/simple/price?ids=blockstack&vs_currencies=usd";
+  "https://api.coingecko.com/api/v3/simple/price?ids=stacks&vs_currencies=usd";
 const REFRESH_INTERVAL = 60_000;
 
 export function useStxPrice() {
@@ -15,7 +15,7 @@ export function useStxPrice() {
       const res = await fetch(COINGECKO_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const usd = data?.blockstack?.usd;
+      const usd = data?.stacks?.usd;
       if (typeof usd !== "number") throw new Error("Invalid price data");
       setPrice(usd);
       setError(null);

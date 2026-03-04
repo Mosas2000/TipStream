@@ -3,8 +3,9 @@ import CopyButton from './ui/copy-button';
 import NotificationBell from './NotificationBell';
 import { useTheme } from '../context/ThemeContext';
 import { NETWORK_NAME, STACKS_API_BASE } from '../config/contracts';
+import { formatAddress } from '../lib/utils';
 
-export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading, isDemo }) {
+export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading }) {
     const { theme, toggleTheme } = useTheme();
     const [apiReachable, setApiReachable] = useState(null);
 
@@ -26,45 +27,47 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
     const networkLabel = NETWORK_NAME.charAt(0).toUpperCase() + NETWORK_NAME.slice(1);
 
     return (
-        <nav className="bg-gradient-to-r from-gray-900 to-black shadow-xl border-b border-white/10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center h-20">
-                    <div className="flex items-center space-x-3">
+        <nav className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between items-center h-16">
+                    {/* Logo */}
+                    <div className="flex items-center gap-3">
                         <img
-                            src="/logo.png"
+                            src="/logo.svg"
                             alt="TipStream"
-                            width={48}
-                            height={48}
-                            className="h-12 w-12 object-contain"
+                            width={36}
+                            height={36}
+                            className="h-9 w-9 object-contain"
                         />
-                        <div>
-                            <h1 className="text-2xl font-black text-white tracking-tight">TipStream</h1>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300 bg-gray-800/50 px-2 py-0.5 rounded-full">v1.0.0</span>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-lg font-black text-white tracking-tight">TipStream</h1>
+                            <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
+                                <span className={`h-1.5 w-1.5 rounded-full ${apiReachable === null ? 'bg-yellow-400 animate-pulse' : apiReachable ? 'bg-green-400 pulse-live' : 'bg-red-400'}`} />
+                                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{networkLabel}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-3 sm:space-x-6">
-                        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5">
-                            <span className={`h-2 w-2 rounded-full ${apiReachable === null ? 'bg-yellow-400 animate-pulse' : apiReachable ? 'bg-green-400' : 'bg-red-400'}`} />
-                            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">{networkLabel}</span>
-                        </div>
-
+                    {/* Right side */}
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        {/* Theme toggle */}
                         <button
                             onClick={toggleTheme}
-                            className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
                         >
                             {theme === 'dark' ? (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                             ) : (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                                 </svg>
                             )}
                         </button>
 
+                        {/* Notifications */}
                         {userData && (
                             <NotificationBell
                                 notifications={notifications}
@@ -74,37 +77,27 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                             />
                         )}
 
-                        {isDemo && !userData && (
-                            <div className="hidden sm:flex flex-col items-end">
-                                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-tighter">Demo Wallet</span>
-                                <p className="text-xs font-mono text-white/90 bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-500/30 truncate max-w-[140px] sm:max-w-none">
-                                    SP1DEMO...SANDBOX
-                                </p>
-                            </div>
-                        )}
-
+                        {/* Wallet address */}
                         {userData && (
-                            <div className="hidden sm:flex flex-col items-end">
-                                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-tighter">Connected Wallet</span>
-                                <div className="flex items-center gap-1.5">
-                                    <p className="text-xs sm:text-sm font-mono text-white/90 bg-white/10 px-2 sm:px-3 py-1 rounded-lg border border-white/5 truncate max-w-[140px] sm:max-w-none">
-                                        {userData.profile.stxAddress.mainnet.slice(0, 6)}...
-                                        {userData.profile.stxAddress.mainnet.slice(-4)}
-                                    </p>
-                                    <CopyButton text={userData.profile.stxAddress.mainnet} className="text-white/70 hover:text-white" />
-                                </div>
+                            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                                <p className="text-xs font-mono text-gray-300">
+                                    {formatAddress(userData.profile.stxAddress.mainnet, 6, 4)}
+                                </p>
+                                <CopyButton text={userData.profile.stxAddress.mainnet} className="text-gray-500 hover:text-white" />
                             </div>
                         )}
 
+                        {/* Connect / Disconnect */}
                         <button
                             onClick={onAuth}
                             disabled={authLoading}
-                            className={`px-4 sm:px-8 py-2.5 rounded-xl font-bold transition-all transform active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] text-sm sm:text-base ${userData
-                                ? 'bg-red-500/10 text-red-100 border border-red-500/50 hover:bg-red-500 hover:text-white'
-                                : 'bg-white text-gray-900 hover:bg-gray-50 hover:shadow-white/10'
-                                }`}
+                            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${
+                                userData
+                                    ? 'bg-red-500/10 text-red-300 border border-red-500/20 hover:bg-red-500/20'
+                                    : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:shadow-lg hover:shadow-amber-500/20'
+                            }`}
                         >
-                            {authLoading ? 'Connecting...' : userData ? 'Disconnect' : isDemo ? 'Connect Real Wallet' : 'Connect Wallet'}
+                            {authLoading ? 'Connecting...' : userData ? 'Disconnect' : 'Connect Wallet'}
                         </button>
                     </div>
                 </div>

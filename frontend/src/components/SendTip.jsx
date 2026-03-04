@@ -14,7 +14,6 @@ import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
 import { useStxPrice } from '../hooks/useStxPrice';
 import { analytics } from '../lib/analytics';
-import { useDemoMode } from '../context/DemoContext';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
 
@@ -37,7 +36,6 @@ const TIP_CATEGORIES = [
 export default function SendTip({ addToast }) {
     const { notifyTipSent } = useTipContext();
     const { toUsd } = useStxPrice();
-    const { isDemo, simulateTipSend, demoBalance } = useDemoMode();
     const [recipient, setRecipient] = useState('');
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
@@ -49,6 +47,17 @@ export default function SendTip({ addToast }) {
     const [amountError, setAmountError] = useState('');
     const [cooldown, setCooldown] = useState(0);
     const cooldownRef = useRef(null);
+
+    const senderAddress = useMemo(() => {
+        try {
+            return userSession.loadUserData().profile.stxAddress.mainnet;
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const { balance, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
+    const balanceSTX = balance !== null ? Number(balance) / 1_000_000 : null;
 
     useEffect(() => {
         return () => {
@@ -70,21 +79,6 @@ export default function SendTip({ addToast }) {
         }, 1000);
     }, []);
 
-    const senderAddress = useMemo(() => {
-        if (isDemo) return 'SP1DEMO000000000000000000000SANDBOX';
-        try {
-            return userSession.loadUserData().profile.stxAddress.mainnet;
-        } catch {
-            return null;
-        }
-    }, [isDemo]);
-
-    const { balance, loading: balanceLoading, refetch: refetchBalance } = useBalance(isDemo ? null : senderAddress);
-
-    const balanceSTX = isDemo
-        ? demoBalance / 1_000_000
-        : balance !== null ? Number(balance) / 1_000_000 : null;
-
     const isValidStacksAddress = (address) => {
         if (!address) return false;
         const trimmed = address.trim();
@@ -103,10 +97,7 @@ export default function SendTip({ addToast }) {
 
     const handleAmountChange = (value) => {
         setAmount(value);
-        if (!value) {
-            setAmountError('');
-            return;
-        }
+        if (!value) { setAmountError(''); return; }
         const parsed = parseFloat(value);
         if (isNaN(parsed) || parsed <= 0) {
             setAmountError('Amount must be a positive number');
@@ -122,48 +113,15 @@ export default function SendTip({ addToast }) {
     };
 
     const validateAndConfirm = () => {
-        if (cooldown > 0) {
-            addToast(`Please wait ${cooldown}s before sending another tip`, 'warning');
-            return;
-        }
-
-        if (!recipient || !amount) {
-            addToast('Please fill in all required fields', 'warning');
-            return;
-        }
-
-        if (!isValidStacksAddress(recipient)) {
-            addToast('Invalid Stacks address format', 'warning');
-            return;
-        }
-
-        const currentSender = isDemo ? 'SP1DEMO000000000000000000000SANDBOX' : userSession.loadUserData().profile.stxAddress.mainnet;
-        if (recipient.trim() === currentSender) {
-            addToast('You cannot send a tip to yourself', 'warning');
-            return;
-        }
-
+        if (cooldown > 0) { addToast(`Please wait ${cooldown}s before sending another tip`, 'warning'); return; }
+        if (!recipient || !amount) { addToast('Please fill in all required fields', 'warning'); return; }
+        if (!isValidStacksAddress(recipient)) { addToast('Invalid Stacks address format', 'warning'); return; }
+        if (recipient.trim() === senderAddress) { addToast('You cannot send a tip to yourself', 'warning'); return; }
         const parsedAmount = parseFloat(amount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-            addToast('Please enter a valid tip amount greater than zero', 'warning');
-            return;
-        }
-
-        if (parsedAmount < MIN_TIP_STX) {
-            addToast(`Minimum tip amount is ${MIN_TIP_STX} STX`, 'warning');
-            return;
-        }
-
-        if (parsedAmount > MAX_TIP_STX) {
-            addToast(`Maximum tip amount is ${MAX_TIP_STX.toLocaleString()} STX`, 'warning');
-            return;
-        }
-
-        if (balanceSTX !== null && parsedAmount > balanceSTX) {
-            addToast('Insufficient STX balance for this tip', 'warning');
-            return;
-        }
-
+        if (isNaN(parsedAmount) || parsedAmount <= 0) { addToast('Please enter a valid amount', 'warning'); return; }
+        if (parsedAmount < MIN_TIP_STX) { addToast(`Minimum tip is ${MIN_TIP_STX} STX`, 'warning'); return; }
+        if (parsedAmount > MAX_TIP_STX) { addToast(`Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`, 'warning'); return; }
+        if (balanceSTX !== null && parsedAmount > balanceSTX) { addToast('Insufficient STX balance', 'warning'); return; }
         setShowConfirm(true);
         analytics.trackTipStarted();
     };
@@ -171,38 +129,10 @@ export default function SendTip({ addToast }) {
     const handleSendTip = async () => {
         setShowConfirm(false);
         analytics.trackTipSubmitted();
-
         setLoading(true);
-
-        // Demo mode: simulate tip sending
-        if (isDemo) {
-            await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
-            const result = simulateTipSend({
-                recipient: recipient.trim(),
-                amount: toMicroSTX(amount),
-                message: message || 'Thanks!',
-                category,
-            });
-            setLoading(false);
-            setPendingTx({
-                txId: result.txId,
-                recipient,
-                amount: parseFloat(amount),
-            });
-            setRecipient('');
-            setAmount('');
-            setMessage('');
-            setCategory(0);
-            notifyTipSent();
-            startCooldown();
-            addToast('Demo tip sent! (simulated — no real STX used)', 'success');
-            return;
-        }
 
         try {
             const microSTX = toMicroSTX(amount);
-            const senderAddress = userSession.loadUserData().profile.stxAddress.mainnet;
-
             const postConditions = [
                 Pc.principal(senderAddress).willSendLte(microSTX).ustx()
             ];
@@ -214,7 +144,7 @@ export default function SendTip({ addToast }) {
                 uintCV(category)
             ];
 
-            const options = {
+            await openContractCall({
                 network,
                 appDetails,
                 contractAddress: CONTRACT_ADDRESS,
@@ -225,11 +155,7 @@ export default function SendTip({ addToast }) {
                 postConditionMode: PostConditionMode.Deny,
                 onFinish: (data) => {
                     setLoading(false);
-                    setPendingTx({
-                        txId: data.txId,
-                        recipient,
-                        amount: parseFloat(amount),
-                    });
+                    setPendingTx({ txId: data.txId, recipient, amount: parseFloat(amount) });
                     setRecipient('');
                     setAmount('');
                     setMessage('');
@@ -238,217 +164,151 @@ export default function SendTip({ addToast }) {
                     refetchBalance();
                     startCooldown();
                     analytics.trackTipConfirmed();
-                    addToast('Tip sent successfully! Transaction: ' + data.txId, 'success');
+                    addToast('Tip sent! Tx: ' + data.txId, 'success');
                 },
                 onCancel: () => {
-                    console.info('Transaction cancelled by user');
                     setLoading(false);
                     analytics.trackTipCancelled();
-                    addToast('Transaction cancelled. Your funds were not transferred.', 'info');
+                    addToast('Transaction cancelled.', 'info');
                 }
-            };
-
-            await openContractCall(options);
+            });
         } catch (error) {
             console.error('Failed to send tip:', error.message || error);
             analytics.trackTipFailed();
-            analytics.trackError('SendTip', error.message || 'Unknown error');
             addToast('Failed to send tip. Please try again.', 'error');
             setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">Send a Tip</h2>
+        <div className="max-w-md mx-auto">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Send a Tip</h2>
 
-            {senderAddress && (
-                <div className="mb-5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-3 border border-gray-200 dark:border-gray-700">
-                    <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Your Balance</p>
-                        <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                            {balanceLoading
-                                ? 'Loading...'
-                                : balanceSTX !== null
+                {/* Balance */}
+                {senderAddress && (
+                    <div className="mb-5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700">
+                        <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Your Balance</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                {balanceLoading ? 'Loading...' : balanceSTX !== null
                                     ? `${balanceSTX.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} STX`
                                     : 'Unavailable'}
-                        </p>
-                    </div>
-                    <button
-                        onClick={refetchBalance}
-                        disabled={balanceLoading}
-                        className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
-                        title="Refresh balance"
-                    >
-                        <svg className={`w-4 h-4 ${balanceLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </button>
-                </div>
-            )}
-
-            <div className="space-y-5">
-                <div>
-                    <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                        Recipient Address
-                    </label>
-                    <input
-                        type="text"
-                        value={recipient}
-                        onChange={(e) => handleRecipientChange(e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent transition-all outline-none dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700'}`}
-                        placeholder="SP2..."
-                    />
-                    {recipientError && (
-                        <p className="mt-1 text-xs text-red-500">{recipientError}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                        Amount (STX)
-                    </label>
-                    <input
-                        type="number"
-                        value={amount}
-                        onChange={(e) => handleAmountChange(e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent transition-all outline-none dark:bg-gray-800 dark:text-white ${amountError ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700'}`}
-                        placeholder="0.5"
-                        step="0.001"
-                        min={MIN_TIP_STX}
-                        max={MAX_TIP_STX}
-                    />
-                    {amountError && (
-                        <p className="mt-1 text-xs text-red-500">{amountError}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                        Message (optional)
-                    </label>
-                    <textarea
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent transition-all outline-none resize-none"
-                        placeholder="Great work!"
-                        maxLength={280}
-                        rows={3}
-                    />
-                    <div className="flex justify-end mt-1">
-                        <p className={`text-xs ${message.length >= 280 ? 'text-red-500' : 'text-gray-400'}`}>
-                            {message.length}/280 characters
-                        </p>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                        Category
-                    </label>
-                    <select
-                        value={category}
-                        onChange={(e) => setCategory(Number(e.target.value))}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-400 focus:border-transparent transition-all outline-none"
-                    >
-                        {TIP_CATEGORIES.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                                {cat.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {amount && parseFloat(amount) > 0 && (
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-sm">
-                        <p className="font-semibold text-gray-700 mb-2">Transaction Breakdown</p>
-                        <div className="space-y-1 text-gray-600">
-                            <div className="flex justify-between">
-                                <span>Tip amount</span>
-                                <span>
-                                    {parseFloat(amount).toFixed(6)} STX
-                                    {toUsd(amount) && <span className="text-gray-400 ml-1">(~${toUsd(amount)})</span>}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Platform fee (0.5%)</span>
-                                <span>
-                                    {formatSTX(
-                                        Math.floor(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR),
-                                        6
-                                    )} STX
-                                </span>
-                            </div>
-                            <div className="border-t border-gray-200 pt-1 mt-1 flex justify-between font-semibold text-gray-800">
-                                <span>Recipient receives</span>
-                                <span>
-                                    {(() => {
-                                        const net = toMicroSTX(amount) - Math.floor(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR);
-                                        const netStx = formatSTX(net, 6);
-                                        return (
-                                            <>
-                                                {netStx} STX
-                                                {toUsd(parseFloat(netStx)) && <span className="font-normal text-gray-400 ml-1">(~${toUsd(parseFloat(netStx))})</span>}
-                                            </>
-                                        );
-                                    })()}
-                                </span>
-                            </div>
+                            </p>
                         </div>
+                        <button onClick={refetchBalance} disabled={balanceLoading}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50" title="Refresh">
+                            <svg className={`w-4 h-4 ${balanceLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
                     </div>
                 )}
 
-                <button
-                    onClick={validateAndConfirm}
-                    disabled={loading || cooldown > 0}
-                    className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transform active:scale-95 transition-all disabled:bg-gray-400 disabled:shadow-none"
-                >
-                    {loading ? (
-                        <span className="flex items-center justify-center">
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing...
-                        </span>
-                    ) : cooldown > 0 ? `Wait ${cooldown}s` : 'Send Tip'}
-                </button>
-            </div>
+                <div className="space-y-4">
+                    {/* Recipient */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Recipient Address</label>
+                        <input type="text" value={recipient} onChange={(e) => handleRecipientChange(e.target.value)}
+                            className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
+                            placeholder="SP2..." />
+                        {recipientError && <p className="mt-1 text-xs text-red-500">{recipientError}</p>}
+                    </div>
 
-            {pendingTx && (
-                <div className="mt-6">
-                    <p className="text-sm text-gray-700 mb-1">
-                        Sent {pendingTx.amount} STX to{' '}
-                        <span className="font-mono text-xs">{pendingTx.recipient.slice(0, 8)}...{pendingTx.recipient.slice(-4)}</span>
-                    </p>
-                    <TxStatus
-                        txId={pendingTx.txId}
-                        onConfirmed={() => addToast('Tip confirmed on-chain!', 'success')}
-                        onFailed={(reason) => addToast(`Transaction failed: ${reason}`, 'error')}
-                    />
-                    <button
-                        onClick={() => setPendingTx(null)}
-                        className="mt-2 text-xs text-gray-500 hover:text-gray-700"
-                    >
-                        Dismiss
+                    {/* Amount */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Amount (STX)</label>
+                        <input type="number" value={amount} onChange={(e) => handleAmountChange(e.target.value)}
+                            className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${amountError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
+                            placeholder="0.5" step="0.001" min={MIN_TIP_STX} max={MAX_TIP_STX} />
+                        {amountError && <p className="mt-1 text-xs text-red-500">{amountError}</p>}
+                    </div>
+
+                    {/* Message */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Message (optional)</label>
+                        <textarea value={message} onChange={(e) => setMessage(e.target.value)}
+                            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all resize-none"
+                            placeholder="Great work!" maxLength={280} rows={2} />
+                        <p className={`text-xs mt-1 text-right ${message.length >= 280 ? 'text-red-500' : 'text-gray-400'}`}>
+                            {message.length}/280
+                        </p>
+                    </div>
+
+                    {/* Category */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
+                        <select value={category} onChange={(e) => setCategory(Number(e.target.value))}
+                            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all">
+                            {TIP_CATEGORIES.map((cat) => (
+                                <option key={cat.id} value={cat.id}>{cat.label}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Breakdown */}
+                    {amount && parseFloat(amount) > 0 && (
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm">
+                            <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Breakdown</p>
+                            <div className="space-y-1 text-gray-600 dark:text-gray-400">
+                                <div className="flex justify-between">
+                                    <span>Tip amount</span>
+                                    <span>
+                                        {parseFloat(amount).toFixed(6)} STX
+                                        {toUsd(amount) && <span className="text-gray-400 ml-1">(~${toUsd(amount)})</span>}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Platform fee (0.5%)</span>
+                                    <span>{formatSTX(Math.floor(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX</span>
+                                </div>
+                                <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-1 flex justify-between font-semibold text-gray-900 dark:text-white">
+                                    <span>Recipient receives</span>
+                                    <span>
+                                        {formatSTX(toMicroSTX(amount) - Math.floor(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Submit */}
+                    <button onClick={validateAndConfirm} disabled={loading || cooldown > 0}
+                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Processing...
+                            </span>
+                        ) : cooldown > 0 ? `Wait ${cooldown}s` : 'Send Tip'}
                     </button>
                 </div>
-            )}
 
-            <ConfirmDialog
-                open={showConfirm}
-                title="Confirm Tip"
-                onConfirm={handleSendTip}
-                onCancel={() => setShowConfirm(false)}
-                confirmLabel="Send Tip"
-            >
-                <div className="space-y-2">
-                    <p>You are about to send <strong>{amount} STX</strong> to:</p>
-                    <p className="font-mono text-xs bg-gray-100 p-2 rounded break-all">{recipient}</p>
-                    <p className="text-sm text-gray-600">Category: <strong>{TIP_CATEGORIES.find(c => c.id === category)?.label || 'General'}</strong></p>
-                    {message && <p className="italic text-gray-500">"{message}"</p>}
-                </div>
-            </ConfirmDialog>
+                {/* Pending TX */}
+                {pendingTx && (
+                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                            Sent {pendingTx.amount} STX to <span className="font-mono text-xs">{pendingTx.recipient.slice(0, 8)}...{pendingTx.recipient.slice(-4)}</span>
+                        </p>
+                        <TxStatus txId={pendingTx.txId}
+                            onConfirmed={() => addToast('Tip confirmed on-chain!', 'success')}
+                            onFailed={(reason) => addToast(`Transaction failed: ${reason}`, 'error')} />
+                        <button onClick={() => setPendingTx(null)} className="mt-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Dismiss</button>
+                    </div>
+                )}
+
+                <ConfirmDialog open={showConfirm} title="Confirm Tip" onConfirm={handleSendTip} onCancel={() => setShowConfirm(false)} confirmLabel="Send Tip">
+                    <div className="space-y-2">
+                        <p>Send <strong>{amount} STX</strong> to:</p>
+                        <p className="font-mono text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded-lg break-all">{recipient}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Category: <strong>{TIP_CATEGORIES.find(c => c.id === category)?.label}</strong></p>
+                        {message && <p className="italic text-gray-500">"{message}"</p>}
+                    </div>
+                </ConfirmDialog>
+            </div>
         </div>
     );
 }
