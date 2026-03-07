@@ -65,7 +65,7 @@ function App() {
 
   const navItems = [
     { path: '/send', label: 'Send Tip', icon: Zap },
-    { path: '/feed', label: 'Live Feed', icon: '📡' },
+    { path: '/feed', label: 'Live Feed', icon: Radio },
     { path: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
     { path: '/activity', label: 'My Activity', icon: '👤' },
     { path: '/stats', label: 'Stats', icon: '📊' },
