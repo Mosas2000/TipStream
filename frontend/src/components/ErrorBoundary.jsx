@@ -33,7 +33,7 @@ export default class ErrorBoundary extends Component {
                             page or click the button below to recover.
                         </p>
                         {this.state.error && (
-                            <pre className="text-left text-sm bg-gray-100 rounded-lg p-4 overflow-auto max-h-40 text-gray-700">
+                            <pre className="text-left text-sm bg-gray-100 dark:bg-gray-800 rounded-lg p-4 overflow-auto max-h-40 text-gray-700 dark:text-gray-300">
                                 {this.state.error.message}
                             </pre>
                         )}
