@@ -32,6 +32,7 @@ export default function Leaderboard() {
     const [lastRefresh, setLastRefresh] = useState(null);
 
     const fetchLeaderboard = useCallback(async () => {
+        if (loading && leaders.length > 0) return;
         try {
             setLoading(true);
             setError(null);
