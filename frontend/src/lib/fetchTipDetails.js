@@ -1,3 +1,19 @@
+/**
+ * @module fetchTipDetails
+ *
+ * Utilities for retrieving full tip records (including the message field)
+ * from the TipStream smart-contract's on-chain `tips` map.
+ *
+ * The contract's print events deliberately omit `message` to keep event
+ * payloads small.  These helpers call the read-only `get-tip` function to
+ * retrieve the full record and expose a caching layer so repeated renders
+ * do not trigger duplicate API requests.
+ *
+ * Exports:
+ *   fetchTipDetail(tipId)     - Fetch a single tip record (cached).
+ *   fetchTipMessages(tipIds)  - Batch-fetch messages for many tips at once.
+ */
+
 import { fetchCallReadOnlyFunction, cvToJSON, uintCV } from '@stacks/transactions';
 import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
