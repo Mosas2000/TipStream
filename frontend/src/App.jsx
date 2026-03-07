@@ -118,7 +118,7 @@ function App() {
                           }`
                         }
                       >
-                        <span className="text-base">{item.icon}</span>
+                        <item.icon className="w-4 h-4" aria-hidden="true" />
                         <span className={location.pathname === item.path ? 'block' : 'hidden sm:block'}>{item.label}</span>
                       </NavLink>
                     ))}
