@@ -38,6 +38,7 @@ export default function Leaderboard() {
     }, []);
 
     useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard, refreshCounter]);
+    useEffect(() => { const i = setInterval(fetchLeaderboard, 60000); return () => clearInterval(i); }, [fetchLeaderboard]);
 
     const sorted = [...leaders].sort((a, b) => tab === 'sent' ? b.totalSent - a.totalSent : b.totalReceived - a.totalReceived).slice(0, 20);
     const MEDALS = ['bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400', 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300', 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'];
