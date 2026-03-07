@@ -7,7 +7,7 @@ import { network, appDetails, userSession } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
-import { Zap } from 'lucide-react';
+import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
 const PAGE_SIZE = 10;
@@ -156,7 +156,7 @@ export default function RecentTips({ addToast }) {
             <div className="mb-5 space-y-3">
                 <div className="flex gap-2">
                     <div className="relative flex-1">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
                         <input type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setOffset(0); }}
                             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Search by address or message..." />
