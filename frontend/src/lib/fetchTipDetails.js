@@ -101,3 +101,13 @@ export async function fetchTipMessages(tipIds) {
 
     return messages;
 }
+
+/**
+ * Clear the in-memory tip detail cache.
+ *
+ * Useful when the user manually refreshes or when new tips are submitted
+ * and the UI should re-fetch updated records from the chain.
+ */
+export function clearTipCache() {
+    tipCache.clear();
+}
