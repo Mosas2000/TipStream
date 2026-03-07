@@ -40,13 +40,13 @@ export default class ErrorBoundary extends Component {
                         <div className="flex justify-center gap-4">
                             <button
                                 onClick={this.handleReset}
-                                className="px-6 py-2.5 bg-slate-900 text-white rounded-full text-sm font-semibold hover:bg-slate-800 transition-colors"
+                                className="px-6 py-2.5 bg-slate-900 dark:bg-amber-500 text-white dark:text-black rounded-full text-sm font-semibold hover:bg-slate-800 dark:hover:bg-amber-400 transition-colors"
                             >
                                 Try again
                             </button>
                             <button
                                 onClick={() => window.location.reload()}
-                                className="px-6 py-2.5 border border-gray-300 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-full text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                             >
                                 Reload page
                             </button>
