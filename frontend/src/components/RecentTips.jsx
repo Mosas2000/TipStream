@@ -45,6 +45,23 @@ export default function RecentTips({ addToast }) {
             setTips(tipEvents);
             setLoading(false);
             setLastRefresh(new Date());
+
+            // Second phase: fetch on-chain messages for each tip
+            const tipIds = tipEvents.map(t => t.tipId).filter(id => id && id !== '0');
+            if (tipIds.length > 0) {
+                setMessagesLoading(true);
+                try {
+                    const messageMap = await fetchTipMessages(tipIds);
+                    setTips(prev => prev.map(t => {
+                        const msg = messageMap.get(String(t.tipId));
+                        return msg ? { ...t, message: msg } : t;
+                    }));
+                } catch (msgErr) {
+                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
+                } finally {
+                    setMessagesLoading(false);
+                }
+            }
         } catch (err) {
             console.error('Failed to fetch recent tips:', err.message || err);
             const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
