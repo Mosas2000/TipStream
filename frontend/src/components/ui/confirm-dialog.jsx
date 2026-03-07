@@ -27,7 +27,7 @@ export default function ConfirmDialog({ open, title, children, onConfirm, onCanc
             <div
                 ref={dialogRef}
                 tabIndex={-1}
-                className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-md w-full mx-4 animate-in fade-in zoom-in-95"
+                className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-6 max-w-md w-full mx-4 animate-in fade-in zoom-in-95"
             >
                 <h3 className="text-lg font-bold text-gray-900 mb-3">{title}</h3>
                 <div className="text-sm text-gray-600 mb-6">{children}</div>
