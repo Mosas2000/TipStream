@@ -4,6 +4,32 @@ import { formatSTX, formatAddress } from '../lib/utils';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import CopyButton from './ui/copy-button';
 
+/**
+ * Build per-address statistics from an array of parsed tip events.
+ *
+ * @param {Array<Object>} tipEvents - Parsed tip-sent events from parseTipEvent.
+ * @returns {Array<Object>} Array of user stat objects with address, totals, and counts.
+ */
+function buildLeaderboardStats(tipEvents) {
+    const userStats = {};
+
+    tipEvents.forEach(tip => {
+        const sender = tip.sender;
+        const recipient = tip.recipient;
+        const amount = parseInt(tip.amount, 10);
+
+        if (!userStats[sender]) userStats[sender] = { address: sender, totalSent: 0, tipsSent: 0, totalReceived: 0, tipsReceived: 0 };
+        userStats[sender].totalSent += amount;
+        userStats[sender].tipsSent += 1;
+
+        if (!userStats[recipient]) userStats[recipient] = { address: recipient, totalSent: 0, tipsSent: 0, totalReceived: 0, tipsReceived: 0 };
+        userStats[recipient].totalReceived += amount;
+        userStats[recipient].tipsReceived += 1;
+    });
+
+    return Object.values(userStats);
+}
+
 export default function Leaderboard() {
     const [leaders, setLeaders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,28 +45,13 @@ export default function Leaderboard() {
             if (!response.ok) throw new Error(`API returned ${response.status}`);
 
             const data = await response.json();
-            const userStats = {};
 
             const tipEvents = data.results
                 .filter(e => e.contract_log?.value?.repr)
                 .map(e => parseTipEvent(e.contract_log.value.repr))
                 .filter(t => t !== null && t.event === 'tip-sent' && t.sender && t.recipient && t.amount !== '0');
 
-            tipEvents.forEach(tip => {
-                const sender = tip.sender;
-                const recipient = tip.recipient;
-                const amount = parseInt(tip.amount, 10);
-
-                if (!userStats[sender]) userStats[sender] = { address: sender, totalSent: 0, tipsSent: 0, totalReceived: 0, tipsReceived: 0 };
-                userStats[sender].totalSent += amount;
-                userStats[sender].tipsSent += 1;
-
-                if (!userStats[recipient]) userStats[recipient] = { address: recipient, totalSent: 0, tipsSent: 0, totalReceived: 0, tipsReceived: 0 };
-                userStats[recipient].totalReceived += amount;
-                userStats[recipient].tipsReceived += 1;
-            });
-
-            setLeaders(Object.values(userStats));
+            setLeaders(buildLeaderboardStats(tipEvents));
             setLoading(false);
         } catch (err) {
             console.error('Failed to fetch leaderboard:', err.message || err);
