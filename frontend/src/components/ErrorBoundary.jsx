@@ -25,10 +25,10 @@ export default class ErrorBoundary extends Component {
             return (
                 <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
                     <div className="max-w-md w-full text-center space-y-6">
-                        <h1 className="text-2xl font-bold text-gray-900">
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                             Something went wrong
                         </h1>
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 dark:text-gray-400">
                             An unexpected error occurred. You can try reloading the
                             page or click the button below to recover.
                         </p>
