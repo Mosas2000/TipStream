@@ -12,6 +12,7 @@ export default function Leaderboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [tab, setTab] = useState('sent');
+    const [lastRefresh, setLastRefresh] = useState(null);
 
     const fetchLeaderboard = useCallback(async () => {
         try {
@@ -30,6 +31,7 @@ export default function Leaderboard() {
 
             setLeaders(buildLeaderboardStats(tipEvents));
             setLoading(false);
+            setLastRefresh(new Date());
         } catch (err) {
             console.error('Failed to fetch leaderboard:', err.message || err);
             setError(err.message || 'Failed to load leaderboard');
