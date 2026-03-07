@@ -46,3 +46,42 @@ export async function fetchTipDetail(tipId) {
         return null;
     }
 }
+
+/**
+ * Maximum number of concurrent read-only calls when fetching a batch of tips.
+ * Keeps Hiro API rate-limit pressure low while still being faster than serial.
+ */
+const CONCURRENCY_LIMIT = 5;
+
+/**
+ * Fetch messages for a batch of tip IDs.
+ *
+ * Calls fetchTipDetail for each tip ID with bounded concurrency so the
+ * Stacks API is not overwhelmed.  Returns a Map of tipId -> message string.
+ * Tips that fail to load or have no message are silently skipped.
+ *
+ * @param {Array<number|string>} tipIds - The tip IDs to look up.
+ * @returns {Promise<Map<string, string>>} Map from tipId to message text.
+ */
+export async function fetchTipMessages(tipIds) {
+    const messages = new Map();
+    const queue = [...tipIds];
+
+    async function worker() {
+        while (queue.length > 0) {
+            const id = queue.shift();
+            const detail = await fetchTipDetail(id);
+            if (detail?.message?.value) {
+                messages.set(String(id), detail.message.value);
+            }
+        }
+    }
+
+    const workers = Array.from(
+        { length: Math.min(CONCURRENCY_LIMIT, tipIds.length) },
+        () => worker(),
+    );
+    await Promise.all(workers);
+
+    return messages;
+}
