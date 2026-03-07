@@ -68,7 +68,7 @@ function App() {
     { path: '/feed', label: 'Live Feed', icon: Radio },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { path: '/activity', label: 'My Activity', icon: User },
-    { path: '/stats', label: 'Stats', icon: '📊' },
+    { path: '/stats', label: 'Stats', icon: BarChart3 },
   ];
 
   if (healthy === false) {
