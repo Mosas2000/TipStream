@@ -76,7 +76,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
           href={explorerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs font-mono underline break-all"
+          className="text-xs font-mono underline break-all hover:opacity-80 transition-opacity"
         >
           {txId.slice(0, 10)}...{txId.slice(-8)}
         </a>
