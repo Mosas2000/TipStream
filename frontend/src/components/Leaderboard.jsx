@@ -14,6 +14,15 @@ const MEDALS = [
 ];
 const DEFAULT_MEDAL = 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
 
+/**
+ * Leaderboard component that ranks users by total STX sent or received.
+ *
+ * Fetches contract events via the Stacks API, delegates parsing to the
+ * shared `parseTipEvent` utility, and aggregates per-address stats using
+ * `buildLeaderboardStats`.  Supports toggling between "Top Senders" and
+ * "Top Receivers" tabs, auto-refreshes every 60 seconds, and reacts to
+ * the global `refreshCounter` from TipContext.
+ */
 export default function Leaderboard() {
     const { refreshCounter } = useTipContext();
     const [leaders, setLeaders] = useState([]);
