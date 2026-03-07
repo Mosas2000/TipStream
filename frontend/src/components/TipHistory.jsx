@@ -4,7 +4,7 @@ import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
 import { parseTipEvent } from '../lib/parseTipEvent';
-import { fetchTipMessages } from '../lib/fetchTipDetails';
+import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
@@ -29,6 +29,7 @@ export default function TipHistory({ userAddress }) {
         if (!userAddress) return;
         try {
             setError(null);
+            clearTipCache();
             const [statsResult, tipsResult] = await Promise.all([
                 fetchCallReadOnlyFunction({
                     network, contractAddress: CONTRACT_ADDRESS, contractName: CONTRACT_NAME,
