@@ -6,6 +6,14 @@ import { buildLeaderboardStats } from '../lib/buildLeaderboardStats';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 
+/** Tailwind classes for the top-3 medal positions on the leaderboard. */
+const MEDALS = [
+    'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+    'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+    'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+];
+const DEFAULT_MEDAL = 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
+
 export default function Leaderboard() {
     const { refreshCounter } = useTipContext();
     const [leaders, setLeaders] = useState([]);
@@ -48,7 +56,6 @@ export default function Leaderboard() {
             .sort((a, b) => tab === 'sent' ? b.totalSent - a.totalSent : b.totalReceived - a.totalReceived)
             .slice(0, 20);
     }, [leaders, tab]);
-    const MEDALS = ['bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400', 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300', 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'];
 
     if (loading) return (
         <div className="space-y-3 animate-pulse">
@@ -92,7 +99,7 @@ export default function Leaderboard() {
                         {sorted.map((user, i) => (
                             <div key={user.address} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${MEDALS[i] || 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${MEDALS[i] || DEFAULT_MEDAL}`}>
                                         {i + 1}
                                     </div>
                                     <div>
