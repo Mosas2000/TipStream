@@ -34,7 +34,8 @@ export default function Leaderboard() {
             setLastRefresh(new Date());
         } catch (err) {
             console.error('Failed to fetch leaderboard:', err.message || err);
-            setError(err.message || 'Failed to load leaderboard');
+            const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
+            setError(isNet ? 'Unable to reach the Stacks API. Check your connection.' : `Failed to load leaderboard: ${err.message}`);
             setLoading(false);
         }
     }, []);
