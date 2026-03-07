@@ -3,6 +3,12 @@ import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 
 /**
+ * In-memory cache for tip details to avoid redundant API calls.
+ * Keys are tip IDs (as strings), values are the parsed tip objects.
+ */
+const tipCache = new Map();
+
+/**
  * Fetch full tip details (including message) from the contract's tips map.
  *
  * The contract's print events do not include the message field, so this
@@ -13,6 +19,11 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
  * @returns {Promise<Object|null>} The tip details or null if not found.
  */
 export async function fetchTipDetail(tipId) {
+    const cacheKey = String(tipId);
+    if (tipCache.has(cacheKey)) {
+        return tipCache.get(cacheKey);
+    }
+
     try {
         const result = await fetchCallReadOnlyFunction({
             network,
@@ -28,6 +39,7 @@ export async function fetchTipDetail(tipId) {
             return null;
         }
 
+        tipCache.set(cacheKey, parsed.value);
         return parsed.value;
     } catch (err) {
         console.error(`Failed to fetch tip #${tipId}:`, err.message || err);
