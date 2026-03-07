@@ -67,7 +67,7 @@ function App() {
     { path: '/send', label: 'Send Tip', icon: Zap },
     { path: '/feed', label: 'Live Feed', icon: Radio },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { path: '/activity', label: 'My Activity', icon: '👤' },
+    { path: '/activity', label: 'My Activity', icon: User },
     { path: '/stats', label: 'Stats', icon: '📊' },
   ];
 
