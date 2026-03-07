@@ -172,7 +172,11 @@ export default function TipHistory({ userAddress }) {
                                             <span className="font-semibold text-gray-700 dark:text-gray-200">{formatAddress(tip.direction === 'sent' ? tip.recipient : tip.sender, 8, 6)}</span>
                                             <CopyButton text={tip.direction === 'sent' ? tip.recipient : tip.sender} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                                         </div>
-                                        {tip.message && <span className="text-xs text-gray-400 italic">"{tip.message}"</span>}
+                                        {tip.message ? (
+                                            <span className="text-xs text-gray-400 italic">&ldquo;{tip.message}&rdquo;</span>
+                                        ) : messagesLoading ? (
+                                            <span className="inline-block h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-0.5" />
+                                        ) : null}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
