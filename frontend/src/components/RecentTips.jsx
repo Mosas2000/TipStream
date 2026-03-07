@@ -208,9 +208,11 @@ export default function RecentTips({ addToast }) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {tip.message && (
-                                        <span className="text-xs text-gray-400 italic max-w-[200px] truncate">"{tip.message}"</span>
-                                    )}
+                                    {tip.message ? (
+                                        <span className="text-xs text-gray-400 italic max-w-[200px] truncate">&ldquo;{tip.message}&rdquo;</span>
+                                    ) : messagesLoading ? (
+                                        <span className="inline-block h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    ) : null}
                                     {userSession.isUserSignedIn() && (
                                         <button onClick={() => setTipBackTarget(tip)}
                                             className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-lg transition-all sm:opacity-0 sm:group-hover:opacity-100">
