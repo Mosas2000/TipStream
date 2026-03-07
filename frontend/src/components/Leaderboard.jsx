@@ -62,13 +62,19 @@ export default function Leaderboard() {
         <div className="max-w-4xl mx-auto">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">Leaderboard</h2>
 
-            <div className="flex gap-2 mb-5">
-                {['sent', 'received'].map(t => (
-                    <button key={t} onClick={() => setTab(t)}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab === t ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
-                        Top {t === 'sent' ? 'Senders' : 'Receivers'}
-                    </button>
-                ))}
+            <div className="flex items-center justify-between mb-5">
+                <div className="flex gap-2">
+                    {['sent', 'received'].map(t => (
+                        <button key={t} onClick={() => setTab(t)}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab === t ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                            Top {t === 'sent' ? 'Senders' : 'Receivers'}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex items-center gap-3">
+                    {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
+                    <button onClick={fetchLeaderboard} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
