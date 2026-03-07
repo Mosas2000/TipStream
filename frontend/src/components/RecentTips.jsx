@@ -15,6 +15,7 @@ export default function RecentTips({ addToast }) {
     const { refreshCounter } = useTipContext();
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [messagesLoading, setMessagesLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tipBackTarget, setTipBackTarget] = useState(null);
     const [tipBackAmount, setTipBackAmount] = useState('0.5');
