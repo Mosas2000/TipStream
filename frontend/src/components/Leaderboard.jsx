@@ -21,19 +21,15 @@ export default function Leaderboard() {
             const data = await response.json();
             const userStats = {};
 
-            data.results.forEach(event => {
-                if (!event.contract_log?.value?.repr) return;
-                const repr = event.contract_log.value.repr;
-                if (!repr.includes('tip-sent')) return;
+            const tipEvents = data.results
+                .filter(e => e.contract_log?.value?.repr)
+                .map(e => parseTipEvent(e.contract_log.value.repr))
+                .filter(t => t !== null && t.event === 'tip-sent' && t.sender && t.recipient && t.amount !== '0');
 
-                const senderMatch = repr.match(/sender\s+'([A-Z0-9]+)/i);
-                const recipientMatch = repr.match(/recipient\s+'([A-Z0-9]+)/i);
-                const amountMatch = repr.match(/amount\s+u(\d+)/);
-                if (!senderMatch || !recipientMatch || !amountMatch) return;
-
-                const sender = senderMatch[1];
-                const recipient = recipientMatch[1];
-                const amount = parseInt(amountMatch[1], 10);
+            tipEvents.forEach(tip => {
+                const sender = tip.sender;
+                const recipient = tip.recipient;
+                const amount = parseInt(tip.amount, 10);
 
                 if (!userStats[sender]) userStats[sender] = { address: sender, totalSent: 0, tipsSent: 0, totalReceived: 0, tipsReceived: 0 };
                 userStats[sender].totalSent += amount;
