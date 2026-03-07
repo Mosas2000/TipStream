@@ -47,17 +47,17 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const statusConfig = {
     pending: {
       label: 'Pending confirmation...',
-      color: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+      color: 'bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200',
       dot: 'bg-yellow-400 animate-pulse',
     },
     confirmed: {
       label: 'Confirmed on-chain',
-      color: 'bg-green-50 border-green-200 text-green-800',
+      color: 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
       dot: 'bg-green-500',
     },
     failed: {
       label: 'Transaction failed',
-      color: 'bg-red-50 border-red-200 text-red-800',
+      color: 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
       dot: 'bg-red-500',
     },
   };
