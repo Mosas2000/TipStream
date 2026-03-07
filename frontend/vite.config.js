@@ -42,7 +42,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.(mainnet|testnet)\.hiro\.so\/.*/i,
+            urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'stacks-api-cache',
