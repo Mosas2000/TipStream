@@ -10,6 +10,7 @@ import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
+import { Zap, Radio, Trophy, User, BarChart3 } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
@@ -63,11 +64,11 @@ function App() {
   };
 
   const navItems = [
-    { path: '/send', label: 'Send Tip', icon: '⚡' },
-    { path: '/feed', label: 'Live Feed', icon: '📡' },
-    { path: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
-    { path: '/activity', label: 'My Activity', icon: '👤' },
-    { path: '/stats', label: 'Stats', icon: '📊' },
+    { path: '/send', label: 'Send Tip', icon: Zap },
+    { path: '/feed', label: 'Live Feed', icon: Radio },
+    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { path: '/activity', label: 'My Activity', icon: User },
+    { path: '/stats', label: 'Stats', icon: BarChart3 },
   ];
 
   if (healthy === false) {
@@ -117,7 +118,7 @@ function App() {
                           }`
                         }
                       >
-                        <span className="text-base">{item.icon}</span>
+                        <item.icon className="w-4 h-4" aria-hidden="true" />
                         <span className={location.pathname === item.path ? 'block' : 'hidden sm:block'}>{item.label}</span>
                       </NavLink>
                     ))}
