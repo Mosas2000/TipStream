@@ -128,6 +128,14 @@ export default function Leaderboard() {
                         ))}
                     </div>
                 )}
+                {sorted.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center px-3">
+                        <span className="text-xs text-gray-400">Showing top {sorted.length} users</span>
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Total: {formatSTX(sorted.reduce((sum, u) => sum + (tab === 'sent' ? u.totalSent : u.totalReceived), 0), 2)} STX
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
     );
