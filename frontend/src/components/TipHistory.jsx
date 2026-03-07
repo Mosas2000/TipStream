@@ -4,6 +4,7 @@ import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
 import { parseTipEvent } from '../lib/parseTipEvent';
+import { fetchTipMessages } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
