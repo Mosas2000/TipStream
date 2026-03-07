@@ -11,3 +11,5 @@ export const STACKS_API_BASE = NETWORK === 'mainnet'
     : NETWORK === 'testnet'
         ? 'https://api.testnet.hiro.so'
         : 'http://localhost:3999';
+
+export const APP_URL = import.meta.env.VITE_APP_URL || 'https://tipstream-silk.vercel.app';

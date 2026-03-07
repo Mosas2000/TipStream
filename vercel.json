@@ -3,6 +3,12 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "cd frontend && npm install",
   "framework": "vite",
+  "build": {
+    "env": {
+      "VITE_APP_URL": "https://tipstream-silk.vercel.app",
+      "VITE_NETWORK": "mainnet"
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { APP_URL } from '../config/contracts';
 
-const PLATFORM_URL = 'https://tipstream.app';
+const PLATFORM_URL = APP_URL;
 
 function buildShareText(tip) {
     const amt = tip.amount ? `${tip.amount} STX` : 'a tip';
@@ -61,7 +62,7 @@ export default function ShareTip({ tip }) {
         <div className="flex items-center gap-2">
             <button
                 onClick={() => openShare(twitterUrl(text))}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title="Share on X"
                 aria-label="Share on X"
             >
@@ -71,7 +72,7 @@ export default function ShareTip({ tip }) {
             </button>
             <button
                 onClick={() => openShare(linkedinUrl(text))}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title="Share on LinkedIn"
                 aria-label="Share on LinkedIn"
             >
@@ -81,7 +82,7 @@ export default function ShareTip({ tip }) {
             </button>
             <button
                 onClick={() => openShare(facebookUrl())}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title="Share on Facebook"
                 aria-label="Share on Facebook"
             >
@@ -91,12 +92,12 @@ export default function ShareTip({ tip }) {
             </button>
             <button
                 onClick={handleCopyLink}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title="Copy share text"
                 aria-label="Copy share text"
             >
                 {copied ? (
-                    <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                 ) : (
