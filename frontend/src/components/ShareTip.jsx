@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { APP_URL } from '../config/contracts';
 
-const PLATFORM_URL = 'https://tipstream.app';
+const PLATFORM_URL = APP_URL;
 
 function buildShareText(tip) {
     const amt = tip.amount ? `${tip.amount} STX` : 'a tip';
