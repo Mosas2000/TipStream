@@ -7,6 +7,7 @@ import { network, appDetails, userSession } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
+import { Zap } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
 const PAGE_SIZE = 10;
@@ -199,7 +200,9 @@ export default function RecentTips({ addToast }) {
                         {paginatedTips.map((tip, i) => (
                             <div key={tip.tipId || i} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold shrink-0">⚡</div>
+                                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shrink-0">
+                                        <Zap className="w-4 h-4" aria-hidden="true" />
+                                    </div>
                                     <div>
                                         <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 font-semibold">
                                             <span>{formatAddress(tip.sender, 8, 6)}</span>
