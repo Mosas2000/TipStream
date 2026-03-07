@@ -3,9 +3,11 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/cont
 import { formatSTX, formatAddress } from '../lib/utils';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { buildLeaderboardStats } from '../lib/buildLeaderboardStats';
+import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 
 export default function Leaderboard() {
+    const { refreshCounter } = useTipContext();
     const [leaders, setLeaders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -35,7 +37,7 @@ export default function Leaderboard() {
         }
     }, []);
 
-    useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
+    useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard, refreshCounter]);
 
     const sorted = [...leaders].sort((a, b) => tab === 'sent' ? b.totalSent - a.totalSent : b.totalReceived - a.totalReceived).slice(0, 20);
     const MEDALS = ['bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400', 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300', 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'];
