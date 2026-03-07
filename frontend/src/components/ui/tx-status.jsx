@@ -47,17 +47,17 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const statusConfig = {
     pending: {
       label: 'Pending confirmation...',
-      color: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+      color: 'bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200',
       dot: 'bg-yellow-400 animate-pulse',
     },
     confirmed: {
       label: 'Confirmed on-chain',
-      color: 'bg-green-50 border-green-200 text-green-800',
+      color: 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
       dot: 'bg-green-500',
     },
     failed: {
       label: 'Transaction failed',
-      color: 'bg-red-50 border-red-200 text-red-800',
+      color: 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
       dot: 'bg-red-500',
     },
   };
@@ -76,13 +76,13 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
           href={explorerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs font-mono underline break-all"
+          className="text-xs font-mono underline break-all hover:opacity-80 transition-opacity"
         >
           {txId.slice(0, 10)}...{txId.slice(-8)}
         </a>
       </div>
       {status === 'pending' && pollCount >= MAX_POLLS && (
-        <p className="mt-2 text-xs opacity-70">
+        <p className="mt-2 text-xs opacity-70 dark:opacity-60">
           Still waiting. Check the explorer for the latest status.
         </p>
       )}
