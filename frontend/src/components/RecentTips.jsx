@@ -5,7 +5,7 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/cont
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
-import { fetchTipMessages } from '../lib/fetchTipDetails';
+import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 
@@ -32,6 +32,7 @@ export default function RecentTips({ addToast }) {
     const fetchRecentTips = useCallback(async () => {
         try {
             setError(null);
+            clearTipCache();
             const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
             const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=50&offset=0`);
             if (!response.ok) throw new Error(`API returned ${response.status}`);
