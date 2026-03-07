@@ -4,6 +4,7 @@ import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
 import { parseTipEvent } from '../lib/parseTipEvent';
+import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
@@ -18,6 +19,7 @@ export default function TipHistory({ userAddress }) {
     const [stats, setStats] = useState(null);
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [messagesLoading, setMessagesLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tab, setTab] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
@@ -27,6 +29,7 @@ export default function TipHistory({ userAddress }) {
         if (!userAddress) return;
         try {
             setError(null);
+            clearTipCache();
             const [statsResult, tipsResult] = await Promise.all([
                 fetchCallReadOnlyFunction({
                     network, contractAddress: CONTRACT_ADDRESS, contractName: CONTRACT_NAME,
@@ -54,6 +57,23 @@ export default function TipHistory({ userAddress }) {
             setTips(userTips);
             setLoading(false);
             setLastRefresh(new Date());
+
+            // Second phase: fetch on-chain messages for the user's tips
+            const tipIds = userTips.map(t => t.tipId).filter(id => id && id !== '0');
+            if (tipIds.length > 0) {
+                setMessagesLoading(true);
+                try {
+                    const messageMap = await fetchTipMessages(tipIds);
+                    setTips(prev => prev.map(t => {
+                        const msg = messageMap.get(String(t.tipId));
+                        return msg ? { ...t, message: msg } : t;
+                    }));
+                } catch (msgErr) {
+                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
+                } finally {
+                    setMessagesLoading(false);
+                }
+            }
         } catch (err) {
             console.error('Failed to fetch tip history:', err.message || err);
             const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
@@ -153,7 +173,11 @@ export default function TipHistory({ userAddress }) {
                                             <span className="font-semibold text-gray-700 dark:text-gray-200">{formatAddress(tip.direction === 'sent' ? tip.recipient : tip.sender, 8, 6)}</span>
                                             <CopyButton text={tip.direction === 'sent' ? tip.recipient : tip.sender} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                                         </div>
-                                        {tip.message && <span className="text-xs text-gray-400 italic">"{tip.message}"</span>}
+                                        {tip.message ? (
+                                            <span className="text-xs text-gray-400 italic">&ldquo;{tip.message}&rdquo;</span>
+                                        ) : messagesLoading ? (
+                                            <span className="inline-block h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-0.5" />
+                                        ) : null}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">

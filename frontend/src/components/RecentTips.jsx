@@ -5,6 +5,7 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/cont
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
+import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 
@@ -14,6 +15,7 @@ export default function RecentTips({ addToast }) {
     const { refreshCounter } = useTipContext();
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [messagesLoading, setMessagesLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tipBackTarget, setTipBackTarget] = useState(null);
     const [tipBackAmount, setTipBackAmount] = useState('0.5');
@@ -30,6 +32,7 @@ export default function RecentTips({ addToast }) {
     const fetchRecentTips = useCallback(async () => {
         try {
             setError(null);
+            clearTipCache();
             const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
             const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=50&offset=0`);
             if (!response.ok) throw new Error(`API returned ${response.status}`);
@@ -43,6 +46,23 @@ export default function RecentTips({ addToast }) {
             setTips(tipEvents);
             setLoading(false);
             setLastRefresh(new Date());
+
+            // Second phase: fetch on-chain messages for each tip
+            const tipIds = tipEvents.map(t => t.tipId).filter(id => id && id !== '0');
+            if (tipIds.length > 0) {
+                setMessagesLoading(true);
+                try {
+                    const messageMap = await fetchTipMessages(tipIds);
+                    setTips(prev => prev.map(t => {
+                        const msg = messageMap.get(String(t.tipId));
+                        return msg ? { ...t, message: msg } : t;
+                    }));
+                } catch (msgErr) {
+                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
+                } finally {
+                    setMessagesLoading(false);
+                }
+            }
         } catch (err) {
             console.error('Failed to fetch recent tips:', err.message || err);
             const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
@@ -121,6 +141,9 @@ export default function RecentTips({ addToast }) {
                     <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
                         <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />Live
                     </span>
+                    {messagesLoading && (
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Loading messages...</span>
+                    )}
                 </div>
                 <div className="flex items-center gap-3">
                     {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
@@ -189,9 +212,11 @@ export default function RecentTips({ addToast }) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {tip.message && (
-                                        <span className="text-xs text-gray-400 italic max-w-[200px] truncate">"{tip.message}"</span>
-                                    )}
+                                    {tip.message ? (
+                                        <span className="text-xs text-gray-400 italic max-w-[200px] truncate">&ldquo;{tip.message}&rdquo;</span>
+                                    ) : messagesLoading ? (
+                                        <span className="inline-block h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    ) : null}
                                     {userSession.isUserSignedIn() && (
                                         <button onClick={() => setTipBackTarget(tip)}
                                             className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-lg transition-all sm:opacity-0 sm:group-hover:opacity-100">
