@@ -2,33 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
 import { parseTipEvent } from '../lib/parseTipEvent';
+import { buildLeaderboardStats } from '../lib/buildLeaderboardStats';
 import CopyButton from './ui/copy-button';
-
-/**
- * Build per-address statistics from an array of parsed tip events.
- *
- * @param {Array<Object>} tipEvents - Parsed tip-sent events from parseTipEvent.
- * @returns {Array<Object>} Array of user stat objects with address, totals, and counts.
- */
-function buildLeaderboardStats(tipEvents) {
-    const userStats = {};
-
-    tipEvents.forEach(tip => {
-        const sender = tip.sender;
-        const recipient = tip.recipient;
-        const amount = parseInt(tip.amount, 10);
-
-        if (!userStats[sender]) userStats[sender] = { address: sender, totalSent: 0, tipsSent: 0, totalReceived: 0, tipsReceived: 0 };
-        userStats[sender].totalSent += amount;
-        userStats[sender].tipsSent += 1;
-
-        if (!userStats[recipient]) userStats[recipient] = { address: recipient, totalSent: 0, tipsSent: 0, totalReceived: 0, tipsReceived: 0 };
-        userStats[recipient].totalReceived += amount;
-        userStats[recipient].tipsReceived += 1;
-    });
-
-    return Object.values(userStats);
-}
 
 export default function Leaderboard() {
     const [leaders, setLeaders] = useState([]);
