@@ -5,6 +5,7 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/cont
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
+import { fetchTipMessages } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 
