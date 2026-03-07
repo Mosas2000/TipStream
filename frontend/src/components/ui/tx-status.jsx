@@ -82,7 +82,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
         </a>
       </div>
       {status === 'pending' && pollCount >= MAX_POLLS && (
-        <p className="mt-2 text-xs opacity-70">
+        <p className="mt-2 text-xs opacity-70 dark:opacity-60">
           Still waiting. Check the explorer for the latest status.
         </p>
       )}
