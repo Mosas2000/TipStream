@@ -19,6 +19,7 @@ export default function TipHistory({ userAddress }) {
     const [stats, setStats] = useState(null);
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [messagesLoading, setMessagesLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tab, setTab] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
