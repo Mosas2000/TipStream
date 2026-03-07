@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
+import { parseTipEvent } from '../lib/parseTipEvent';
 import CopyButton from './ui/copy-button';
 
 export default function Leaderboard() {
