@@ -14,16 +14,22 @@ const CATEGORY_LABELS = {
     3: 'Community Help', 4: 'Appreciation', 5: 'Education', 6: 'Bug Bounty',
 };
 
+const API_LIMIT = 50;
+
 export default function TipHistory({ userAddress }) {
     const { refreshCounter } = useTipContext();
     const [stats, setStats] = useState(null);
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [messagesLoading, setMessagesLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tab, setTab] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [lastRefresh, setLastRefresh] = useState(null);
+    const [apiOffset, setApiOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [totalApiEvents, setTotalApiEvents] = useState(null);
 
     const fetchData = useCallback(async () => {
         if (!userAddress) return;
@@ -35,7 +41,7 @@ export default function TipHistory({ userAddress }) {
                     network, contractAddress: CONTRACT_ADDRESS, contractName: CONTRACT_NAME,
                     functionName: 'get-user-stats', functionArgs: [principalCV(userAddress)], senderAddress: userAddress,
                 }),
-                fetch(`${STACKS_API_BASE}/extended/v1/contract/${CONTRACT_ADDRESS}.${CONTRACT_NAME}/events?limit=50&offset=0`)
+                fetch(`${STACKS_API_BASE}/extended/v1/contract/${CONTRACT_ADDRESS}.${CONTRACT_NAME}/events?limit=${API_LIMIT}&offset=0`)
                     .then(r => { if (!r.ok) throw new Error(`API returned ${r.status}`); return r.json(); })
             ]);
 
@@ -55,6 +61,9 @@ export default function TipHistory({ userAddress }) {
                 .map(t => ({ ...t, direction: t.sender === userAddress ? 'sent' : 'received', category: categoryMap[t.tipId] ?? null }));
 
             setTips(userTips);
+            setApiOffset(tipsResult.results.length);
+            setHasMore(tipsResult.offset + tipsResult.results.length < tipsResult.total);
+            setTotalApiEvents(tipsResult.total);
             setLoading(false);
             setLastRefresh(new Date());
 
@@ -81,6 +90,51 @@ export default function TipHistory({ userAddress }) {
             setLoading(false);
         }
     }, [userAddress]);
+
+    const loadMoreTips = useCallback(async () => {
+        if (!userAddress) return;
+        try {
+            setLoadingMore(true);
+            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${CONTRACT_ADDRESS}.${CONTRACT_NAME}/events?limit=${API_LIMIT}&offset=${apiOffset}`);
+            if (!response.ok) throw new Error(`API returned ${response.status}`);
+
+            const data = await response.json();
+            const allEvents = data.results
+                .filter(e => e.contract_log?.value?.repr)
+                .map(e => parseTipEvent(e.contract_log.value.repr))
+                .filter(Boolean);
+
+            const categoryMap = {};
+            allEvents.filter(e => e.event === 'tip-categorized').forEach(e => { categoryMap[e.tipId] = Number(e.category || 0); });
+
+            const newUserTips = allEvents
+                .filter(t => t.event === 'tip-sent')
+                .filter(t => t.sender === userAddress || t.recipient === userAddress)
+                .map(t => ({ ...t, direction: t.sender === userAddress ? 'sent' : 'received', category: categoryMap[t.tipId] ?? null }));
+
+            setTips(prev => [...prev, ...newUserTips]);
+            setApiOffset(prev => prev + data.results.length);
+            setHasMore(data.offset + data.results.length < data.total);
+
+            // Fetch messages for new tips
+            const tipIds = newUserTips.map(t => t.tipId).filter(id => id && id !== '0');
+            if (tipIds.length > 0) {
+                try {
+                    const messageMap = await fetchTipMessages(tipIds);
+                    setTips(prev => prev.map(t => {
+                        const msg = messageMap.get(String(t.tipId));
+                        return msg ? { ...t, message: msg } : t;
+                    }));
+                } catch (msgErr) {
+                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load more tips:', err.message || err);
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [userAddress, apiOffset]);
 
     useEffect(() => { fetchData(); }, [fetchData, refreshCounter]);
     useEffect(() => { const i = setInterval(fetchData, 60000); return () => clearInterval(i); }, [fetchData]);
@@ -191,6 +245,19 @@ export default function TipHistory({ userAddress }) {
                     </div>
                 )}
             </div>
+
+            {/* Load More from API */}
+            {hasMore && (
+                <div className="flex flex-col items-center gap-2 mt-4">
+                    <button onClick={loadMoreTips} disabled={loadingMore}
+                        className="px-6 py-2.5 text-sm font-semibold bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
+                        {loadingMore ? 'Loading...' : 'Load More Activity'}
+                    </button>
+                    {totalApiEvents !== null && (
+                        <span className="text-xs text-gray-400">Showing {tips.length} of {totalApiEvents} on-chain events</span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
