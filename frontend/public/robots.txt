@@ -1,0 +1,7 @@
+# TipStream – robots.txt
+# Allow all crawlers; point to sitemap for discoverability.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://tipstream-silk.vercel.app/sitemap.xml

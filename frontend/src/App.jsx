@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { userSession, authenticate, disconnect } from './utils/stacks';
 import Header from './components/Header';
 import SendTip from './components/SendTip';
@@ -16,6 +16,7 @@ const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const NotFound = lazy(() => import('./components/NotFound'));
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -146,7 +147,7 @@ function App() {
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/activity" element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
                 <Route path="/stats" element={<PlatformStats />} />
-                <Route path="*" element={<Navigate to="/send" replace />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </div>
