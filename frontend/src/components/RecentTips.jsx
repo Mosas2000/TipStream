@@ -11,11 +11,13 @@ import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
 const PAGE_SIZE = 10;
+const API_LIMIT = 50;
 
 export default function RecentTips({ addToast }) {
     const { refreshCounter } = useTipContext();
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [messagesLoading, setMessagesLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tipBackTarget, setTipBackTarget] = useState(null);
@@ -29,13 +31,16 @@ export default function RecentTips({ addToast }) {
     const [sortBy, setSortBy] = useState('newest');
     const [showFilters, setShowFilters] = useState(false);
     const [offset, setOffset] = useState(0);
+    const [apiOffset, setApiOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [totalApiEvents, setTotalApiEvents] = useState(null);
 
     const fetchRecentTips = useCallback(async () => {
         try {
             setError(null);
             clearTipCache();
             const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=50&offset=0`);
+            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=0`);
             if (!response.ok) throw new Error(`API returned ${response.status}`);
 
             const data = await response.json();
@@ -45,6 +50,9 @@ export default function RecentTips({ addToast }) {
                 .filter(t => t !== null && t.event === 'tip-sent');
 
             setTips(tipEvents);
+            setApiOffset(data.results.length);
+            setHasMore(data.offset + data.results.length < data.total);
+            setTotalApiEvents(data.total);
             setLoading(false);
             setLastRefresh(new Date());
 
@@ -71,6 +79,43 @@ export default function RecentTips({ addToast }) {
             setLoading(false);
         }
     }, []);
+
+    const loadMoreTips = useCallback(async () => {
+        try {
+            setLoadingMore(true);
+            const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=${apiOffset}`);
+            if (!response.ok) throw new Error(`API returned ${response.status}`);
+
+            const data = await response.json();
+            const newTipEvents = data.results
+                .filter(e => e.contract_log?.value?.repr)
+                .map(e => parseTipEvent(e.contract_log.value.repr))
+                .filter(t => t !== null && t.event === 'tip-sent');
+
+            setTips(prev => [...prev, ...newTipEvents]);
+            setApiOffset(prev => prev + data.results.length);
+            setHasMore(data.offset + data.results.length < data.total);
+
+            // Fetch messages for new tips
+            const tipIds = newTipEvents.map(t => t.tipId).filter(id => id && id !== '0');
+            if (tipIds.length > 0) {
+                try {
+                    const messageMap = await fetchTipMessages(tipIds);
+                    setTips(prev => prev.map(t => {
+                        const msg = messageMap.get(String(t.tipId));
+                        return msg ? { ...t, message: msg } : t;
+                    }));
+                } catch (msgErr) {
+                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load more tips:', err.message || err);
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [apiOffset]);
 
     useEffect(() => { fetchRecentTips(); }, [fetchRecentTips, refreshCounter]);
     useEffect(() => { const i = setInterval(fetchRecentTips, 60000); return () => clearInterval(i); }, [fetchRecentTips]);
@@ -186,7 +231,8 @@ export default function RecentTips({ addToast }) {
                         </div>
                     </div>
                 )}
-                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {tips.length} tips</p>}
+                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {tips.length} tips{totalApiEvents !== null && totalApiEvents > tips.length ? ` (${totalApiEvents} total on-chain)` : ''}</p>}
+                {!hasActiveFilters && totalApiEvents !== null && <p className="text-xs text-gray-500 dark:text-gray-400">Loaded {tips.length} of {totalApiEvents} on-chain events</p>}
             </div>
 
             {/* Tip cards */}
@@ -241,6 +287,16 @@ export default function RecentTips({ addToast }) {
                     <span className="text-xs text-gray-500 dark:text-gray-400">Page {currentPage} of {totalPages}</span>
                     <button onClick={() => setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE))} disabled={currentPage >= totalPages}
                         className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors disabled:opacity-40">Next</button>
+                </div>
+            )}
+
+            {/* Load More from API */}
+            {hasMore && (
+                <div className="flex justify-center mt-4">
+                    <button onClick={loadMoreTips} disabled={loadingMore}
+                        className="px-6 py-2.5 text-sm font-semibold bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
+                        {loadingMore ? 'Loading...' : 'Load More Tips'}
+                    </button>
                 </div>
             )}
 
