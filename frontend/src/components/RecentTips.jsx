@@ -215,16 +215,19 @@ export default function RecentTips({ addToast }) {
                 </div>
                 {showFilters && (
                     <div className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                        {[['Min STX', minAmount, setMinAmount, '0'], ['Max STX', maxAmount, setMaxAmount, 'any']].map(([label, val, setter, ph]) => (
-                            <div key={label} className="flex items-center gap-2">
-                                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
-                                <input type="number" value={val} onChange={(e) => { setter(e.target.value); setOffset(0); }}
-                                    className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder={ph} step="0.001" min="0" />
-                            </div>
-                        ))}
                         <div className="flex items-center gap-2">
-                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Sort</label>
-                            <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setOffset(0); }}
+                            <label htmlFor="feed-filter-min" className="text-xs font-medium text-gray-500 dark:text-gray-400">Min STX</label>
+                            <input id="feed-filter-min" type="number" value={minAmount} onChange={(e) => { setMinAmount(e.target.value); setOffset(0); }}
+                                className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder="0" step="0.001" min="0" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="feed-filter-max" className="text-xs font-medium text-gray-500 dark:text-gray-400">Max STX</label>
+                            <input id="feed-filter-max" type="number" value={maxAmount} onChange={(e) => { setMaxAmount(e.target.value); setOffset(0); }}
+                                className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder="any" step="0.001" min="0" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="feed-sort" className="text-xs font-medium text-gray-500 dark:text-gray-400">Sort</label>
+                            <select id="feed-sort" value={sortBy} onChange={(e) => { setSortBy(e.target.value); setOffset(0); }}
                                 className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500">
                                 <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
                                 <option value="amount-high">Highest amount</option><option value="amount-low">Lowest amount</option>
