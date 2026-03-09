@@ -313,6 +313,18 @@ export default function SendTip({ addToast }) {
                         <p className="font-mono text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded-lg break-all">{recipient}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Category: <strong>{TIP_CATEGORIES.find(c => c.id === category)?.label}</strong></p>
                         {message && <p className="italic text-gray-500">"{message}"</p>}
+                        {amount && parseFloat(amount) > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                <div className="flex justify-between">
+                                    <span>Platform fee ({(FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100).toFixed(1)}%)</span>
+                                    <span>{formatSTX(Math.ceil(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX</span>
+                                </div>
+                                <div className="flex justify-between font-semibold text-gray-900 dark:text-white">
+                                    <span>Total from your wallet</span>
+                                    <span>{formatSTX(toMicroSTX(amount) + Math.ceil(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </ConfirmDialog>
             </div>
