@@ -28,7 +28,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
     const networkLabel = NETWORK_NAME.charAt(0).toUpperCase() + NETWORK_NAME.slice(1);
 
     return (
-        <nav className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5">
+        <nav className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5" aria-label="Site header">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Logo */}
