@@ -18,12 +18,22 @@ npm-debug.log*
 coverage/
 *.info
 
-# Clarinet
-**/settings/Mainnet.toml
-**/settings/Testnet.toml
-settings/Mainnet.toml
+# Clarinet session artifacts
 history.txt
 costs-reports.json
+
+# Network credentials — mainnet and testnet hold real or funded keys
+settings/Mainnet.toml
+settings/Testnet.toml
+**/settings/Mainnet.toml
+**/settings/Testnet.toml
+
+# Catch any stray key/mnemonic exports
+*.pem
+*.key
+*.p12
+**/secrets/
+*.secret
 
 # OS files
 .DS_Store
