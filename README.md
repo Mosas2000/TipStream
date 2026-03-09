@@ -193,10 +193,26 @@ settings/
 - Admin functions are owner-only with on-chain assertions
 - Two-step ownership transfer prevents accidental loss
 - Post conditions on all transactions restrict STX movement
+- Pause/unpause uses a timelock delay to prevent instant abuse
 
-The `settings/Devnet.toml` file contains mnemonic phrases and private keys for Clarinet devnet test accounts. These hold no real value and exist only in the local devnet sandbox. Never use devnet mnemonics or keys on mainnet or testnet.
+### Credential Handling
 
-See [SECURITY.md](SECURITY.md) for the full security audit and vulnerability reporting guidelines.
+- **Mainnet and testnet mnemonics are never committed.**
+  `settings/Mainnet.toml` and `settings/Testnet.toml` are in `.gitignore`.
+- Template files (`Mainnet.toml.example`, `Testnet.toml.example`) are
+  committed with placeholder values only.
+- A pre-commit hook (`scripts/hooks/pre-commit`) scans staged changes for
+  mnemonic patterns before allowing a commit.
+- GitHub Actions runs [gitleaks](https://github.com/gitleaks/gitleaks)
+  on every push and PR via `.gitleaks.toml`.
+
+The `settings/Devnet.toml` file contains mnemonic phrases and private keys
+for Clarinet devnet test accounts.  These hold no real value and exist only
+in the local devnet sandbox.  Never use devnet mnemonics or keys on mainnet
+or testnet.
+
+See [SECURITY.md](SECURITY.md) for the full security policy, vulnerability
+reporting process, and wallet rotation advisory.
 
 ## Contributing
 
