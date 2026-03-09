@@ -151,9 +151,13 @@ function App() {
             >
               <Routes>
                 <Route path="/send" element={<SendTip addToast={addToast} />} />
+                <Route path="/batch" element={<BatchTip addToast={addToast} />} />
+                <Route path="/token-tip" element={<TokenTip addToast={addToast} />} />
                 <Route path="/feed" element={<RecentTips addToast={addToast} />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/activity" element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
+                <Route path="/profile" element={<ProfileManager addToast={addToast} />} />
+                <Route path="/block" element={<BlockManager addToast={addToast} />} />
                 <Route path="/stats" element={<PlatformStats />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
