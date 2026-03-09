@@ -46,3 +46,38 @@ export function tipPostCondition(senderAddress, amountMicroSTX, feeBps = FEE_BAS
         .willSendLte(maxTransferForTip(amountMicroSTX, feeBps))
         .ustx();
 }
+
+/**
+ * Calculate the platform fee in microSTX for a given tip amount.
+ * Uses Math.ceil to match the on-chain rounding behavior.
+ *
+ * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number} [feeBps=50]  Fee in basis points.
+ * @returns {number}
+ */
+export function feeForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
+    return Math.ceil(amountMicroSTX * feeBps / BASIS_POINTS_DIVISOR);
+}
+
+/**
+ * Calculate the total microSTX deducted from the sender's wallet,
+ * which is the tip amount plus the platform fee.
+ *
+ * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number} [feeBps=50]  Fee in basis points.
+ * @returns {number}
+ */
+export function totalDeduction(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
+    return amountMicroSTX + feeForTip(amountMicroSTX, feeBps);
+}
+
+/**
+ * Calculate the net amount the recipient receives after the fee split.
+ *
+ * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number} [feeBps=50]  Fee in basis points.
+ * @returns {number}
+ */
+export function recipientReceives(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
+    return amountMicroSTX - Math.floor(amountMicroSTX * feeBps / BASIS_POINTS_DIVISOR);
+}
