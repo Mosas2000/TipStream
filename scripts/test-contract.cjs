@@ -34,6 +34,10 @@ async function runTestTip() {
     const contractName = "tipstream";
     const functionName = "send-tip";
 
+    // Contract fee parameters — keep in sync with tipstream.clar
+    const FEE_BASIS_POINTS = 50;
+    const BASIS_POINTS_DIVISOR = 10000;
+
     try {
         // Derive wallet and private key
         const wallet = await generateWallet({
@@ -57,7 +61,7 @@ async function runTestTip() {
         // tip amount plus the maximum possible fee.  This ensures the
         // transaction cannot drain more than intended even if the
         // contract logic changes unexpectedly.
-        const maxTransfer = amount + Math.ceil(amount * 50 / 10000) + 1;
+        const maxTransfer = amount + Math.ceil(amount * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR) + 1;
         const postConditions = [
             makeStandardSTXPostCondition(
                 senderAddress,
