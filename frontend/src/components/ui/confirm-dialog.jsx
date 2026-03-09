@@ -2,10 +2,15 @@ import { useEffect, useRef, useCallback } from 'react';
 
 export default function ConfirmDialog({ open, title, children, onConfirm, onCancel, confirmLabel = 'Confirm', cancelLabel = 'Cancel' }) {
     const dialogRef = useRef(null);
+    const previousFocusRef = useRef(null);
 
     useEffect(() => {
         if (open) {
+            previousFocusRef.current = document.activeElement;
             dialogRef.current?.focus();
+        } else if (previousFocusRef.current) {
+            previousFocusRef.current.focus();
+            previousFocusRef.current = null;
         }
     }, [open]);
 
