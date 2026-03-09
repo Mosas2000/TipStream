@@ -53,6 +53,19 @@ async function runTestTip() {
         console.log(`Recipient: ${recipient}`);
         console.log(`Amount: ${amount} uSTX (0.001 STX)`);
 
+        // Build post conditions to restrict STX movement to exactly the
+        // tip amount plus the maximum possible fee.  This ensures the
+        // transaction cannot drain more than intended even if the
+        // contract logic changes unexpectedly.
+        const maxTransfer = amount + Math.ceil(amount * 50 / 10000) + 1;
+        const postConditions = [
+            makeStandardSTXPostCondition(
+                senderAddress,
+                FungibleConditionCode.LessEqual,
+                maxTransfer
+            )
+        ];
+
         const txOptions = {
             contractAddress,
             contractName,
@@ -62,10 +75,11 @@ async function runTestTip() {
                 uintCV(amount),
                 stringUtf8CV(message),
             ],
+            postConditions,
             senderKey,
             network,
             anchorMode: AnchorMode.Any,
-            postConditionMode: PostConditionMode.Allow,
+            postConditionMode: PostConditionMode.Deny,
         };
 
         const transaction = await makeContractCall(txOptions);
