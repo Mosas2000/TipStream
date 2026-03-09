@@ -6,14 +6,13 @@ import {
     principalCV,
     PostConditionMode,
     Pc,
-    fetchCallReadOnlyFunction,
-    cvToJSON,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
+import { useBlockCheck } from '../hooks/useBlockCheck';
 import { useStxPrice } from '../hooks/useStxPrice';
 import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
@@ -38,6 +37,7 @@ const TIP_CATEGORIES = [
 export default function SendTip({ addToast }) {
     const { notifyTipSent } = useTipContext();
     const { toUsd } = useStxPrice();
+    const { blocked: blockedWarning, checkBlocked, reset: resetBlockCheck } = useBlockCheck();
     const [recipient, setRecipient] = useState('');
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
@@ -47,7 +47,6 @@ export default function SendTip({ addToast }) {
     const [pendingTx, setPendingTx] = useState(null);
     const [recipientError, setRecipientError] = useState('');
     const [amountError, setAmountError] = useState('');
-    const [blockedWarning, setBlockedWarning] = useState(false);
     const [cooldown, setCooldown] = useState(0);
     const cooldownRef = useRef(null);
 
@@ -91,27 +90,13 @@ export default function SendTip({ addToast }) {
 
     const handleRecipientChange = (value) => {
         setRecipient(value);
-        setBlockedWarning(false);
+        resetBlockCheck();
         if (value && !isValidStacksAddress(value)) {
             setRecipientError('Enter a valid Stacks address (SP... or SM...)');
         } else {
             setRecipientError('');
-            // Check if sender is blocked by this recipient
-            if (value && isValidStacksAddress(value) && senderAddress && value.trim() !== senderAddress) {
-                fetchCallReadOnlyFunction({
-                    network,
-                    contractAddress: CONTRACT_ADDRESS,
-                    contractName: CONTRACT_NAME,
-                    functionName: 'is-user-blocked',
-                    functionArgs: [principalCV(value.trim()), principalCV(senderAddress)],
-                    senderAddress,
-                }).then((result) => {
-                    const json = cvToJSON(result);
-                    const isBlocked = json.value === true || json.value === 'true';
-                    setBlockedWarning(isBlocked);
-                }).catch(() => {
-                    // Silently ignore check failures
-                });
+            if (value && isValidStacksAddress(value)) {
+                checkBlocked(value);
             }
         }
     };
