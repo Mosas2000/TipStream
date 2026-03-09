@@ -175,10 +175,13 @@ tests/
   tipstream.test.ts       Vitest contract tests
 scripts/
   deploy.sh               Deployment script
+  hooks/                  Git hooks (pre-commit secret scanner)
 deployments/
   *.yaml                  Clarinet deployment plans
 settings/
   *.toml                  Network configurations
+  *.toml.example          Safe templates (committed)
+  README.md               Credential setup guide
 ```
 
 ## Security
