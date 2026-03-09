@@ -10,7 +10,7 @@ import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
-import { Zap, Radio, Trophy, User, BarChart3 } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
@@ -70,9 +70,13 @@ function App() {
 
   const navItems = [
     { path: '/send', label: 'Send Tip', icon: Zap },
+    { path: '/batch', label: 'Batch', icon: Users },
+    { path: '/token-tip', label: 'Token Tip', icon: Coins },
     { path: '/feed', label: 'Live Feed', icon: Radio },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { path: '/activity', label: 'My Activity', icon: User },
+    { path: '/profile', label: 'Profile', icon: UserCircle },
+    { path: '/block', label: 'Block', icon: ShieldBan },
     { path: '/stats', label: 'Stats', icon: BarChart3 },
   ];
 
