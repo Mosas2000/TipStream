@@ -8,7 +8,7 @@ import {
     PostConditionMode,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PROFILE, FN_UPDATE_PROFILE } from '../config/contracts';
 import { User, Save, Loader2 } from 'lucide-react';
 
 export default function ProfileManager({ addToast }) {
@@ -42,7 +42,7 @@ export default function ProfileManager({ addToast }) {
                 network,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'get-profile',
+                functionName: FN_GET_PROFILE,
                 functionArgs: [principalCV(senderAddress)],
                 senderAddress,
             });
@@ -92,7 +92,7 @@ export default function ProfileManager({ addToast }) {
                 appDetails,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'update-profile',
+                functionName: FN_UPDATE_PROFILE,
                 functionArgs: [
                     stringUtf8CV(displayName.trim()),
                     stringUtf8CV(bio.trim()),

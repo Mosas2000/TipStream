@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
 import { network, userSession } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_USER_BLOCKED } from '../config/contracts';
 
 /**
  * Hook that checks whether the current user is blocked by a given address.
@@ -52,7 +52,7 @@ export function useBlockCheck() {
                 network,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'is-user-blocked',
+                functionName: FN_IS_USER_BLOCKED,
                 functionArgs: [principalCV(trimmed), principalCV(senderAddress)],
                 senderAddress,
             })

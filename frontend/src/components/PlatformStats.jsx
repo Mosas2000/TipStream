@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON } from '@stacks/transactions';
 import { network } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PLATFORM_STATS } from '../config/contracts';
 import { formatSTX } from '../lib/utils';
 import { useTipContext } from '../context/TipContext';
 
@@ -18,7 +18,7 @@ export default function PlatformStats() {
                 network,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'get-platform-stats',
+                functionName: FN_GET_PLATFORM_STATS,
                 functionArgs: [],
                 senderAddress: CONTRACT_ADDRESS,
             });

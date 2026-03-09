@@ -10,7 +10,7 @@ import {
     Pc,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
 import { useBalance } from '../hooks/useBalance';
 import { useTipContext } from '../context/TipContext';
@@ -181,7 +181,7 @@ export default function BatchTip({ addToast }) {
                 appDetails,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: strictMode ? 'send-batch-tips-strict' : 'send-batch-tips',
+                functionName: strictMode ? FN_SEND_BATCH_TIPS_STRICT : FN_SEND_BATCH_TIPS,
                 functionArgs: [listCV(tipsList)],
                 postConditions: [
                     Pc.principal(senderAddress).willSendLte(totalMicro).ustx(),

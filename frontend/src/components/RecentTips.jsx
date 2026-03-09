@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { openContractCall } from '@stacks/connect';
 import { uintCV, stringUtf8CV, PostConditionMode, Pc } from '@stacks/transactions';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_TIP_A_TIP } from '../config/contracts';
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
@@ -129,7 +129,7 @@ export default function RecentTips({ addToast }) {
             await openContractCall({
                 network, appDetails,
                 contractAddress: CONTRACT_ADDRESS, contractName: CONTRACT_NAME,
-                functionName: 'tip-a-tip',
+                functionName: FN_TIP_A_TIP,
                 functionArgs: [uintCV(parseInt(tip.tipId)), uintCV(microSTX), stringUtf8CV(tipBackMessage || 'Tipping back!')],
                 postConditions: [Pc.principal(senderAddress).willSendLte(microSTX).ustx()],
                 postConditionMode: PostConditionMode.Deny,

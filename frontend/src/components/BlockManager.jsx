@@ -7,7 +7,7 @@ import {
     PostConditionMode,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_USER_BLOCKED, FN_TOGGLE_BLOCK_USER } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { ShieldBan, Search, UserX, UserCheck, Loader2 } from 'lucide-react';
 
@@ -55,7 +55,7 @@ export default function BlockManager({ addToast }) {
                 network,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'is-user-blocked',
+                functionName: FN_IS_USER_BLOCKED,
                 functionArgs: [principalCV(senderAddress), principalCV(target)],
                 senderAddress,
             });
@@ -81,7 +81,7 @@ export default function BlockManager({ addToast }) {
                 appDetails,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'toggle-block-user',
+                functionName: FN_TOGGLE_BLOCK_USER,
                 functionArgs: [principalCV(targetAddress)],
                 postConditions: [],
                 postConditionMode: PostConditionMode.Deny,

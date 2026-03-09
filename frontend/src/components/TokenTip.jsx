@@ -12,7 +12,7 @@ import {
     FungibleConditionCode,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_TOKEN_WHITELISTED, FN_SEND_TOKEN_TIP } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { Coins, CheckCircle, XCircle, Loader2, Send } from 'lucide-react';
 import ConfirmDialog from './ui/confirm-dialog';
@@ -75,7 +75,7 @@ export default function TokenTip({ addToast }) {
                 network,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'is-token-whitelisted',
+                functionName: FN_IS_TOKEN_WHITELISTED,
                 functionArgs: [principalCV(tokenId)],
                 senderAddress: senderAddress || CONTRACT_ADDRESS,
             });
@@ -166,7 +166,7 @@ export default function TokenTip({ addToast }) {
                 appDetails,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'send-token-tip',
+                functionName: FN_SEND_TOKEN_TIP,
                 functionArgs: [
                     contractPrincipalCV(tokenAddr, tokenName),
                     principalCV(recipient.trim()),

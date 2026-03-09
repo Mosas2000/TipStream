@@ -8,7 +8,7 @@ import {
     Pc,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
@@ -155,7 +155,7 @@ export default function SendTip({ addToast }) {
                 appDetails,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'send-categorized-tip',
+                functionName: FN_SEND_CATEGORIZED_TIP,
                 functionArgs,
                 postConditions,
                 postConditionMode: PostConditionMode.Deny,
