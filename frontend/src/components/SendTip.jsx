@@ -4,12 +4,11 @@ import {
     stringUtf8CV,
     uintCV,
     principalCV,
-    PostConditionMode,
-    Pc
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
+import { tipPostCondition, SAFE_POST_CONDITION_MODE, FEE_BASIS_POINTS, BASIS_POINTS_DIVISOR } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
 import { useStxPrice } from '../hooks/useStxPrice';
@@ -17,8 +16,6 @@ import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
 
-const FEE_BASIS_POINTS = 50;
-const BASIS_POINTS_DIVISOR = 10000;
 const MIN_TIP_STX = 0.001;
 const MAX_TIP_STX = 10000;
 const COOLDOWN_SECONDS = 10;
@@ -134,7 +131,7 @@ export default function SendTip({ addToast }) {
         try {
             const microSTX = toMicroSTX(amount);
             const postConditions = [
-                Pc.principal(senderAddress).willSendLte(microSTX).ustx()
+                tipPostCondition(senderAddress, microSTX)
             ];
 
             const functionArgs = [
@@ -152,7 +149,7 @@ export default function SendTip({ addToast }) {
                 functionName: 'send-categorized-tip',
                 functionArgs,
                 postConditions,
-                postConditionMode: PostConditionMode.Deny,
+                postConditionMode: SAFE_POST_CONDITION_MODE,
                 onFinish: (data) => {
                     setLoading(false);
                     setPendingTx({ txId: data.txId, recipient, amount: parseFloat(amount) });
