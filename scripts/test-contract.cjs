@@ -92,6 +92,16 @@ async function runTestTip() {
         };
 
         const transaction = await makeContractCall(txOptions);
+
+        // Dry-run mode: build and display the transaction without broadcasting
+        if (process.env.DRY_RUN === '1') {
+            console.log("Dry run — transaction built but NOT broadcast.");
+            console.log(`Post-condition: sender can send at most ${maxTransfer} uSTX`);
+            console.log(`PostConditionMode: Deny`);
+            console.log(`Transaction size: ${transaction.serialize().byteLength} bytes`);
+            return;
+        }
+
         const response = await broadcastTransaction(transaction, network);
 
         if (response.error) {
