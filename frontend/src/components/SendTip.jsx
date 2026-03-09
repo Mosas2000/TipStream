@@ -102,8 +102,16 @@ export default function SendTip({ addToast }) {
             setAmountError(`Minimum tip is ${MIN_TIP_STX} STX`);
         } else if (parsed > MAX_TIP_STX) {
             setAmountError(`Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`);
-        } else if (balanceSTX !== null && parsed > balanceSTX) {
-            setAmountError('Insufficient balance');
+        } else if (balanceSTX !== null) {
+            // Account for the platform fee when checking balance
+            const microSTX = toMicroSTX(parsed.toString());
+            const totalMicro = microSTX + Math.ceil(microSTX * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR);
+            const totalSTX = totalMicro / 1_000_000;
+            if (totalSTX > balanceSTX) {
+                setAmountError('Insufficient balance (tip + 0.5% fee exceeds balance)');
+            } else {
+                setAmountError('');
+            }
         } else {
             setAmountError('');
         }
