@@ -45,7 +45,11 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
             </button>
 
             {open && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                <div
+                    className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+                    role="region"
+                    aria-label="Notifications"
+                >
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                         <h3 className="font-bold text-sm text-gray-800 dark:text-gray-200">Notifications</h3>
                         {notifications.length > 0 && (
