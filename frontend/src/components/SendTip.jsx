@@ -126,7 +126,14 @@ export default function SendTip({ addToast }) {
         if (isNaN(parsedAmount) || parsedAmount <= 0) { addToast('Please enter a valid amount', 'warning'); return; }
         if (parsedAmount < MIN_TIP_STX) { addToast(`Minimum tip is ${MIN_TIP_STX} STX`, 'warning'); return; }
         if (parsedAmount > MAX_TIP_STX) { addToast(`Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`, 'warning'); return; }
-        if (balanceSTX !== null && parsedAmount > balanceSTX) { addToast('Insufficient STX balance', 'warning'); return; }
+        if (balanceSTX !== null) {
+            const microSTX = toMicroSTX(amount);
+            const totalMicro = microSTX + Math.ceil(microSTX * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR);
+            if (totalMicro / 1_000_000 > balanceSTX) {
+                addToast('Insufficient balance to cover tip plus platform fee', 'warning');
+                return;
+            }
+        }
         setShowConfirm(true);
         analytics.trackTipStarted();
     };
