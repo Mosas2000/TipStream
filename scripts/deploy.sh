@@ -37,6 +37,14 @@ if grep -q '<YOUR DEPLOYER MNEMONIC HERE>' settings/Mainnet.toml 2>/dev/null; th
     exit 1
 fi
 
+# Safety net: abort if the credentials file is tracked by git
+if git ls-files --error-unmatch settings/Mainnet.toml &>/dev/null; then
+    echo "CRITICAL: settings/Mainnet.toml is tracked by git."
+    echo "Run:  git rm --cached settings/Mainnet.toml"
+    echo "Then commit. Deployment aborted to prevent mnemonic exposure."
+    exit 1
+fi
+
 # Run contract checks before deploying
 echo "Running contract syntax check..."
 if ! clarinet check; then
