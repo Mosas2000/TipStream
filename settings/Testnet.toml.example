@@ -1,0 +1,18 @@
+# TipStream Testnet Configuration
+# Copy this file to Testnet.toml and fill in your testnet mnemonic.
+#
+# Testnet STX can be obtained from the Stacks testnet faucet:
+#   https://explorer.hiro.so/sandbox/faucet?chain=testnet
+#
+# SECURITY: Testnet.toml is listed in .gitignore and must NEVER
+# be committed.  Even testnet keys should be treated carefully
+# to avoid accidental reuse on mainnet.
+
+[network]
+name = "testnet"
+stacks_node_rpc_address = "https://api.testnet.hiro.so"
+deployment_fee_rate = 10
+
+[accounts.deployer]
+mnemonic = "<YOUR PRIVATE TESTNET MNEMONIC HERE>"
+# stx_address: <deployer ST address>
