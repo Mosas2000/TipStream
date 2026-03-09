@@ -44,4 +44,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
-settings/Testnet.toml
+
+# Hosting platform local state
+.vercel/
+.netlify/
