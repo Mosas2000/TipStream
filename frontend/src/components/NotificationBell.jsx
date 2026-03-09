@@ -34,7 +34,11 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
             >
                 <Bell className="w-5 h-5" aria-hidden="true" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-gray-900">
+                    <span
+                        className="absolute -top-0.5 -right-0.5 h-5 w-5 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-gray-900"
+                        aria-live="polite"
+                        aria-atomic="true"
+                    >
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
