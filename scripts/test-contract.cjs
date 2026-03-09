@@ -57,6 +57,13 @@ async function runTestTip() {
             process.exit(1);
         }
 
+        // The contract rejects self-tips; catch it early
+        if (senderAddress === recipient) {
+            console.error("Error: sender and recipient are the same address.");
+            console.error("The contract does not allow self-tipping.");
+            process.exit(1);
+        }
+
         console.log(`Calling ${contractName}.${functionName} on Mainnet...`);
         console.log(`Sender: ${senderAddress}`);
         console.log(`Recipient: ${recipient}`);
