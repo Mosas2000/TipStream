@@ -5,7 +5,9 @@ import {
     uintCV,
     principalCV,
     PostConditionMode,
-    Pc
+    Pc,
+    fetchCallReadOnlyFunction,
+    cvToJSON,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
@@ -45,6 +47,7 @@ export default function SendTip({ addToast }) {
     const [pendingTx, setPendingTx] = useState(null);
     const [recipientError, setRecipientError] = useState('');
     const [amountError, setAmountError] = useState('');
+    const [blockedWarning, setBlockedWarning] = useState(false);
     const [cooldown, setCooldown] = useState(0);
     const cooldownRef = useRef(null);
 
@@ -88,10 +91,28 @@ export default function SendTip({ addToast }) {
 
     const handleRecipientChange = (value) => {
         setRecipient(value);
+        setBlockedWarning(false);
         if (value && !isValidStacksAddress(value)) {
             setRecipientError('Enter a valid Stacks address (SP... or SM...)');
         } else {
             setRecipientError('');
+            // Check if sender is blocked by this recipient
+            if (value && isValidStacksAddress(value) && senderAddress && value.trim() !== senderAddress) {
+                fetchCallReadOnlyFunction({
+                    network,
+                    contractAddress: CONTRACT_ADDRESS,
+                    contractName: CONTRACT_NAME,
+                    functionName: 'is-user-blocked',
+                    functionArgs: [principalCV(value.trim()), principalCV(senderAddress)],
+                    senderAddress,
+                }).then((result) => {
+                    const json = cvToJSON(result);
+                    const isBlocked = json.value === true || json.value === 'true';
+                    setBlockedWarning(isBlocked);
+                }).catch(() => {
+                    // Silently ignore check failures
+                });
+            }
         }
     };
 
@@ -213,6 +234,11 @@ export default function SendTip({ addToast }) {
                             className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="SP2..." />
                         {recipientError && <p className="mt-1 text-xs text-red-500">{recipientError}</p>}
+                        {blockedWarning && (
+                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                This recipient has blocked you. The transaction will likely fail on-chain.
+                            </p>
+                        )}
                     </div>
 
                     {/* Amount */}
