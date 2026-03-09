@@ -8,7 +8,7 @@ import {
 import { network, appDetails, userSession } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
-import { tipPostCondition, SAFE_POST_CONDITION_MODE, FEE_BASIS_POINTS, BASIS_POINTS_DIVISOR } from '../lib/post-conditions';
+import { tipPostCondition, maxTransferForTip, SAFE_POST_CONDITION_MODE, FEE_BASIS_POINTS, BASIS_POINTS_DIVISOR } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
 import { useStxPrice } from '../hooks/useStxPrice';
@@ -243,10 +243,10 @@ export default function SendTip({ addToast }) {
                         </select>
                     </div>
 
-                    {/* Breakdown */}
+                    {/* Breakdown with fee preview and post-condition ceiling */}
                     {amount && parseFloat(amount) > 0 && (
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm">
-                            <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Breakdown</p>
+                            <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Fee Preview</p>
                             <div className="space-y-1 text-gray-600 dark:text-gray-400">
                                 <div className="flex justify-between">
                                     <span>Tip amount</span>
@@ -256,14 +256,24 @@ export default function SendTip({ addToast }) {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Platform fee (0.5%)</span>
-                                    <span>{formatSTX(Math.floor(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX</span>
+                                    <span>Platform fee ({(FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100).toFixed(1)}%)</span>
+                                    <span>{formatSTX(Math.ceil(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX</span>
                                 </div>
                                 <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-1 flex justify-between font-semibold text-gray-900 dark:text-white">
+                                    <span>Total from wallet</span>
+                                    <span>
+                                        {formatSTX(toMicroSTX(amount) + Math.ceil(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-gray-500 dark:text-gray-500">
                                     <span>Recipient receives</span>
                                     <span>
                                         {formatSTX(toMicroSTX(amount) - Math.floor(toMicroSTX(amount) * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR), 6)} STX
                                     </span>
+                                </div>
+                                <div className="flex justify-between text-xs text-gray-400 dark:text-gray-600 pt-1">
+                                    <span>Post-condition ceiling</span>
+                                    <span>{formatSTX(maxTransferForTip(toMicroSTX(amount)), 6)} STX</span>
                                 </div>
                             </div>
                         </div>
