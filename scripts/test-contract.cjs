@@ -35,6 +35,12 @@ if (!recipientArg) {
     process.exit(1);
 }
 
+// Validate recipient is a valid Stacks mainnet principal
+if (!/^SP[0-9A-Z]{33,}$/.test(recipientArg)) {
+    console.error("Error: RECIPIENT does not look like a valid mainnet principal (must start with SP).");
+    process.exit(1);
+}
+
 async function runTestTip() {
     const contractAddress = "SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T";
     const contractName = "tipstream";
