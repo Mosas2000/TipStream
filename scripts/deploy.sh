@@ -4,14 +4,36 @@ set -euo pipefail
 # TipStream Deployment Script
 # Deploys the 10-contract ecosystem to Stacks mainnet
 # Total cost: ~1 STX (0.1 STX per contract × 10 contracts)
+#
+# Prerequisites:
+#   - clarinet CLI installed
+#   - settings/Mainnet.toml populated with deployer mnemonic
+#     (copy settings/Mainnet.toml.example if it does not exist)
 
 echo "Starting TipStream ecosystem deployment..."
 echo ""
+
+# ---- Pre-flight checks ----
 
 # Verify clarinet is installed
 if ! command -v clarinet &> /dev/null; then
     echo "Error: clarinet is not installed or not in PATH."
     echo "Install it from https://github.com/hirosystems/clarinet"
+    exit 1
+fi
+
+# Verify mainnet settings exist (we never ship the real file)
+if [ ! -f "settings/Mainnet.toml" ]; then
+    echo "Error: settings/Mainnet.toml not found."
+    echo "Copy the template and fill in your mnemonic:"
+    echo "  cp settings/Mainnet.toml.example settings/Mainnet.toml"
+    exit 1
+fi
+
+# Warn if the mainnet config still contains placeholder text
+if grep -q '<YOUR DEPLOYER MNEMONIC HERE>' settings/Mainnet.toml 2>/dev/null; then
+    echo "Error: settings/Mainnet.toml still contains the placeholder mnemonic."
+    echo "Replace it with your real deployer mnemonic before deploying."
     exit 1
 fi
 
