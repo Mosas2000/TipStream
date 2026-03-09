@@ -131,6 +131,17 @@ export default function BatchTip({ addToast }) {
             }
         });
 
+        // Check for duplicate addresses
+        const seen = new Set();
+        recipients.forEach((r, i) => {
+            const addr = r.address.trim();
+            if (addr && seen.has(addr)) {
+                newErrors[`${i}-address`] = 'Duplicate address';
+                valid = false;
+            }
+            if (addr) seen.add(addr);
+        });
+
         if (valid && balanceSTX !== null && totalAmount > balanceSTX) {
             addToast?.('Insufficient balance for this batch', 'warning');
             return false;
