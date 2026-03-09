@@ -155,8 +155,11 @@ export default function ProfileManager({ addToast }) {
                             className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 outline-none transition-all"
                             placeholder="Your display name"
                             maxLength={50}
+                            required
+                            aria-required="true"
+                            aria-describedby="profile-name-count"
                         />
-                        <p className={`text-xs mt-1 text-right ${displayName.length >= 50 ? 'text-red-500' : 'text-gray-400'}`}>
+                        <p id="profile-name-count" className={`text-xs mt-1 text-right ${displayName.length >= 50 ? 'text-red-500' : 'text-gray-400'}`}>
                             {displayName.length}/50
                         </p>
                     </div>
@@ -173,8 +176,9 @@ export default function ProfileManager({ addToast }) {
                             placeholder="Tell others about yourself"
                             maxLength={280}
                             rows={3}
+                            aria-describedby="profile-bio-count"
                         />
-                        <p className={`text-xs mt-1 text-right ${bio.length >= 280 ? 'text-red-500' : 'text-gray-400'}`}>
+                        <p id="profile-bio-count" className={`text-xs mt-1 text-right ${bio.length >= 280 ? 'text-red-500' : 'text-gray-400'}`}>
                             {bio.length}/280
                         </p>
                     </div>
@@ -191,8 +195,9 @@ export default function ProfileManager({ addToast }) {
                             className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 outline-none transition-all"
                             placeholder="https://example.com/avatar.png"
                             maxLength={256}
+                            aria-describedby="profile-avatar-count"
                         />
-                        <p className={`text-xs mt-1 text-right ${avatarUrl.length >= 256 ? 'text-red-500' : 'text-gray-400'}`}>
+                        <p id="profile-avatar-count" className={`text-xs mt-1 text-right ${avatarUrl.length >= 256 ? 'text-red-500' : 'text-gray-400'}`}>
                             {avatarUrl.length}/256
                         </p>
                     </div>
