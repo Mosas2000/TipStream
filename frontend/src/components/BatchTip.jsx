@@ -15,6 +15,7 @@ import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
 import { useBalance } from '../hooks/useBalance';
 import { useTipContext } from '../context/TipContext';
 import { Users, Plus, Trash2, Send, Loader2, AlertTriangle } from 'lucide-react';
+import ConfirmDialog from './ui/confirm-dialog';
 
 const MAX_BATCH_SIZE = 50;
 const MIN_TIP_STX = 0.001;
@@ -28,6 +29,7 @@ export default function BatchTip({ addToast }) {
     const [recipients, setRecipients] = useState([emptyRecipient()]);
     const [strictMode, setStrictMode] = useState(false);
     const [sending, setSending] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [errors, setErrors] = useState({});
 
     const senderAddress = useMemo(() => {
@@ -151,8 +153,13 @@ export default function BatchTip({ addToast }) {
         return valid;
     };
 
-    const handleSendBatch = async () => {
+    const handleConfirmAndSend = () => {
         if (!validate()) return;
+        setShowConfirm(true);
+    };
+
+    const handleSendBatch = async () => {
+        setShowConfirm(false);
 
         setSending(true);
         try {
@@ -385,7 +392,7 @@ export default function BatchTip({ addToast }) {
                 )}
 
                 <button
-                    onClick={handleSendBatch}
+                    onClick={handleConfirmAndSend}
                     disabled={sending || recipients.length === 0}
                     className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
@@ -402,6 +409,22 @@ export default function BatchTip({ addToast }) {
                     )}
                 </button>
             </div>
+
+            <ConfirmDialog
+                open={showConfirm}
+                title="Confirm Batch Tips"
+                onConfirm={handleSendBatch}
+                onCancel={() => setShowConfirm(false)}
+                confirmLabel={`Send ${recipients.length} Tip${recipients.length !== 1 ? 's' : ''}`}
+            >
+                <p>
+                    You are about to send <strong>{recipients.length}</strong> tip{recipients.length !== 1 ? 's' : ''} totalling{' '}
+                    <strong>{totalAmount.toFixed(6)} STX</strong> in a single transaction.
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                    Mode: {strictMode ? 'Strict (all-or-nothing)' : 'Best effort (partial success allowed)'}
+                </p>
+            </ConfirmDialog>
         </div>
     );
 }
