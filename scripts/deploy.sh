@@ -88,6 +88,14 @@ echo ""
 echo "Applying deployment plan..."
 clarinet deployments apply -p deployments/default.mainnet-plan.yaml
 
+DEPLOY_EXIT=$?
+if [ $DEPLOY_EXIT -ne 0 ]; then
+    echo ""
+    echo "Deployment failed with exit code $DEPLOY_EXIT."
+    echo "Check the output above for details."
+    exit $DEPLOY_EXIT
+fi
+
 echo ""
 echo "=== Post-Deployment Setup ==="
 echo "Run these transactions after deployment:"
