@@ -19,6 +19,14 @@ if (!mnemonic) {
     process.exit(1);
 }
 
+// Basic sanity check: a BIP-39 mnemonic should contain 12 or 24 words.
+const wordCount = mnemonic.trim().split(/\s+/).length;
+if (wordCount !== 12 && wordCount !== 24) {
+    console.error(`Error: mnemonic has ${wordCount} words (expected 12 or 24).`);
+    console.error("Double-check the MNEMONIC environment variable.");
+    process.exit(1);
+}
+
 const recipientArg = process.env.RECIPIENT;
 if (!recipientArg) {
     console.error("Error: RECIPIENT environment variable not set.");
