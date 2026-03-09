@@ -6,6 +6,8 @@ const {
     principalCV,
     uintCV,
     stringUtf8CV,
+    makeStandardSTXPostCondition,
+    FungibleConditionCode,
 } = require('@stacks/transactions');
 const { STACKS_MAINNET: network } = require('@stacks/network');
 const { generateWallet, getStxAddress } = require('@stacks/wallet-sdk');
