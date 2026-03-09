@@ -15,6 +15,7 @@ import { network, appDetails, userSession } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { Coins, CheckCircle, XCircle, Loader2, Send } from 'lucide-react';
+import ConfirmDialog from './ui/confirm-dialog';
 
 export default function TokenTip({ addToast }) {
     const [tokenContract, setTokenContract] = useState('');
@@ -24,6 +25,7 @@ export default function TokenTip({ addToast }) {
     const [whitelistStatus, setWhitelistStatus] = useState(null);
     const [checkingWhitelist, setCheckingWhitelist] = useState(false);
     const [sending, setSending] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [tokenError, setTokenError] = useState('');
     const [recipientError, setRecipientError] = useState('');
     const [amountError, setAmountError] = useState('');
@@ -146,8 +148,13 @@ export default function TokenTip({ addToast }) {
         return valid;
     };
 
-    const handleSendTokenTip = async () => {
+    const handleConfirmAndSend = () => {
         if (!validateForm()) return;
+        setShowConfirm(true);
+    };
+
+    const handleSendTokenTip = async () => {
+        setShowConfirm(false);
 
         setSending(true);
         try {
@@ -324,7 +331,7 @@ export default function TokenTip({ addToast }) {
 
                     {/* Submit */}
                     <button
-                        onClick={handleSendTokenTip}
+                        onClick={handleConfirmAndSend}
                         disabled={sending || whitelistStatus !== true}
                         className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
@@ -342,6 +349,20 @@ export default function TokenTip({ addToast }) {
                     </button>
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={showConfirm}
+                title="Confirm Token Tip"
+                onConfirm={handleSendTokenTip}
+                onCancel={() => setShowConfirm(false)}
+                confirmLabel="Send Token Tip"
+            >
+                <p>
+                    Send <strong>{amount}</strong> tokens from{' '}
+                    <strong className="font-mono text-xs">{formatAddress(tokenContract.trim(), 8, 6)}</strong>{' '}
+                    to <strong className="font-mono text-xs">{formatAddress(recipient.trim(), 8, 6)}</strong>.
+                </p>
+            </ConfirmDialog>
         </div>
     );
 }
