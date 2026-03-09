@@ -16,6 +16,10 @@ const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const ProfileManager = lazy(() => import('./components/ProfileManager'));
+const BlockManager = lazy(() => import('./components/BlockManager'));
+const BatchTip = lazy(() => import('./components/BatchTip'));
+const TokenTip = lazy(() => import('./components/TokenTip'));
 const NotFound = lazy(() => import('./components/NotFound'));
 
 function App() {
