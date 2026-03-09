@@ -49,8 +49,13 @@ async function runTestTip() {
         const senderAddress = account.address;
 
         const recipient = recipientArg;
-        const amount = 1000;
-        const message = "On-chain test tip";
+        const amount = parseInt(process.env.AMOUNT || '1000', 10);
+        const message = process.env.MESSAGE || "On-chain test tip";
+
+        if (isNaN(amount) || amount < 1000) {
+            console.error("Error: AMOUNT must be at least 1000 uSTX (0.001 STX).");
+            process.exit(1);
+        }
 
         console.log(`Calling ${contractName}.${functionName} on Mainnet...`);
         console.log(`Sender: ${senderAddress}`);
