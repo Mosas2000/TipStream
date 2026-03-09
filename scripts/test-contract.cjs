@@ -2,15 +2,17 @@ const {
     makeContractCall,
     broadcastTransaction,
     AnchorMode,
-    PostConditionMode,
     principalCV,
     uintCV,
     stringUtf8CV,
-    makeStandardSTXPostCondition,
-    FungibleConditionCode,
 } = require('@stacks/transactions');
 const { STACKS_MAINNET: network } = require('@stacks/network');
-const { generateWallet, getStxAddress } = require('@stacks/wallet-sdk');
+const { generateWallet } = require('@stacks/wallet-sdk');
+const {
+    tipPostCondition,
+    maxTransferForTip,
+    SAFE_POST_CONDITION_MODE,
+} = require('./lib/post-conditions.cjs');
 
 // Use MNEMONIC environment variable for security
 const mnemonic = process.env.MNEMONIC;
@@ -34,9 +36,7 @@ async function runTestTip() {
     const contractName = "tipstream";
     const functionName = "send-tip";
 
-    // Contract fee parameters — keep in sync with tipstream.clar
-    const FEE_BASIS_POINTS = 50;
-    const BASIS_POINTS_DIVISOR = 10000;
+    // Fee constants are defined in scripts/lib/post-conditions.cjs
 
     try {
         // Derive wallet and private key
@@ -69,18 +69,8 @@ async function runTestTip() {
         console.log(`Recipient: ${recipient}`);
         console.log(`Amount: ${amount} uSTX (0.001 STX)`);
 
-        // Build post conditions to restrict STX movement to exactly the
-        // tip amount plus the maximum possible fee.  This ensures the
-        // transaction cannot drain more than intended even if the
-        // contract logic changes unexpectedly.
-        const maxTransfer = amount + Math.ceil(amount * FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR) + 1;
-        const postConditions = [
-            makeStandardSTXPostCondition(
-                senderAddress,
-                FungibleConditionCode.LessEqual,
-                maxTransfer
-            )
-        ];
+        // Build post conditions using the shared helper.
+        const postConditions = [tipPostCondition(senderAddress, amount)];
 
         const txOptions = {
             contractAddress,
@@ -95,7 +85,7 @@ async function runTestTip() {
             senderKey,
             network,
             anchorMode: AnchorMode.Any,
-            postConditionMode: PostConditionMode.Deny,
+            postConditionMode: SAFE_POST_CONDITION_MODE,
         };
 
         const transaction = await makeContractCall(txOptions);
@@ -103,7 +93,7 @@ async function runTestTip() {
         // Dry-run mode: build and display the transaction without broadcasting
         if (process.env.DRY_RUN === '1') {
             console.log("Dry run — transaction built but NOT broadcast.");
-            console.log(`Post-condition: sender can send at most ${maxTransfer} uSTX`);
+            console.log(`Post-condition: sender can send at most ${maxTransferForTip(amount)} uSTX`);
             console.log(`PostConditionMode: Deny`);
             console.log(`Transaction size: ${transaction.serialize().byteLength} bytes`);
             return;
