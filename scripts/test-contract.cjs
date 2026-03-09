@@ -92,7 +92,10 @@ async function runTestTip() {
             console.log(`Explorer Link: https://explorer.hiro.so/txid/0x${response.txid}?chain=mainnet`);
         }
     } catch (error) {
-        console.error("Error creating/broadcasting transaction:", error);
+        // Sanitize error output to avoid leaking keys
+        const safeMessage = (error.message || String(error))
+            .replace(/[0-9a-f]{64}/gi, '[REDACTED_KEY]');
+        console.error("Error creating/broadcasting transaction:", safeMessage);
     }
 }
 
