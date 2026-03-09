@@ -185,7 +185,7 @@ export default function RecentTips({ addToast }) {
                 <div className="flex items-center gap-2">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Live Feed</h2>
                     <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />Live
+                        <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" aria-hidden="true" />Live
                     </span>
                     {messagesLoading && (
                         <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Loading messages...</span>
