@@ -50,6 +50,39 @@ function tipPostCondition(senderAddress, amount, feeBps = FEE_BASIS_POINTS) {
 }
 
 /**
+ * Calculate the platform fee in microSTX for a given tip amount.
+ *
+ * @param {number} amount  Tip amount in microSTX.
+ * @param {number} [feeBps=50]  Fee in basis points.
+ * @returns {number}
+ */
+function feeForTip(amount, feeBps = FEE_BASIS_POINTS) {
+    return Math.ceil(amount * feeBps / BASIS_POINTS_DIVISOR);
+}
+
+/**
+ * Calculate the total microSTX deducted from the sender's wallet.
+ *
+ * @param {number} amount  Tip amount in microSTX.
+ * @param {number} [feeBps=50]  Fee in basis points.
+ * @returns {number}
+ */
+function totalDeduction(amount, feeBps = FEE_BASIS_POINTS) {
+    return amount + feeForTip(amount, feeBps);
+}
+
+/**
+ * Calculate the net amount the recipient receives after the fee.
+ *
+ * @param {number} amount  Tip amount in microSTX.
+ * @param {number} [feeBps=50]  Fee in basis points.
+ * @returns {number}
+ */
+function recipientReceives(amount, feeBps = FEE_BASIS_POINTS) {
+    return amount - Math.floor(amount * feeBps / BASIS_POINTS_DIVISOR);
+}
+
+/**
  * The only acceptable post-condition mode for production transactions.
  */
 const SAFE_POST_CONDITION_MODE = PostConditionMode.Deny;
@@ -59,5 +92,8 @@ module.exports = {
     BASIS_POINTS_DIVISOR,
     maxTransferForTip,
     tipPostCondition,
+    feeForTip,
+    totalDeduction,
+    recipientReceives,
     SAFE_POST_CONDITION_MODE,
 };
