@@ -116,6 +116,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | `is-user-blocked` | Check if one user has blocked another |
 | `get-contract-owner` | Current contract owner |
 | `get-pending-owner` | Pending ownership transfer target |
+| `get-pending-fee-change` | Pending fee proposal and execution height |
+| `get-pending-pause-change` | Pending pause proposal and execution height |
+| `get-multisig` | Authorized multisig contract address |
+| `get-contract-version` | Contract version and name |
 
 ### Frontend Components
 
