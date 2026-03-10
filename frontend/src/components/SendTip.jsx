@@ -183,9 +183,16 @@ export default function SendTip({ addToast }) {
                 }
             });
         } catch (error) {
-            console.error('Failed to send tip:', error.message || error);
+            const msg = error.message || String(error);
+            console.error('Failed to send tip:', msg);
             analytics.trackTipFailed();
-            addToast('Failed to send tip. Please try again.', 'error');
+
+            // Provide a more specific message for post-condition failures
+            if (msg.toLowerCase().includes('post-condition') || msg.toLowerCase().includes('postcondition')) {
+                addToast('Transaction rejected by post-condition check. Your funds are safe.', 'error');
+            } else {
+                addToast('Failed to send tip. Please try again.', 'error');
+            }
             setLoading(false);
         }
     };
