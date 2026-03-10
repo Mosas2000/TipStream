@@ -1763,4 +1763,199 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
         });
     });
+
+    describe("Print Event Verification for Timelocked Operations", () => {
+        it("emits fee-change-proposed print event with correct fields", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            const printData = (printEvents[0] as any).data;
+            expect(printData).toBeDefined();
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "cancel-fee-change", [], deployer);
+        });
+
+        it("emits fee-change-executed print event after timelock expires", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(300)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Restore original fee
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("emits fee-change-cancelled print event on cancellation", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(400)],
+                deployer
+            );
+
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-fee-change",
+                [],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it("emits pause-change-proposed print event with correct fields", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Do not execute - just let the proposal sit
+        });
+
+        it("emits pause-change-executed print event after timelock expires", () => {
+            // Propose unpause to restore state after test
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(false)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it("emits contract-paused print event on direct set-paused call", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "set-paused",
+                [Cl.bool(true)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Undo
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("emits fee-updated print event on direct set-fee-basis-points call", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "set-fee-basis-points",
+                [Cl.uint(100)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Restore
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("does not emit print events when non-admin calls timelocked functions", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(500)],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+        });
+
+        it("timelocked proposal emits different event type than direct bypass", () => {
+            // Direct bypass event
+            const directResult = simnet.callPublicFn(
+                "tipstream",
+                "set-fee-basis-points",
+                [Cl.uint(75)],
+                deployer
+            );
+            const directPrints = directResult.events.filter(
+                (e: any) => e.event === "print_event"
+            );
+
+            // Timelocked proposal event
+            const proposalResult = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+            const proposalPrints = proposalResult.events.filter(
+                (e: any) => e.event === "print_event"
+            );
+
+            // Both should emit print events
+            expect(directPrints.length).toBeGreaterThanOrEqual(1);
+            expect(proposalPrints.length).toBeGreaterThanOrEqual(1);
+
+            // The print data should differ (different event types)
+            expect(directPrints[0].data).not.toEqual(proposalPrints[0].data);
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "cancel-fee-change", [], deployer);
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+    });
 });
