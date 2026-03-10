@@ -10,13 +10,14 @@ import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
-import { Zap, Radio, Trophy, User, BarChart3 } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Shield } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const NotFound = lazy(() => import('./components/NotFound'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 
 function App() {
   const [userData, setUserData] = useState(null);
