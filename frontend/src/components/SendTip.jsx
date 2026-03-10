@@ -8,7 +8,7 @@ import {
 import { network, appDetails, userSession } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
-import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_BASIS_POINTS, BASIS_POINTS_DIVISOR } from '../lib/post-conditions';
+import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
 import { useStxPrice } from '../hooks/useStxPrice';
@@ -276,7 +276,7 @@ export default function SendTip({ addToast }) {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Platform fee ({(FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100).toFixed(1)}%)</span>
+                                    <span>Platform fee ({FEE_PERCENT}%)</span>
                                     <span>{formatSTX(feeForTip(toMicroSTX(amount)), 6)} STX</span>
                                 </div>
                                 <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-1 flex justify-between font-semibold text-gray-900 dark:text-white">
@@ -336,7 +336,7 @@ export default function SendTip({ addToast }) {
                         {amount && parseFloat(amount) > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                 <div className="flex justify-between">
-                                    <span>Platform fee ({(FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100).toFixed(1)}%)</span>
+                                    <span>Platform fee ({FEE_PERCENT}%)</span>
                                     <span>{formatSTX(feeForTip(toMicroSTX(amount)), 6)} STX</span>
                                 </div>
                                 <div className="flex justify-between font-semibold text-gray-900 dark:text-white">
