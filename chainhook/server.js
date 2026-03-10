@@ -187,6 +187,32 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  if (req.method === "GET" && path === "/api/admin/events") {
+    const allEvents = loadEvents();
+    const adminEvents = allEvents
+      .map(parseAdminEvent)
+      .filter(Boolean)
+      .reverse();
+    return sendJson(res, 200, { events: adminEvents, total: adminEvents.length });
+  }
+
+  if (req.method === "GET" && path === "/api/admin/bypasses") {
+    const allEvents = loadEvents();
+    const bypasses = [];
+    for (let i = 0; i < allEvents.length; i++) {
+      const detection = detectBypass(allEvents[i], allEvents.slice(Math.max(0, i - 50), i));
+      if (detection.isBypass) {
+        bypasses.push({
+          ...detection,
+          txId: allEvents[i].txId,
+          blockHeight: allEvents[i].blockHeight,
+          timestamp: allEvents[i].timestamp,
+        });
+      }
+    }
+    return sendJson(res, 200, { bypasses, total: bypasses.length });
+  }
+
   sendJson(res, 404, { error: "not found" });
 });
 
