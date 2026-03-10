@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     FEE_BASIS_POINTS,
     BASIS_POINTS_DIVISOR,
+    FEE_PERCENT,
     SAFE_POST_CONDITION_MODE,
     maxTransferForTip,
     tipPostCondition,
@@ -23,6 +24,11 @@ describe('post-conditions', () => {
         it('exports Deny as the safe post-condition mode', () => {
             // PostConditionMode.Deny is 0x02
             expect(SAFE_POST_CONDITION_MODE).toBeDefined();
+        });
+
+        it('exports FEE_PERCENT as a derived percentage', () => {
+            expect(FEE_PERCENT).toBe(0.5);
+            expect(FEE_PERCENT).toBe(FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100);
         });
     });
 
