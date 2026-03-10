@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { userSession, authenticate, disconnect } from './utils/stacks';
 import Header from './components/Header';
@@ -10,6 +10,7 @@ import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
+import { useAdmin } from './hooks/useAdmin';
 import { Zap, Radio, Trophy, User, BarChart3, Shield } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
@@ -28,6 +29,7 @@ function App() {
 
   const userAddress = userData?.profile?.stxAddress?.mainnet || null;
   const { notifications, unreadCount, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
+  const { isOwner } = useAdmin(userAddress);
 
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
@@ -65,14 +67,19 @@ function App() {
     }
   };
 
-  const navItems = [
-    { path: '/send', label: 'Send Tip', icon: Zap },
-    { path: '/feed', label: 'Live Feed', icon: Radio },
-    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { path: '/activity', label: 'My Activity', icon: User },
-    { path: '/stats', label: 'Stats', icon: BarChart3 },
-    { path: '/admin', label: 'Admin', icon: Shield },
-  ];
+  const navItems = useMemo(() => {
+    const items = [
+      { path: '/send', label: 'Send Tip', icon: Zap },
+      { path: '/feed', label: 'Live Feed', icon: Radio },
+      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+      { path: '/activity', label: 'My Activity', icon: User },
+      { path: '/stats', label: 'Stats', icon: BarChart3 },
+    ];
+    if (isOwner) {
+      items.push({ path: '/admin', label: 'Admin', icon: Shield });
+    }
+    return items;
+  }, [isOwner]);
 
   if (healthy === false) {
     return (
