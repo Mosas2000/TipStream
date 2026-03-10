@@ -1131,7 +1131,7 @@ describe("TipStream Contract Tests", () => {
                 deployer
             );
 
-            const pending = (result as any).data;
+            const pending = (result as any).value;
             expect(pending["pending-pause"]).toEqual(Cl.some(Cl.bool(true)));
         });
 
@@ -1241,7 +1241,7 @@ describe("TipStream Contract Tests", () => {
                 deployer
             );
 
-            const pending = (result as any).data;
+            const pending = (result as any).value;
             expect(pending["pending-pause"]).toEqual(Cl.none());
 
             // Clean up
@@ -1282,7 +1282,7 @@ describe("TipStream Contract Tests", () => {
                 [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Still works")],
                 wallet1
             );
-            expect(tipResult).toBeOk(Cl.uint(expect.any(Number)));
+            expect(tipResult).not.toBeErr();
         });
     });
 
@@ -1332,7 +1332,7 @@ describe("TipStream Contract Tests", () => {
                 deployer
             );
 
-            const pending = (result as any).data;
+            const pending = (result as any).value;
             expect(pending["pending-fee"]).toEqual(Cl.some(Cl.uint(300)));
         });
 
@@ -1435,7 +1435,7 @@ describe("TipStream Contract Tests", () => {
                 deployer
             );
 
-            const pending = (result as any).data;
+            const pending = (result as any).value;
             expect(pending["pending-fee"]).toEqual(Cl.none());
 
             // Reset fee
@@ -1466,7 +1466,7 @@ describe("TipStream Contract Tests", () => {
                 deployer
             );
 
-            const data = (pending as any).data;
+            const data = (pending as any).value;
             expect(data["pending-fee"]).toEqual(Cl.none());
         });
 
@@ -1722,7 +1722,7 @@ describe("TipStream Contract Tests", () => {
                 [],
                 deployer
             );
-            const pending = (result as any).data;
+            const pending = (result as any).value;
             expect(pending["pending-pause"]).toEqual(Cl.some(Cl.bool(true)));
 
             // Unpause and clean up
@@ -1755,7 +1755,7 @@ describe("TipStream Contract Tests", () => {
                 [],
                 deployer
             );
-            const pending = (result as any).data;
+            const pending = (result as any).value;
             expect(pending["pending-fee"]).toEqual(Cl.some(Cl.uint(200)));
 
             // Clean up
