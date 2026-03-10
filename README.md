@@ -169,12 +169,18 @@ frontend/
     components/           React components
     config/               Contract address configuration
     context/              TipContext (shared state)
-    lib/                  Utility functions
+    lib/                  Utility functions and post-condition helpers
+    test/                 Unit and integration tests
     utils/                Stacks wallet/network helpers
 tests/
   tipstream.test.ts       Vitest contract tests
 scripts/
+  lib/                    Shared modules (post-conditions)
+  audit-post-conditions.sh  CI audit for Allow mode usage
   deploy.sh               Deployment script
+  test-contract.cjs       Mainnet test tip script
+docs/
+  POST-CONDITION-GUIDE.md Post-condition enforcement strategy
 deployments/
   *.yaml                  Clarinet deployment plans
 settings/
