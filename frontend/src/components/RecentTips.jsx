@@ -185,7 +185,7 @@ export default function RecentTips({ addToast }) {
                 <div className="flex items-center gap-2">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Live Feed</h2>
                     <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />Live
+                        <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" aria-hidden="true" />Live
                     </span>
                     {messagesLoading && (
                         <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Loading messages...</span>
@@ -202,7 +202,8 @@ export default function RecentTips({ addToast }) {
                 <div className="flex gap-2">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
-                        <input type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setOffset(0); }}
+                        <label htmlFor="feed-search" className="sr-only">Search tips</label>
+                        <input id="feed-search" type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setOffset(0); }}
                             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Search by address or message..." />
                     </div>
@@ -214,16 +215,19 @@ export default function RecentTips({ addToast }) {
                 </div>
                 {showFilters && (
                     <div className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                        {[['Min STX', minAmount, setMinAmount, '0'], ['Max STX', maxAmount, setMaxAmount, 'any']].map(([label, val, setter, ph]) => (
-                            <div key={label} className="flex items-center gap-2">
-                                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
-                                <input type="number" value={val} onChange={(e) => { setter(e.target.value); setOffset(0); }}
-                                    className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder={ph} step="0.001" min="0" />
-                            </div>
-                        ))}
                         <div className="flex items-center gap-2">
-                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Sort</label>
-                            <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setOffset(0); }}
+                            <label htmlFor="feed-filter-min" className="text-xs font-medium text-gray-500 dark:text-gray-400">Min STX</label>
+                            <input id="feed-filter-min" type="number" value={minAmount} onChange={(e) => { setMinAmount(e.target.value); setOffset(0); }}
+                                className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder="0" step="0.001" min="0" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="feed-filter-max" className="text-xs font-medium text-gray-500 dark:text-gray-400">Max STX</label>
+                            <input id="feed-filter-max" type="number" value={maxAmount} onChange={(e) => { setMaxAmount(e.target.value); setOffset(0); }}
+                                className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder="any" step="0.001" min="0" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="feed-sort" className="text-xs font-medium text-gray-500 dark:text-gray-400">Sort</label>
+                            <select id="feed-sort" value={sortBy} onChange={(e) => { setSortBy(e.target.value); setOffset(0); }}
                                 className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500">
                                 <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
                                 <option value="amount-high">Highest amount</option><option value="amount-low">Lowest amount</option>
