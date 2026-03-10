@@ -148,6 +148,7 @@ function App() {
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/activity" element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
                 <Route path="/stats" element={<PlatformStats />} />
+                <Route path="/admin" element={<AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
