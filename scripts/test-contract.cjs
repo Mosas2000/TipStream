@@ -1,3 +1,18 @@
+/**
+ * test-contract.cjs — Send a test tip on Stacks mainnet.
+ *
+ * Usage:
+ *   MNEMONIC="..." RECIPIENT="SP..." node scripts/test-contract.cjs
+ *
+ * Optional env vars:
+ *   AMOUNT   — Tip in microSTX (default 1000, min 1000)
+ *   MESSAGE  — On-chain message (default "On-chain test tip")
+ *   DRY_RUN  — Set to "1" to build the tx without broadcasting
+ *
+ * Security:
+ *   This script uses PostConditionMode.Deny with an explicit STX ceiling.
+ *   See scripts/lib/post-conditions.cjs and docs/POST-CONDITION-GUIDE.md.
+ */
 const {
     makeContractCall,
     broadcastTransaction,
