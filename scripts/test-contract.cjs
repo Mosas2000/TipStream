@@ -26,6 +26,8 @@ const { generateWallet } = require('@stacks/wallet-sdk');
 const {
     tipPostCondition,
     maxTransferForTip,
+    feeForTip,
+    totalDeduction,
     SAFE_POST_CONDITION_MODE,
 } = require('./lib/post-conditions.cjs');
 
@@ -93,9 +95,14 @@ async function runTestTip() {
         }
 
         console.log(`Calling ${contractName}.${functionName} on Mainnet...`);
-        console.log(`Sender: ${senderAddress}`);
+        console.log(`Sender:    ${senderAddress}`);
         console.log(`Recipient: ${recipient}`);
-        console.log(`Amount: ${amount} uSTX (0.001 STX)`);
+        console.log(`Amount:    ${amount} uSTX (${(amount / 1_000_000).toFixed(6)} STX)`);
+        console.log(`Fee:       ${feeForTip(amount)} uSTX (0.5%)`);
+        console.log(`Total:     ${totalDeduction(amount)} uSTX`);
+        console.log(`Ceiling:   ${maxTransferForTip(amount)} uSTX (post-condition limit)`);
+        console.log(`Mode:      PostConditionMode.Deny`);
+        console.log(`Message:   "${message}"`);
 
         // Build post conditions using the shared helper.
         const postConditions = [tipPostCondition(senderAddress, amount)];
