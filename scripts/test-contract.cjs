@@ -38,11 +38,24 @@ if (!mnemonic) {
     process.exit(1);
 }
 
+// BIP-39 mnemonics are 12 or 24 words
+const wordCount = mnemonic.trim().split(/\s+/).length;
+if (wordCount !== 12 && wordCount !== 24) {
+    console.error(`Error: MNEMONIC has ${wordCount} words. Expected 12 or 24.`);
+    process.exit(1);
+}
+
 const recipientArg = process.env.RECIPIENT;
 if (!recipientArg) {
     console.error("Error: RECIPIENT environment variable not set.");
     console.log("The contract does not allow self-tipping. Provide a different recipient address.");
     console.log("Usage: MNEMONIC=\"your mnemonic\" RECIPIENT=\"SPaddress\" node scripts/test-contract.cjs");
+    process.exit(1);
+}
+
+// Validate recipient address format
+if (!/^SP[0-9A-Z]{33,39}$/i.test(recipientArg.trim())) {
+    console.error("Error: RECIPIENT does not look like a valid mainnet address (SP...).");
     process.exit(1);
 }
 
