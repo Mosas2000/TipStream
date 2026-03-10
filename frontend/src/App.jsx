@@ -71,6 +71,7 @@ function App() {
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { path: '/activity', label: 'My Activity', icon: User },
     { path: '/stats', label: 'Stats', icon: BarChart3 },
+    { path: '/admin', label: 'Admin', icon: Shield },
   ];
 
   if (healthy === false) {
