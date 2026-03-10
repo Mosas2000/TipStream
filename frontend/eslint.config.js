@@ -30,11 +30,22 @@ export default defineConfig([
         property: 'Allow',
         message: 'Use PostConditionMode.Deny with explicit post conditions. See lib/post-conditions.js.',
       }],
-      // Also catch string-literal access like PostConditionMode['Allow']
-      'no-restricted-syntax': ['error', {
-        selector: "MemberExpression[object.name='PostConditionMode'][property.value='Allow']",
-        message: 'Use PostConditionMode.Deny with explicit post conditions. See lib/post-conditions.js.',
-      }],
+      // Ban direct bypass functions and PostConditionMode['Allow'] string access
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='PostConditionMode'][property.value='Allow']",
+          message: 'Use PostConditionMode.Deny with explicit post conditions. See lib/post-conditions.js.',
+        },
+        {
+          selector: "Literal[value='set-paused']",
+          message: 'Direct set-paused bypasses the timelock. Use propose-pause-change and execute-pause-change instead.',
+        },
+        {
+          selector: "Literal[value='set-fee-basis-points']",
+          message: 'Direct set-fee-basis-points bypasses the timelock. Use propose-fee-change and execute-fee-change instead.',
+        },
+      ],
     },
   },
 ])

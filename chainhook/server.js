@@ -2,6 +2,7 @@ import http from "node:http";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3100;
@@ -118,6 +119,19 @@ const server = http.createServer(async (req, res) => {
       const newEvents = extractEvents(payload);
       if (newEvents.length > 0) {
         const stored = loadEvents();
+
+        // Check for timelock bypass events
+        for (const evt of newEvents) {
+          const detection = detectBypass(evt, stored.slice(-50));
+          if (detection.isBypass) {
+            console.warn(formatBypassAlert(detection, evt));
+          }
+          const adminEvt = parseAdminEvent(evt);
+          if (adminEvt) {
+            console.log(`Admin event: ${adminEvt.eventType} at block ${adminEvt.blockHeight}`);
+          }
+        }
+
         stored.push(...newEvents);
         saveEvents(stored);
         console.log(`Indexed ${newEvents.length} events (total: ${stored.length})`);
@@ -171,6 +185,32 @@ const server = http.createServer(async (req, res) => {
       uniqueSenders: new Set(tips.map((t) => t.sender)).size,
       uniqueRecipients: new Set(tips.map((t) => t.recipient)).size,
     });
+  }
+
+  if (req.method === "GET" && path === "/api/admin/events") {
+    const allEvents = loadEvents();
+    const adminEvents = allEvents
+      .map(parseAdminEvent)
+      .filter(Boolean)
+      .reverse();
+    return sendJson(res, 200, { events: adminEvents, total: adminEvents.length });
+  }
+
+  if (req.method === "GET" && path === "/api/admin/bypasses") {
+    const allEvents = loadEvents();
+    const bypasses = [];
+    for (let i = 0; i < allEvents.length; i++) {
+      const detection = detectBypass(allEvents[i], allEvents.slice(Math.max(0, i - 50), i));
+      if (detection.isBypass) {
+        bypasses.push({
+          ...detection,
+          txId: allEvents[i].txId,
+          blockHeight: allEvents[i].blockHeight,
+          timestamp: allEvents[i].timestamp,
+        });
+      }
+    }
+    return sendJson(res, 200, { bypasses, total: bypasses.length });
   }
 
   sendJson(res, 404, { error: "not found" });
