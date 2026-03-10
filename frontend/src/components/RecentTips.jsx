@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { openContractCall } from '@stacks/connect';
-import { uintCV, stringUtf8CV, PostConditionMode, Pc } from '@stacks/transactions';
+import { uintCV, stringUtf8CV } from '@stacks/transactions';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
+import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
 import { network, appDetails, userSession } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
@@ -131,14 +132,19 @@ export default function RecentTips({ addToast }) {
                 contractAddress: CONTRACT_ADDRESS, contractName: CONTRACT_NAME,
                 functionName: 'tip-a-tip',
                 functionArgs: [uintCV(parseInt(tip.tipId)), uintCV(microSTX), stringUtf8CV(tipBackMessage || 'Tipping back!')],
-                postConditions: [Pc.principal(senderAddress).willSendLte(microSTX).ustx()],
-                postConditionMode: PostConditionMode.Deny,
+                postConditions: [tipPostCondition(senderAddress, microSTX)],
+                postConditionMode: SAFE_POST_CONDITION_MODE,
                 onFinish: (data) => { setSending(false); setTipBackTarget(null); setTipBackMessage(''); addToast?.('Tip-a-tip sent! Tx: ' + data.txId, 'success'); },
                 onCancel: () => { setSending(false); addToast?.('Tip-a-tip cancelled', 'info'); },
             });
         } catch (err) {
-            console.error('Tip-a-tip failed:', err.message || err);
-            addToast?.('Failed to send tip-a-tip', 'error');
+            const msg = err.message || String(err);
+            console.error('Tip-a-tip failed:', msg);
+            if (msg.toLowerCase().includes('post-condition') || msg.toLowerCase().includes('postcondition')) {
+                addToast?.('Transaction rejected by post-condition check. Your funds are safe.', 'error');
+            } else {
+                addToast?.('Failed to send tip-a-tip', 'error');
+            }
             setSending(false);
         }
     };
