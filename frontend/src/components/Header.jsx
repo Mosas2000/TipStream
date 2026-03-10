@@ -28,7 +28,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
     const networkLabel = NETWORK_NAME.charAt(0).toUpperCase() + NETWORK_NAME.slice(1);
 
     return (
-        <nav className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5">
+        <nav className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5" aria-label="Site header">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Logo */}
@@ -42,9 +42,15 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                         />
                         <div className="flex items-center gap-2">
                             <h1 className="text-lg font-black text-white tracking-tight">TipStream</h1>
-                            <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
-                                <span className={`h-1.5 w-1.5 rounded-full ${apiReachable === null ? 'bg-yellow-400 animate-pulse' : apiReachable ? 'bg-green-400 pulse-live' : 'bg-red-400'}`} />
+                            <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/5" role="status" aria-label={`API status: ${apiReachable === null ? 'checking' : apiReachable ? 'connected' : 'disconnected'}`}>
+                                <span
+                                    className={`h-1.5 w-1.5 rounded-full ${apiReachable === null ? 'bg-yellow-400 animate-pulse' : apiReachable ? 'bg-green-400 pulse-live' : 'bg-red-400'}`}
+                                    aria-hidden="true"
+                                />
                                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{networkLabel}</span>
+                                <span className="sr-only">
+                                    {apiReachable === null ? 'Checking connection' : apiReachable ? 'API connected' : 'API disconnected'}
+                                </span>
                             </div>
                         </div>
                     </div>

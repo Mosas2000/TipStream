@@ -93,6 +93,12 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 transition-colors">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-amber-500 focus:text-black focus:rounded-lg focus:text-sm focus:font-semibold focus:outline-none focus:ring-2 focus:ring-amber-300"
+      >
+        Skip to main content
+      </a>
       <OfflineBanner />
       <Header
         userData={userData}
@@ -104,7 +110,7 @@ function App() {
         notificationsLoading={notificationsLoading}
       />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         {userData ? (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
             {/* Navigation */}

@@ -85,3 +85,24 @@ body {
 .radial-hero {
   background: radial-gradient(ellipse at 50% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 60%);
 }
+
+/* ── Accessibility ─────────────────────────────────────────── */
+
+/* Screen-reader-only utility (matches Tailwind sr-only) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Ensure visible focus rings for keyboard navigation */
+:focus-visible {
+  outline: 2px solid rgb(245, 158, 11);
+  outline-offset: 2px;
+}
