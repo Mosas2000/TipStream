@@ -30,6 +30,11 @@ export default defineConfig([
         property: 'Allow',
         message: 'Use PostConditionMode.Deny with explicit post conditions. See lib/post-conditions.js.',
       }],
+      // Also catch string-literal access like PostConditionMode['Allow']
+      'no-restricted-syntax': ['error', {
+        selector: "MemberExpression[object.name='PostConditionMode'][property.value='Allow']",
+        message: 'Use PostConditionMode.Deny with explicit post conditions. See lib/post-conditions.js.',
+      }],
     },
   },
 ])
