@@ -145,7 +145,14 @@ async function runTestTip() {
             console.log(`Explorer Link: https://explorer.hiro.so/txid/0x${response.txid}?chain=mainnet`);
         }
     } catch (error) {
-        console.error("Error creating/broadcasting transaction:", error);
+        // Sanitize the error output to ensure mnemonics and private keys
+        // are never leaked to logs or CI output.
+        let safeMessage = (error.message || String(error));
+        if (mnemonic) {
+            safeMessage = safeMessage.replace(new RegExp(mnemonic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]');
+        }
+        console.error("Error creating/broadcasting transaction:", safeMessage);
+        process.exit(1);
     }
 }
 
