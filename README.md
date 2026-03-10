@@ -94,9 +94,14 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | `tip-a-tip` | Recursive tip referencing a previous tip ID |
 | `update-profile` | Set display name, bio, avatar URL |
 | `toggle-block-user` | Block or unblock a principal |
-| `set-fee` | Admin: update fee basis points |
-| `toggle-pause` | Admin: pause/resume contract |
-| `propose-new-owner` | Admin: initiate ownership transfer |
+| `set-fee-basis-points` | Admin: update fee basis points (direct, bypasses timelock) |
+| `set-paused` | Admin: pause/resume contract (direct, bypasses timelock) |
+| `propose-fee-change` | Admin: propose timelocked fee change (144-block delay) |
+| `execute-fee-change` | Admin: execute pending fee change after timelock |
+| `cancel-fee-change` | Admin: cancel a pending fee proposal |
+| `propose-pause-change` | Admin: propose timelocked pause change (144-block delay) |
+| `execute-pause-change` | Admin: execute pending pause change after timelock |
+| `propose-new-owner` | Admin: initiate two-step ownership transfer |
 | `accept-ownership` | Accept pending ownership transfer |
 
 **Read-only:**
