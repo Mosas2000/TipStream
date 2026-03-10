@@ -1,10 +1,14 @@
 /**
+ * @module post-conditions
+ *
  * Post-condition helpers for TipStream frontend contract calls.
  *
  * All user-facing transactions must use PostConditionMode.Deny and
  * attach explicit STX transfer limits.  This module provides the
  * same fee-aware calculation used in the CLI scripts so the frontend
  * and backend stay in sync.
+ *
+ * @see docs/POST-CONDITION-GUIDE.md
  */
 
 import { PostConditionMode, Pc } from '@stacks/transactions';
@@ -12,6 +16,9 @@ import { PostConditionMode, Pc } from '@stacks/transactions';
 // Contract fee parameters — keep in sync with tipstream.clar
 export const FEE_BASIS_POINTS = 50;
 export const BASIS_POINTS_DIVISOR = 10000;
+
+/** Human-readable fee percentage (e.g. 0.5 for 0.5%). */
+export const FEE_PERCENT = FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100;
 
 /**
  * The only acceptable post-condition mode for production transactions.
