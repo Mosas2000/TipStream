@@ -4,6 +4,7 @@ import {
     TimelockStatus,
     formatBlockHeight,
     formatBasisPoints,
+    timelockProgress,
     TIMELOCK_BLOCKS,
 } from '../lib/timelock';
 import {
@@ -272,6 +273,7 @@ export default function AdminDashboard({ userAddress, addToast }) {
                             label={`Pending: ${pauseState.pendingPause ? 'Pause' : 'Unpause'}`}
                             status={pendingPauseStatus}
                             effectiveHeight={pauseState.effectiveHeight}
+                            blockHeight={blockHeight}
                             onExecute={handleExecutePause}
                             submitting={submitting}
                         />
@@ -325,6 +327,7 @@ export default function AdminDashboard({ userAddress, addToast }) {
                                 label={`Pending Fee: ${formatBasisPoints(feeState.pendingFee)}`}
                                 status={pendingFeeStatus}
                                 effectiveHeight={feeState.effectiveHeight}
+                                blockHeight={blockHeight}
                                 onExecute={handleExecuteFee}
                                 onCancel={handleCancelFee}
                                 submitting={submitting}
@@ -375,8 +378,11 @@ function TimelockNotice() {
     );
 }
 
-function PendingChangeCard({ label, status, effectiveHeight, onExecute, onCancel, submitting }) {
+function PendingChangeCard({ label, status, effectiveHeight, blockHeight, onExecute, onCancel, submitting }) {
     const isReady = status.status === TimelockStatus.READY;
+    const progress = typeof status.blocksLeft === 'number' && typeof effectiveHeight === 'number' && typeof status.blocksTotal === 'number'
+        ? 1 - (status.blocksLeft / status.blocksTotal)
+        : 0;
 
     return (
         <div className={`rounded-xl border p-4 ${
@@ -397,10 +403,18 @@ function PendingChangeCard({ label, status, effectiveHeight, onExecute, onCancel
                 )}
             </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 Effective at block {formatBlockHeight(effectiveHeight)}
                 {status.blocksLeft > 0 && ` (${status.blocksLeft} blocks remaining)`}
             </p>
+
+            {/* Timelock progress bar */}
+            <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded mb-3 overflow-hidden">
+                <div
+                    className="h-2 bg-amber-500 dark:bg-amber-400 transition-all duration-500"
+                    style={{ width: `${Math.min(Math.max(progress * 100, 0), 100)}%` }}
+                />
+            </div>
 
             <div className="flex gap-2">
                 <button
