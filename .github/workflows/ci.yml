@@ -115,3 +115,12 @@ jobs:
           name: frontend-dist
           path: frontend/dist
           retention-days: 7
+
+  post-condition-audit:
+    name: Post-Condition Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify no PostConditionMode.Allow in production code
+        run: bash scripts/audit-post-conditions.sh

@@ -196,13 +196,19 @@ export default function TipHistory({ userAddress }) {
             {/* Tip list */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
                 <div className="flex flex-wrap items-center gap-2 mb-5">
-                    {['all', 'sent', 'received'].map((t) => (
-                        <button key={t} onClick={() => setTab(t)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${tab === t ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
-                            {t}
-                        </button>
-                    ))}
-                    <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
+                    <div role="tablist" aria-label="Filter by direction" className="flex items-center gap-2">
+                        {['all', 'sent', 'received'].map((t) => (
+                            <button key={t} onClick={() => setTab(t)}
+                                role="tab"
+                                aria-selected={tab === t}
+                                aria-controls="tip-history-panel"
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${tab === t ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+                    <label htmlFor="category-filter" className="sr-only">Filter by category</label>
+                    <select id="category-filter" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-none outline-none">
                         <option value="all">All Categories</option>
                         {Object.entries(CATEGORY_LABELS).map(([id, label]) => (<option key={id} value={id}>{label}</option>))}
@@ -210,11 +216,11 @@ export default function TipHistory({ userAddress }) {
                 </div>
 
                 {filteredTips.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                    <div id="tip-history-panel" role="tabpanel" className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
                         <p className="text-gray-400">No tips found</p>
                     </div>
                 ) : (
-                    <div className="space-y-2">
+                    <div id="tip-history-panel" role="tabpanel" className="space-y-2">
                         {filteredTips.map((tip, i) => (
                             <div key={tip.tipId || i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
