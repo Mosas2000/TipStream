@@ -199,6 +199,9 @@ settings/
 - Admin functions are owner-only with on-chain assertions
 - Two-step ownership transfer prevents accidental loss
 - Post conditions on all transactions restrict STX movement
+- **Timelocked admin changes**: Fee and pause changes use a 144-block (~24 hour) propose-wait-execute cycle
+- **Frontend enforces timelocked paths**: The AdminDashboard never calls direct bypass functions
+- **Multisig governance**: Optional multi-signature approval layer for admin actions
 
 The `settings/Devnet.toml` file contains mnemonic phrases and private keys for Clarinet devnet test accounts. These hold no real value and exist only in the local devnet sandbox. Never use devnet mnemonics or keys on mainnet or testnet.
 
