@@ -183,17 +183,22 @@ settings/
 
 ## Security
 
+- **PostConditionMode.Deny** enforced on every user-facing transaction, preventing
+  the contract from transferring more STX than explicitly permitted
+- Shared post-condition modules (`lib/post-conditions.js`, `scripts/lib/post-conditions.cjs`)
+  centralize fee-aware ceiling calculations
+- ESLint rules and CI pipeline block `PostConditionMode.Allow` from entering the codebase
 - Fee calculation enforces a minimum of 1 microSTX to prevent zero-fee abuse
 - Minimum tip amount of 1000 microSTX (0.001 STX)
 - Self-tipping is rejected at the contract level
 - Blocked users cannot receive tips from the blocker
 - Admin functions are owner-only with on-chain assertions
 - Two-step ownership transfer prevents accidental loss
-- Post conditions on all transactions restrict STX movement
 
 The `settings/Devnet.toml` file contains mnemonic phrases and private keys for Clarinet devnet test accounts. These hold no real value and exist only in the local devnet sandbox. Never use devnet mnemonics or keys on mainnet or testnet.
 
 See [SECURITY.md](SECURITY.md) for the full security audit and vulnerability reporting guidelines.
+See [docs/POST-CONDITION-GUIDE.md](docs/POST-CONDITION-GUIDE.md) for the post-condition enforcement strategy.
 
 ## Contributing
 
