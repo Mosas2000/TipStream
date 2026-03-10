@@ -138,8 +138,13 @@ export default function RecentTips({ addToast }) {
                 onCancel: () => { setSending(false); addToast?.('Tip-a-tip cancelled', 'info'); },
             });
         } catch (err) {
-            console.error('Tip-a-tip failed:', err.message || err);
-            addToast?.('Failed to send tip-a-tip', 'error');
+            const msg = err.message || String(err);
+            console.error('Tip-a-tip failed:', msg);
+            if (msg.toLowerCase().includes('post-condition') || msg.toLowerCase().includes('postcondition')) {
+                addToast?.('Transaction rejected by post-condition check. Your funds are safe.', 'error');
+            } else {
+                addToast?.('Failed to send tip-a-tip', 'error');
+            }
             setSending(false);
         }
     };
