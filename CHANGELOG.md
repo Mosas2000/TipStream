@@ -11,9 +11,15 @@ All notable changes to the TipStream project will be documented in this file.
 - Added frontend AdminDashboard that exclusively uses timelocked propose-wait-execute path
 - ESLint rules ban direct bypass function references (`set-paused`, `set-fee-basis-points`)
 - All admin transaction builders enforce `PostConditionMode.Deny`
+- Chainhook bypass detection module flags direct admin calls that skip the timelock
 
 ### Added
 
+- Chainhook `/api/admin/events` endpoint for querying admin event history
+- Chainhook `/api/admin/bypasses` endpoint for querying detected bypass events
+- Chainhook `bypass-detection.js` module for real-time admin event monitoring
+- Admin navigation link only visible to the contract owner
+- Visual timelock progress bar on pending change cards in AdminDashboard
 - `AdminDashboard` component with owner-only access, pause/fee controls, and pending change display
 - `useAdmin` hook for polling contract owner, pending changes, and block height
 - `admin-contract.js` library with read-only query helpers and Clarity hex parser
