@@ -56,3 +56,36 @@ export function stxToMicro(stx) {
   const n = parseFloat(stx);
   return Number.isFinite(n) ? Math.floor(n * MICRO_STX) : null;
 }
+
+/**
+ * Format a micro-STX balance for display as a locale-aware STX string.
+ *
+ * Returns a human-readable string like `"1,234.50 STX"`. If the input
+ * cannot be parsed, returns the provided fallback (default `'--'`).
+ *
+ * @param {string|number|bigint|null|undefined} microStx - Balance in micro-STX.
+ * @param {object} [options]
+ * @param {number} [options.minDecimals=2] - Minimum fraction digits.
+ * @param {number} [options.maxDecimals=6] - Maximum fraction digits.
+ * @param {boolean} [options.suffix=true] - Append " STX" suffix.
+ * @param {string} [options.fallback='--'] - Value when balance is null/invalid.
+ * @returns {string}
+ */
+export function formatBalance(microStx, options = {}) {
+  const {
+    minDecimals = 2,
+    maxDecimals = 6,
+    suffix = true,
+    fallback = '--',
+  } = options;
+
+  const stx = microToStx(microStx);
+  if (stx === null) return fallback;
+
+  const formatted = stx.toLocaleString(undefined, {
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
+  });
+
+  return suffix ? `${formatted} STX` : formatted;
+}
