@@ -64,7 +64,7 @@ export function tipPostCondition(senderAddress, amountMicroSTX, feeBps = FEE_BAS
  * @returns {number}
  */
 export function feeForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    return Math.ceil(amountMicroSTX * feeBps / BASIS_POINTS_DIVISOR);
+    return Math.ceil(Number(amountMicroSTX) * feeBps / BASIS_POINTS_DIVISOR);
 }
 
 /**
