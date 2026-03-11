@@ -1,11 +1,10 @@
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { MICRO_STX } from './balance-utils';
 
 export function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
-
-const MICRO_STX = 1_000_000;
 
 /**
  * Convert micro-STX (integer) to STX (decimal string).
