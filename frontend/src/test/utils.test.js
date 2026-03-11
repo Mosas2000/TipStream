@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatSTX, toMicroSTX, cn, formatAddress, formatNumber } from '../lib/utils';
+import { formatSTX, toMicroSTX, cn, formatAddress, formatNumber, MICRO_STX } from '../lib/utils';
 
 describe('formatSTX', () => {
   it('converts micro-STX to STX string', () => {
@@ -102,5 +102,16 @@ describe('formatNumber', () => {
   it('handles string input', () => {
     const result = formatNumber('999');
     expect(result).toContain('999');
+  });
+});
+
+describe('MICRO_STX re-export', () => {
+  it('re-exports MICRO_STX from balance-utils', () => {
+    expect(MICRO_STX).toBe(1_000_000);
+  });
+
+  it('is the same reference as balance-utils.MICRO_STX', async () => {
+    const { MICRO_STX: original } = await import('../lib/balance-utils');
+    expect(MICRO_STX).toBe(original);
   });
 });
