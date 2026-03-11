@@ -1,0 +1,45 @@
+/**
+ * Pure helper functions for extracting data from the user data object
+ * returned by `authenticate()` and `userSession.loadUserData()`.
+ *
+ * These are intentionally kept in a separate module from `stacks.js`
+ * so they can be tested without importing the Stacks SDK, which
+ * requires browser globals.
+ */
+
+/**
+ * Extract the mainnet STX address from a user data object.
+ *
+ * Safely navigates `profile.stxAddress.mainnet` and returns `null`
+ * if any intermediate property is missing.
+ *
+ * @param {object|null|undefined} data - User data from authenticate() or loadUserData().
+ * @returns {string|null} The mainnet Stacks address, or null.
+ */
+export function getMainnetAddress(data) {
+  return data?.profile?.stxAddress?.mainnet ?? null;
+}
+
+/**
+ * Extract the testnet STX address from a user data object.
+ *
+ * @param {object|null|undefined} data - User data from authenticate() or loadUserData().
+ * @returns {string|null} The testnet Stacks address, or null.
+ */
+export function getTestnetAddress(data) {
+  return data?.profile?.stxAddress?.testnet ?? null;
+}
+
+/**
+ * Validate that a user data object has the expected shape.
+ *
+ * Returns `true` only if `data.profile.stxAddress.mainnet` is a
+ * non-empty string. Does not throw on any input.
+ *
+ * @param {unknown} data - Value to check.
+ * @returns {boolean}
+ */
+export function isValidUserData(data) {
+  const address = getMainnetAddress(data);
+  return typeof address === 'string' && address.length > 0;
+}
