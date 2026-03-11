@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom'
 import { userSession, authenticate, disconnect } from './utils/stacks';
 import Header from './components/Header';
 import SendTip from './components/SendTip';
+import SkipNav from './components/SkipNav';
 import OfflineBanner from './components/OfflineBanner';
 import MaintenancePage from './components/MaintenancePage';
 import { AnimatedHero } from './components/ui/animated-hero';
@@ -110,12 +111,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 transition-colors">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-amber-500 focus:text-black focus:rounded-lg focus:text-sm focus:font-semibold focus:outline-none focus:ring-2 focus:ring-amber-300"
-      >
-        Skip to main content
-      </a>
+      <SkipNav />
       <OfflineBanner />
       <Header
         userData={userData}
