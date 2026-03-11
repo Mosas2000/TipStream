@@ -41,3 +41,18 @@ export function microToStx(microStx) {
   const parsed = parseBalance(microStx);
   return parsed !== null ? parsed / MICRO_STX : null;
 }
+
+/**
+ * Convert an STX value to micro-STX (integer, floored).
+ *
+ * Accepts string or number. Returns `null` if the input is not a valid
+ * finite number after parsing.
+ *
+ * @param {string|number|null|undefined} stx - Amount in STX.
+ * @returns {number|null} Integer amount in micro-STX, or null.
+ */
+export function stxToMicro(stx) {
+  if (stx === null || stx === undefined || stx === '') return null;
+  const n = parseFloat(stx);
+  return Number.isFinite(n) ? Math.floor(n * MICRO_STX) : null;
+}
