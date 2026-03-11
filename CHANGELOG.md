@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Root URL ("/") now redirects to `/send` instead of showing a blank 404 page
+  for authenticated users (Issue #225).
+- NotFound page displays the attempted URL path so users know what went wrong.
+
+### Added
+
+- Centralised route constants module (`config/routes.js`) eliminates hard-coded
+  path strings across the entire frontend.
+- `usePageTitle` hook updates `document.title` on every route change.
+- `SkipNav` component for keyboard-first navigation to the main content area.
+- `RouteSkeleton` loading placeholder shown while lazy-loaded pages resolve.
+- `LazyErrorBoundary` catches chunk-load failures and offers a retry button.
+- `RequireAdmin` route guard restricts admin dashboard access to the contract
+  owner and redirects other users to the default route.
+- Route title, label, and metadata maps in `config/routes.js` serve as a
+  single source of truth for navigation UI and document titles.
+- `trackRouteRedirect` analytics method for monitoring redirect frequency.
+- Playwright e2e tests for root redirect and 404 page behaviour.
+- Comprehensive unit tests for routing, NotFound, route constants, page titles,
+  SkipNav, RouteSkeleton, LazyErrorBoundary, and RequireAdmin.
+
 ### Security
 
 - Mainnet seed phrases are excluded from version control (never committed).
