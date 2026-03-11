@@ -6,11 +6,12 @@ import {
     principalCV,
 } from '@stacks/transactions';
 import { network, appDetails, userSession } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
+import { useBlockCheck } from '../hooks/useBlockCheck';
 import { useStxPrice } from '../hooks/useStxPrice';
 import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
@@ -33,6 +34,7 @@ const TIP_CATEGORIES = [
 export default function SendTip({ addToast }) {
     const { notifyTipSent } = useTipContext();
     const { toUsd } = useStxPrice();
+    const { blocked: blockedWarning, checkBlocked, reset: resetBlockCheck } = useBlockCheck();
     const [recipient, setRecipient] = useState('');
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
@@ -85,10 +87,14 @@ export default function SendTip({ addToast }) {
 
     const handleRecipientChange = (value) => {
         setRecipient(value);
+        resetBlockCheck();
         if (value && !isValidStacksAddress(value)) {
             setRecipientError('Enter a valid Stacks address (SP... or SM...)');
         } else {
             setRecipientError('');
+            if (value && isValidStacksAddress(value)) {
+                checkBlocked(value);
+            }
         }
     };
 
@@ -159,7 +165,7 @@ export default function SendTip({ addToast }) {
                 appDetails,
                 contractAddress: CONTRACT_ADDRESS,
                 contractName: CONTRACT_NAME,
-                functionName: 'send-categorized-tip',
+                functionName: FN_SEND_CATEGORIZED_TIP,
                 functionArgs,
                 postConditions,
                 postConditionMode: SAFE_POST_CONDITION_MODE,
@@ -230,6 +236,11 @@ export default function SendTip({ addToast }) {
                             className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="SP2..." />
                         {recipientError && <p className="mt-1 text-xs text-red-500">{recipientError}</p>}
+                        {blockedWarning && (
+                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                This recipient has blocked you. The transaction will likely fail on-chain.
+                            </p>
+                        )}
                     </div>
 
                     {/* Amount */}

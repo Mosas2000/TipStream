@@ -11,12 +11,16 @@ import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
 import { useAdmin } from './hooks/useAdmin';
-import { Zap, Radio, Trophy, User, BarChart3, Shield } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const ProfileManager = lazy(() => import('./components/ProfileManager'));
+const BlockManager = lazy(() => import('./components/BlockManager'));
+const BatchTip = lazy(() => import('./components/BatchTip'));
+const TokenTip = lazy(() => import('./components/TokenTip'));
 const NotFound = lazy(() => import('./components/NotFound'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 
@@ -70,9 +74,13 @@ function App() {
   const navItems = useMemo(() => {
     const items = [
       { path: '/send', label: 'Send Tip', icon: Zap },
+      { path: '/batch', label: 'Batch', icon: Users },
+      { path: '/token-tip', label: 'Token Tip', icon: Coins },
       { path: '/feed', label: 'Live Feed', icon: Radio },
       { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
       { path: '/activity', label: 'My Activity', icon: User },
+      { path: '/profile', label: 'Profile', icon: UserCircle },
+      { path: '/block', label: 'Block', icon: ShieldBan },
       { path: '/stats', label: 'Stats', icon: BarChart3 },
     ];
     if (isOwner) {
@@ -158,9 +166,13 @@ function App() {
             >
               <Routes>
                 <Route path="/send" element={<SendTip addToast={addToast} />} />
+                <Route path="/batch" element={<BatchTip addToast={addToast} />} />
+                <Route path="/token-tip" element={<TokenTip addToast={addToast} />} />
                 <Route path="/feed" element={<RecentTips addToast={addToast} />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/activity" element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
+                <Route path="/profile" element={<ProfileManager addToast={addToast} />} />
+                <Route path="/block" element={<BlockManager addToast={addToast} />} />
                 <Route path="/stats" element={<PlatformStats />} />
                 <Route path="/admin" element={<AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} />} />
                 <Route path="*" element={<NotFound />} />

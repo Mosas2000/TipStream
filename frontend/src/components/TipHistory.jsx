@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
 import { network } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_GET_USER_STATS } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
@@ -39,7 +39,7 @@ export default function TipHistory({ userAddress }) {
             const [statsResult, tipsResult] = await Promise.all([
                 fetchCallReadOnlyFunction({
                     network, contractAddress: CONTRACT_ADDRESS, contractName: CONTRACT_NAME,
-                    functionName: 'get-user-stats', functionArgs: [principalCV(userAddress)], senderAddress: userAddress,
+                    functionName: FN_GET_USER_STATS, functionArgs: [principalCV(userAddress)], senderAddress: userAddress,
                 }),
                 fetch(`${STACKS_API_BASE}/extended/v1/contract/${CONTRACT_ADDRESS}.${CONTRACT_NAME}/events?limit=${API_LIMIT}&offset=0`)
                     .then(r => { if (!r.ok) throw new Error(`API returned ${r.status}`); return r.json(); })
