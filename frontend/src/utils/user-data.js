@@ -1,10 +1,22 @@
 /**
- * Pure helper functions for extracting data from the user data object
- * returned by `authenticate()` and `userSession.loadUserData()`.
+ * @module utils/user-data
+ * @description Pure helper functions for extracting data from the user
+ * data object returned by `authenticate()` and `userSession.loadUserData()`.
  *
  * These are intentionally kept in a separate module from `stacks.js`
  * so they can be tested without importing the Stacks SDK, which
  * requires browser globals.
+ *
+ * The expected user data shape is:
+ * ```
+ * {
+ *   profile: {
+ *     stxAddress: { mainnet: string, testnet: string }
+ *   }
+ * }
+ * ```
+ *
+ * @see module:utils/stacks - Re-exports these helpers alongside SDK functions.
  */
 
 /**
