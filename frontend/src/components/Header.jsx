@@ -82,7 +82,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                         )}
 
                         {/* Wallet address */}
-                        {userData && (
+                        {userData && getMainnetAddress(userData) && (
                             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                                 <p className="text-xs font-mono text-gray-300">
                                     {formatAddress(getMainnetAddress(userData), 6, 4)}
