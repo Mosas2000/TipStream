@@ -31,13 +31,14 @@ export const SAFE_POST_CONDITION_MODE = PostConditionMode.Deny;
  * Calculate the maximum microSTX the sender will transfer for a tip,
  * including the contract fee and a 1-uSTX rounding buffer.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
 export function maxTransferForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    const fee = Math.ceil(amountMicroSTX * feeBps / BASIS_POINTS_DIVISOR);
-    return amountMicroSTX + fee + 1;
+    const amt = Number(amountMicroSTX);
+    const fee = Math.ceil(amt * feeBps / BASIS_POINTS_DIVISOR);
+    return amt + fee + 1;
 }
 
 /**
@@ -58,33 +59,35 @@ export function tipPostCondition(senderAddress, amountMicroSTX, feeBps = FEE_BAS
  * Calculate the platform fee in microSTX for a given tip amount.
  * Uses Math.ceil to match the on-chain rounding behavior.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
 export function feeForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    return Math.ceil(amountMicroSTX * feeBps / BASIS_POINTS_DIVISOR);
+    return Math.ceil(Number(amountMicroSTX) * feeBps / BASIS_POINTS_DIVISOR);
 }
 
 /**
  * Calculate the total microSTX deducted from the sender's wallet,
  * which is the tip amount plus the platform fee.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
 export function totalDeduction(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    return amountMicroSTX + feeForTip(amountMicroSTX, feeBps);
+    const amt = Number(amountMicroSTX);
+    return amt + feeForTip(amt, feeBps);
 }
 
 /**
  * Calculate the net amount the recipient receives after the fee split.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
 export function recipientReceives(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    return amountMicroSTX - Math.floor(amountMicroSTX * feeBps / BASIS_POINTS_DIVISOR);
+    const amt = Number(amountMicroSTX);
+    return amt - Math.floor(amt * feeBps / BASIS_POINTS_DIVISOR);
 }

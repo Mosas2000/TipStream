@@ -8,6 +8,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `useBalance` no longer wraps the API response in `BigInt()`. The balance is
+  stored as the raw API string (micro-STX) and converted at point of use via
+  the new `balance-utils` helpers, eliminating the `BigInt` / `Number` type
+  mismatch that caused silent precision bugs (Issue #227).
+- Inline `Number(balance) / 1_000_000` conversions in `SendTip` and `BatchTip`
+  replaced with the centralised `microToStx()` helper.
+- Inline `balanceSTX.toLocaleString(undefined, { ... })` display templates in
+  `SendTip` and `BatchTip` replaced with the centralised `formatBalance()`
+  helper.
+- Magic-number `1_000_000` divisor in `SendTip` balance-vs-deduction checks
+  replaced with `microToStx(totalDeduction(...))` calls.
+- Post-condition arithmetic functions (`maxTransferForTip`, `feeForTip`,
+  `totalDeduction`, `recipientReceives`) now coerce inputs via `Number()` to
+  guard against string or BigInt values leaking through.
+- Duplicate `MICRO_STX` constant in `utils.js` replaced with an import from
+  `balance-utils`, establishing a single source of truth.
+
+### Added
+
+- `balance-utils.js` pure module with `MICRO_STX` constant, `parseBalance`,
+  `microToStx`, `stxToMicro`, `formatBalance`, and `isValidBalance` helpers
+  for safe, centralised balance conversion and display.
+- `useBalance` hook now returns a memoised `balanceStx` property so consumers
+  can access the STX value directly without importing `microToStx`.
+- `useBalance` hook validates the API response shape and coerces the balance
+  to a string, throwing a descriptive error for unexpected formats.
+- `MICRO_STX` re-exported from `utils.js` for backward compatibility.
+- 52 unit tests for `balance-utils` covering all helpers and edge cases.
+- 9 unit tests for the `useBalance` hook covering fetch, coercion, error
+  handling, and the derived `balanceStx` property.
+- 4 string-input coercion tests for post-condition arithmetic functions.
+- 2 tests verifying the `MICRO_STX` re-export from `utils.js`.
+
 - `authenticate()` now always resolves with `userSession.loadUserData()` instead
   of the raw `authResponsePayload`, which lacked the
   `profile.stxAddress.mainnet` property and caused silent address lookup

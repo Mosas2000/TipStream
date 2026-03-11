@@ -149,4 +149,22 @@ describe('post-conditions', () => {
             expect(Math.abs(fee + net - amount)).toBeLessThanOrEqual(1);
         });
     });
+
+    describe('string input coercion', () => {
+        it('maxTransferForTip accepts a string micro-STX value', () => {
+            expect(maxTransferForTip('1000000')).toBe(maxTransferForTip(1000000));
+        });
+
+        it('feeForTip accepts a string micro-STX value', () => {
+            expect(feeForTip('500000')).toBe(feeForTip(500000));
+        });
+
+        it('totalDeduction accepts a string micro-STX value', () => {
+            expect(totalDeduction('1000000')).toBe(totalDeduction(1000000));
+        });
+
+        it('recipientReceives accepts a string micro-STX value', () => {
+            expect(recipientReceives('1000000')).toBe(recipientReceives(1000000));
+        });
+    });
 });
