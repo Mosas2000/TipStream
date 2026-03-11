@@ -11,7 +11,7 @@ import {
     Pc,
     FungibleConditionCode,
 } from '@stacks/transactions';
-import { network, appDetails, userSession } from '../utils/stacks';
+import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_TOKEN_WHITELISTED, FN_SEND_TOKEN_TIP } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { Coins, CheckCircle, XCircle, Loader2, Send } from 'lucide-react';
@@ -30,13 +30,7 @@ export default function TokenTip({ addToast }) {
     const [recipientError, setRecipientError] = useState('');
     const [amountError, setAmountError] = useState('');
 
-    const senderAddress = useMemo(() => {
-        try {
-            return userSession.loadUserData().profile.stxAddress.mainnet;
-        } catch {
-            return null;
-        }
-    }, []);
+    const senderAddress = useMemo(() => getSenderAddress(), []);
 
     const isValidStacksAddress = (address) => {
         if (!address) return false;
