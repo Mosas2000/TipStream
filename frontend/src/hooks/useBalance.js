@@ -6,8 +6,8 @@ import { STACKS_API_BASE } from '../config/contracts';
  *
  * The balance is stored as the raw string returned by the Stacks API
  * (`/extended/v1/address/:addr/stx`), representing micro-STX. Consumers
- * should convert with `Number(balance) / 1_000_000` for display or use
- * the balance-utils helpers.
+ * should use the balance-utils helpers (`microToStx`, `formatBalance`) to
+ * convert for display rather than dividing by a magic number.
  *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
  * @returns {{ balance: string|null, loading: boolean, error: string|null, refetch: () => Promise<void> }}
