@@ -50,8 +50,7 @@ export default function SendTip({ addToast }) {
 
     const senderAddress = useMemo(() => getSenderAddress(), []);
 
-    const { balance, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
-    const balanceSTX = microToStx(balance);
+    const { balance, balanceStx: balanceSTX, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
 
     useEffect(() => {
         return () => {
