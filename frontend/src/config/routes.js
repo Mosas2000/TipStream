@@ -130,3 +130,66 @@ export const ROUTE_TITLES = {
  * @type {string}
  */
 export const DEFAULT_TITLE = 'TipStream';
+
+/**
+ * Extended route metadata keyed by path.
+ *
+ * Each entry describes the route's purpose, whether it requires
+ * authentication, and whether it is restricted to the contract owner.
+ * Components can consume this map for dynamic menus, breadcrumbs,
+ * or automated sitemap generation.
+ *
+ * @type {Record<string, { description: string, requiresAuth: boolean, adminOnly: boolean }>}
+ */
+export const ROUTE_META = {
+  [ROUTE_SEND]: {
+    description: 'Send a single STX micro-tip to any Stacks address.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_BATCH]: {
+    description: 'Tip up to 50 recipients in one transaction.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_TOKEN_TIP]: {
+    description: 'Send a SIP-010 token tip.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_FEED]: {
+    description: 'Real-time feed of tips across the platform.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_LEADERBOARD]: {
+    description: 'Top tippers and recipients ranked by volume.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_ACTIVITY]: {
+    description: 'Personal tip history for sent and received tips.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_PROFILE]: {
+    description: 'Manage display name, bio, and avatar.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_BLOCK]: {
+    description: 'Block or unblock specific Stacks addresses.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_STATS]: {
+    description: 'Platform-wide aggregate statistics.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_ADMIN]: {
+    description: 'Pause/resume, fee configuration, ownership transfer.',
+    requiresAuth: true,
+    adminOnly: true,
+  },
+};
