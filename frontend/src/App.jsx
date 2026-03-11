@@ -6,6 +6,7 @@ import SendTip from './components/SendTip';
 import SkipNav from './components/SkipNav';
 import RouteSkeleton from './components/RouteSkeleton';
 import RequireAdmin from './components/RequireAdmin';
+import LazyErrorBoundary from './components/LazyErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
 import MaintenancePage from './components/MaintenancePage';
 import { AnimatedHero } from './components/ui/animated-hero';
@@ -159,22 +160,24 @@ function App() {
             </nav>
 
             {/* Page content */}
-            <Suspense fallback={<RouteSkeleton />}>
-              <Routes>
-                <Route path={ROUTE_SEND} element={<SendTip addToast={addToast} />} />
-                <Route path={ROUTE_BATCH} element={<BatchTip addToast={addToast} />} />
-                <Route path={ROUTE_TOKEN_TIP} element={<TokenTip addToast={addToast} />} />
-                <Route path={ROUTE_FEED} element={<RecentTips addToast={addToast} />} />
-                <Route path={ROUTE_LEADERBOARD} element={<Leaderboard />} />
-                <Route path={ROUTE_ACTIVITY} element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
-                <Route path={ROUTE_PROFILE} element={<ProfileManager addToast={addToast} />} />
-                <Route path={ROUTE_BLOCK} element={<BlockManager addToast={addToast} />} />
-                <Route path={ROUTE_STATS} element={<PlatformStats />} />
-                <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} /></RequireAdmin>} />
-                <Route path="/" element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+            <LazyErrorBoundary>
+              <Suspense fallback={<RouteSkeleton />}>
+                <Routes>
+                  <Route path={ROUTE_SEND} element={<SendTip addToast={addToast} />} />
+                  <Route path={ROUTE_BATCH} element={<BatchTip addToast={addToast} />} />
+                  <Route path={ROUTE_TOKEN_TIP} element={<TokenTip addToast={addToast} />} />
+                  <Route path={ROUTE_FEED} element={<RecentTips addToast={addToast} />} />
+                  <Route path={ROUTE_LEADERBOARD} element={<Leaderboard />} />
+                  <Route path={ROUTE_ACTIVITY} element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
+                  <Route path={ROUTE_PROFILE} element={<ProfileManager addToast={addToast} />} />
+                  <Route path={ROUTE_BLOCK} element={<BlockManager addToast={addToast} />} />
+                  <Route path={ROUTE_STATS} element={<PlatformStats />} />
+                  <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} /></RequireAdmin>} />
+                  <Route path="/" element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </LazyErrorBoundary>
           </div>
         ) : (
           <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
