@@ -4,7 +4,7 @@ import { uintCV, stringUtf8CV } from '@stacks/transactions';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_TIP_A_TIP } from '../config/contracts';
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
-import { network, appDetails, userSession } from '../utils/stacks';
+import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
@@ -124,7 +124,7 @@ export default function RecentTips({ addToast }) {
     const handleTipBack = async (tip) => {
         if (!userSession.isUserSignedIn()) return;
         const microSTX = toMicroSTX(tipBackAmount);
-        const senderAddress = userSession.loadUserData().profile.stxAddress.mainnet;
+        const senderAddress = getSenderAddress();
         setSending(true);
         try {
             await openContractCall({
