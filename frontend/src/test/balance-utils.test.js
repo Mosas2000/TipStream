@@ -112,3 +112,46 @@ describe('microToStx', () => {
     expect(microToStx('9000000000000000')).toBe(9_000_000_000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// stxToMicro
+// ---------------------------------------------------------------------------
+describe('stxToMicro', () => {
+  it('converts 1 STX to 1_000_000 micro-STX', () => {
+    expect(stxToMicro(1)).toBe(1_000_000);
+  });
+
+  it('converts a string amount', () => {
+    expect(stxToMicro('2.5')).toBe(2_500_000);
+  });
+
+  it('floors fractional micro-STX', () => {
+    // 0.0000001 STX = 0.1 micro-STX -> floor to 0
+    expect(stxToMicro('0.0000001')).toBe(0);
+  });
+
+  it('converts zero', () => {
+    expect(stxToMicro(0)).toBe(0);
+    expect(stxToMicro('0')).toBe(0);
+  });
+
+  it('returns null for null', () => {
+    expect(stxToMicro(null)).toBeNull();
+  });
+
+  it('returns null for undefined', () => {
+    expect(stxToMicro(undefined)).toBeNull();
+  });
+
+  it('returns null for empty string', () => {
+    expect(stxToMicro('')).toBeNull();
+  });
+
+  it('returns null for non-numeric string', () => {
+    expect(stxToMicro('xyz')).toBeNull();
+  });
+
+  it('handles small amounts correctly', () => {
+    expect(stxToMicro('0.001')).toBe(1000);
+  });
+});
