@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
-import { network, userSession } from '../utils/stacks';
+import { network, userSession, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_USER_BLOCKED } from '../config/contracts';
 
 /**
@@ -17,13 +17,7 @@ export function useBlockCheck() {
     const [checking, setChecking] = useState(false);
     const abortRef = useRef(0);
 
-    const senderAddress = (() => {
-        try {
-            return userSession.loadUserData().profile.stxAddress.mainnet;
-        } catch {
-            return null;
-        }
-    })();
+    const senderAddress = getSenderAddress();
 
     useEffect(() => {
         return () => {
