@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import NotFound from '../components/NotFound';
+import { DEFAULT_AUTHENTICATED_ROUTE, ROUTE_LABELS } from '../config/routes';
 
 /**
  * Tests for the NotFound (404) component.
@@ -39,11 +40,12 @@ describe('NotFound', () => {
     expect(screen.getByText('/settings/deep')).toBeInTheDocument();
   });
 
-  it('provides a link back to the app', () => {
+  it('provides a link back to the default authenticated route', () => {
     renderNotFound();
-    const link = screen.getByRole('link', { name: /go to send tip/i });
+    const label = ROUTE_LABELS[DEFAULT_AUTHENTICATED_ROUTE];
+    const link = screen.getByRole('link', { name: new RegExp(`go to ${label}`, 'i') });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', '/send');
+    expect(link).toHaveAttribute('href', DEFAULT_AUTHENTICATED_ROUTE);
   });
 
   it('marks the 404 number as decorative with aria-hidden', () => {
