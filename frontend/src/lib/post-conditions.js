@@ -31,7 +31,7 @@ export const SAFE_POST_CONDITION_MODE = PostConditionMode.Deny;
  * Calculate the maximum microSTX the sender will transfer for a tip,
  * including the contract fee and a 1-uSTX rounding buffer.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
@@ -59,7 +59,7 @@ export function tipPostCondition(senderAddress, amountMicroSTX, feeBps = FEE_BAS
  * Calculate the platform fee in microSTX for a given tip amount.
  * Uses Math.ceil to match the on-chain rounding behavior.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
@@ -71,7 +71,7 @@ export function feeForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
  * Calculate the total microSTX deducted from the sender's wallet,
  * which is the tip amount plus the platform fee.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
@@ -83,7 +83,7 @@ export function totalDeduction(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
 /**
  * Calculate the net amount the recipient receives after the fee split.
  *
- * @param {number} amountMicroSTX  Tip amount in microSTX.
+ * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
