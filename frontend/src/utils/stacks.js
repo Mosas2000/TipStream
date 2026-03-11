@@ -94,6 +94,30 @@ export function getUserData() {
 }
 
 /**
+ * Extract the mainnet STX address from a user data object.
+ *
+ * Safely navigates `profile.stxAddress.mainnet` and returns `null`
+ * if any intermediate property is missing. Use this instead of
+ * manually chaining optional access across components.
+ *
+ * @param {object|null|undefined} data - User data from authenticate() or loadUserData().
+ * @returns {string|null} The mainnet Stacks address, or null.
+ */
+export function getMainnetAddress(data) {
+    return data?.profile?.stxAddress?.mainnet ?? null;
+}
+
+/**
+ * Extract the testnet STX address from a user data object.
+ *
+ * @param {object|null|undefined} data - User data from authenticate() or loadUserData().
+ * @returns {string|null} The testnet Stacks address, or null.
+ */
+export function getTestnetAddress(data) {
+    return data?.profile?.stxAddress?.testnet ?? null;
+}
+
+/**
  * Disconnect the active wallet session and clear stored credentials.
  */
 export function disconnect() {
