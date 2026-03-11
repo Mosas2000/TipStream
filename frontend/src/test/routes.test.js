@@ -13,6 +13,9 @@ import {
   ROUTE_ADMIN,
   DEFAULT_AUTHENTICATED_ROUTE,
   ROUTE_LABELS,
+  ROUTE_META,
+  ROUTE_TITLES,
+  DEFAULT_TITLE,
 } from '../config/routes';
 
 /**
@@ -129,5 +132,73 @@ describe('ROUTE_LABELS', () => {
 
   it('Admin label is correct', () => {
     expect(ROUTE_LABELS[ROUTE_ADMIN]).toBe('Admin');
+  });
+});
+
+describe('ROUTE_META', () => {
+  const NAVIGABLE_ROUTES = [
+    ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
+    ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
+    ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN,
+  ];
+
+  it('has metadata for every navigable route', () => {
+    for (const route of NAVIGABLE_ROUTES) {
+      expect(ROUTE_META[route]).toBeDefined();
+    }
+  });
+
+  it('every entry has a non-empty description', () => {
+    for (const meta of Object.values(ROUTE_META)) {
+      expect(typeof meta.description).toBe('string');
+      expect(meta.description.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('every entry has a boolean requiresAuth flag', () => {
+    for (const meta of Object.values(ROUTE_META)) {
+      expect(typeof meta.requiresAuth).toBe('boolean');
+    }
+  });
+
+  it('every entry has a boolean adminOnly flag', () => {
+    for (const meta of Object.values(ROUTE_META)) {
+      expect(typeof meta.adminOnly).toBe('boolean');
+    }
+  });
+
+  it('only the admin route is marked adminOnly', () => {
+    for (const [path, meta] of Object.entries(ROUTE_META)) {
+      if (path === ROUTE_ADMIN) {
+        expect(meta.adminOnly).toBe(true);
+      } else {
+        expect(meta.adminOnly).toBe(false);
+      }
+    }
+  });
+
+  it('all navigable routes require authentication', () => {
+    for (const route of NAVIGABLE_ROUTES) {
+      expect(ROUTE_META[route].requiresAuth).toBe(true);
+    }
+  });
+});
+
+describe('ROUTE_TITLES', () => {
+  it('has a title for every navigable route', () => {
+    const routes = Object.keys(ROUTE_LABELS);
+    for (const route of routes) {
+      expect(ROUTE_TITLES[route]).toBeDefined();
+    }
+  });
+
+  it('every title contains the app name', () => {
+    for (const title of Object.values(ROUTE_TITLES)) {
+      expect(title).toContain('TipStream');
+    }
+  });
+
+  it('DEFAULT_TITLE is "TipStream"', () => {
+    expect(DEFAULT_TITLE).toBe('TipStream');
   });
 });
