@@ -77,6 +77,7 @@ function App() {
       if (!isValidUserData(data)) {
         console.error('authenticate() returned unexpected data shape:', data);
         addToast('Wallet connected but returned unexpected data. Please try again.', 'error');
+        analytics.trackAuthError('invalid_data_shape');
         return;
       }
       setUserData(data);
@@ -88,6 +89,7 @@ function App() {
       } else {
         console.error('Authentication failed:', error.message || error);
         addToast(error.message || 'Failed to connect wallet. Please try again.', 'error');
+        analytics.trackAuthError(error.message || 'unknown');
       }
     } finally {
       setAuthLoading(false);
