@@ -33,8 +33,8 @@ export async function authenticate() {
     return new Promise((resolve, reject) => {
         showConnect({
             userSession,
-            onFinish: ({ authResponsePayload }) => {
-                resolve(authResponsePayload || userSession.loadUserData());
+            onFinish: () => {
+                resolve(userSession.loadUserData());
             },
             onCancel: () => {
                 reject(new Error('User cancelled wallet connection.'));
