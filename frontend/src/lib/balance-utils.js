@@ -12,3 +12,18 @@
 
 /** Number of micro-STX in one STX. */
 export const MICRO_STX = 1_000_000;
+
+/**
+ * Parse a balance value (string, number, or BigInt) into a finite number.
+ *
+ * Returns `null` for any input that cannot be safely represented as a
+ * JavaScript number (NaN, Infinity, null, undefined, empty string).
+ *
+ * @param {string|number|bigint|null|undefined} value - Raw balance value.
+ * @returns {number|null} Parsed numeric value in micro-STX, or null.
+ */
+export function parseBalance(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
