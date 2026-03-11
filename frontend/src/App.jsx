@@ -178,11 +178,11 @@ function App() {
                   <Route path={ROUTE_TOKEN_TIP} element={<TokenTip addToast={addToast} />} />
                   <Route path={ROUTE_FEED} element={<RecentTips addToast={addToast} />} />
                   <Route path={ROUTE_LEADERBOARD} element={<Leaderboard />} />
-                  <Route path={ROUTE_ACTIVITY} element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
+                  <Route path={ROUTE_ACTIVITY} element={<TipHistory userAddress={userAddress} />} />
                   <Route path={ROUTE_PROFILE} element={<ProfileManager addToast={addToast} />} />
                   <Route path={ROUTE_BLOCK} element={<BlockManager addToast={addToast} />} />
                   <Route path={ROUTE_STATS} element={<PlatformStats />} />
-                  <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} /></RequireAdmin>} />
+                  <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userAddress} addToast={addToast} /></RequireAdmin>} />
                   <Route path="/" element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
