@@ -97,6 +97,23 @@ export function getUserData() {
 export { getMainnetAddress, getTestnetAddress, isValidUserData } from './user-data';
 
 /**
+ * Return the current user's mainnet STX address from the active session.
+ *
+ * Loads user data from `userSession`, extracts the mainnet address via
+ * `getMainnetAddress`, and returns `null` if no session is active or
+ * the stored data has an unexpected shape.
+ *
+ * @returns {string|null} The mainnet STX address, or null.
+ */
+export function getSenderAddress() {
+    try {
+        return getMainnetAddress(userSession.loadUserData());
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Disconnect the active wallet session and clear stored credentials.
  */
 export function disconnect() {
