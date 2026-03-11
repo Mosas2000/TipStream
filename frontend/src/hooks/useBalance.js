@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
 
+/**
+ * Fetch and track the STX balance for a Stacks address.
+ *
+ * The balance is stored as the raw string returned by the Stacks API
+ * (`/extended/v1/address/:addr/stx`), representing micro-STX. Consumers
+ * should convert with `Number(balance) / 1_000_000` for display or use
+ * the balance-utils helpers.
+ *
+ * @param {string|null} address - Stacks principal to query. Pass null to skip.
+ * @returns {{ balance: string|null, loading: boolean, error: string|null, refetch: () => Promise<void> }}
+ */
 export function useBalance(address) {
     const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(false);
