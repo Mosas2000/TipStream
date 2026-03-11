@@ -94,7 +94,7 @@ export function getUserData() {
 }
 
 // Re-export pure helpers from user-data.js so existing imports still work.
-export { getMainnetAddress, getTestnetAddress, isValidUserData } from './user-data';
+export { getMainnetAddress, getTestnetAddress, isValidUserData, getNetworkAddress } from './user-data';
 
 /**
  * Return the current user's mainnet STX address from the active session.
