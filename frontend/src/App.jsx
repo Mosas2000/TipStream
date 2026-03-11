@@ -11,6 +11,12 @@ import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
 import { useAdmin } from './hooks/useAdmin';
+import {
+  ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
+  ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
+  ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN,
+  DEFAULT_AUTHENTICATED_ROUTE,
+} from './config/routes';
 import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
@@ -73,18 +79,18 @@ function App() {
 
   const navItems = useMemo(() => {
     const items = [
-      { path: '/send', label: 'Send Tip', icon: Zap },
-      { path: '/batch', label: 'Batch', icon: Users },
-      { path: '/token-tip', label: 'Token Tip', icon: Coins },
-      { path: '/feed', label: 'Live Feed', icon: Radio },
-      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-      { path: '/activity', label: 'My Activity', icon: User },
-      { path: '/profile', label: 'Profile', icon: UserCircle },
-      { path: '/block', label: 'Block', icon: ShieldBan },
-      { path: '/stats', label: 'Stats', icon: BarChart3 },
+      { path: ROUTE_SEND, label: 'Send Tip', icon: Zap },
+      { path: ROUTE_BATCH, label: 'Batch', icon: Users },
+      { path: ROUTE_TOKEN_TIP, label: 'Token Tip', icon: Coins },
+      { path: ROUTE_FEED, label: 'Live Feed', icon: Radio },
+      { path: ROUTE_LEADERBOARD, label: 'Leaderboard', icon: Trophy },
+      { path: ROUTE_ACTIVITY, label: 'My Activity', icon: User },
+      { path: ROUTE_PROFILE, label: 'Profile', icon: UserCircle },
+      { path: ROUTE_BLOCK, label: 'Block', icon: ShieldBan },
+      { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
     ];
     if (isOwner) {
-      items.push({ path: '/admin', label: 'Admin', icon: Shield });
+      items.push({ path: ROUTE_ADMIN, label: 'Admin', icon: Shield });
     }
     return items;
   }, [isOwner]);
@@ -165,17 +171,17 @@ function App() {
               }
             >
               <Routes>
-                <Route path="/send" element={<SendTip addToast={addToast} />} />
-                <Route path="/batch" element={<BatchTip addToast={addToast} />} />
-                <Route path="/token-tip" element={<TokenTip addToast={addToast} />} />
-                <Route path="/feed" element={<RecentTips addToast={addToast} />} />
-                <Route path="/leaderboard" element={<Leaderboard />} />
-                <Route path="/activity" element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
-                <Route path="/profile" element={<ProfileManager addToast={addToast} />} />
-                <Route path="/block" element={<BlockManager addToast={addToast} />} />
-                <Route path="/stats" element={<PlatformStats />} />
-                <Route path="/admin" element={<AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} />} />
-                <Route path="/" element={<Navigate to="/send" replace />} />
+                <Route path={ROUTE_SEND} element={<SendTip addToast={addToast} />} />
+                <Route path={ROUTE_BATCH} element={<BatchTip addToast={addToast} />} />
+                <Route path={ROUTE_TOKEN_TIP} element={<TokenTip addToast={addToast} />} />
+                <Route path={ROUTE_FEED} element={<RecentTips addToast={addToast} />} />
+                <Route path={ROUTE_LEADERBOARD} element={<Leaderboard />} />
+                <Route path={ROUTE_ACTIVITY} element={<TipHistory userAddress={userData.profile.stxAddress.mainnet} />} />
+                <Route path={ROUTE_PROFILE} element={<ProfileManager addToast={addToast} />} />
+                <Route path={ROUTE_BLOCK} element={<BlockManager addToast={addToast} />} />
+                <Route path={ROUTE_STATS} element={<PlatformStats />} />
+                <Route path={ROUTE_ADMIN} element={<AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} />} />
+                <Route path="/" element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
