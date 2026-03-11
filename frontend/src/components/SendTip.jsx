@@ -5,7 +5,7 @@ import {
     uintCV,
     principalCV,
 } from '@stacks/transactions';
-import { network, appDetails, userSession } from '../utils/stacks';
+import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
@@ -47,13 +47,7 @@ export default function SendTip({ addToast }) {
     const [cooldown, setCooldown] = useState(0);
     const cooldownRef = useRef(null);
 
-    const senderAddress = useMemo(() => {
-        try {
-            return userSession.loadUserData().profile.stxAddress.mainnet;
-        } catch {
-            return null;
-        }
-    }, []);
+    const senderAddress = useMemo(() => getSenderAddress(), []);
 
     const { balance, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
     const balanceSTX = balance !== null ? Number(balance) / 1_000_000 : null;
