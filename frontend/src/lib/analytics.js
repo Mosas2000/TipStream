@@ -100,6 +100,11 @@ export const analytics = {
     incrementMap('errors', key);
   },
 
+  trackAuthError(reason) {
+    const key = `auth:${reason}`.slice(0, 200);
+    incrementMap('errors', key);
+  },
+
   trackPerformance(metric, value, rating) {
     const metrics = loadMetrics();
     if (!metrics.webVitals) metrics.webVitals = {};

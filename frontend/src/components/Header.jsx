@@ -4,6 +4,7 @@ import NotificationBell from './NotificationBell';
 import { useTheme } from '../context/ThemeContext';
 import { NETWORK_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
+import { getMainnetAddress } from '../utils/stacks';
 import { Sun, Moon } from 'lucide-react';
 
 export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading }) {
@@ -81,12 +82,12 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                         )}
 
                         {/* Wallet address */}
-                        {userData && (
+                        {userData && getMainnetAddress(userData) && (
                             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                                 <p className="text-xs font-mono text-gray-300">
-                                    {formatAddress(userData.profile.stxAddress.mainnet, 6, 4)}
+                                    {formatAddress(getMainnetAddress(userData), 6, 4)}
                                 </p>
-                                <CopyButton text={userData.profile.stxAddress.mainnet} className="text-gray-500 hover:text-white" />
+                                <CopyButton text={getMainnetAddress(userData)} className="text-gray-500 hover:text-white" />
                             </div>
                         )}
 

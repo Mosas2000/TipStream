@@ -43,6 +43,17 @@ vi.mock('../utils/stacks', () => ({
   },
   authenticate: vi.fn(),
   disconnect: vi.fn(),
+  getMainnetAddress: (data) => data?.profile?.stxAddress?.mainnet ?? null,
+  getTestnetAddress: (data) => data?.profile?.stxAddress?.testnet ?? null,
+  getNetworkAddress: (data, network = 'mainnet') => {
+    if (network === 'testnet' || network === 'devnet') return data?.profile?.stxAddress?.testnet ?? null;
+    return data?.profile?.stxAddress?.mainnet ?? null;
+  },
+  isValidUserData: (data) => {
+    const addr = data?.profile?.stxAddress?.mainnet;
+    return typeof addr === 'string' && addr.length > 0;
+  },
+  getSenderAddress: () => 'SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7',
 }));
 
 // Stub analytics to avoid side effects
@@ -52,6 +63,7 @@ vi.mock('../lib/analytics', () => ({
     trackPageView: vi.fn(),
     trackWalletConnect: vi.fn(),
     trackWalletDisconnect: vi.fn(),
+    trackAuthError: vi.fn(),
   },
 }));
 

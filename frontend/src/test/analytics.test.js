@@ -64,6 +64,24 @@ describe('Analytics', () => {
         expect(summary.sortedErrors[0]).toEqual(['SendTip:Network error', 2]);
     });
 
+    it('tracks auth errors with dedicated method', () => {
+        analytics.trackAuthError('invalid_data_shape');
+        analytics.trackAuthError('invalid_data_shape');
+        analytics.trackAuthError('session_restore_invalid_shape');
+        const metrics = analytics.getMetrics();
+        expect(metrics.errors['auth:invalid_data_shape']).toBe(2);
+        expect(metrics.errors['auth:session_restore_invalid_shape']).toBe(1);
+    });
+
+    it('truncates long auth error reason to 200 characters', () => {
+        const longReason = 'x'.repeat(300);
+        analytics.trackAuthError(longReason);
+        const metrics = analytics.getMetrics();
+        const keys = Object.keys(metrics.errors);
+        const authKey = keys.find(k => k.startsWith('auth:'));
+        expect(authKey.length).toBeLessThanOrEqual(200);
+    });
+
     it('tracks batch tip events', () => {
         analytics.trackBatchTipStarted();
         analytics.trackBatchTipSubmitted();

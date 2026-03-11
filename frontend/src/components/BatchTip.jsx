@@ -9,7 +9,7 @@ import {
     PostConditionMode,
     Pc,
 } from '@stacks/transactions';
-import { network, appDetails, userSession } from '../utils/stacks';
+import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
 import { useBalance } from '../hooks/useBalance';
@@ -32,13 +32,7 @@ export default function BatchTip({ addToast }) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [errors, setErrors] = useState({});
 
-    const senderAddress = useMemo(() => {
-        try {
-            return userSession.loadUserData().profile.stxAddress.mainnet;
-        } catch {
-            return null;
-        }
-    }, []);
+    const senderAddress = useMemo(() => getSenderAddress(), []);
 
     const { balance, loading: balanceLoading } = useBalance(senderAddress);
     const balanceSTX = balance !== null ? Number(balance) / 1_000_000 : null;

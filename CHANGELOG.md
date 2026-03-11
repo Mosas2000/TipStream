@@ -8,12 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `authenticate()` now always resolves with `userSession.loadUserData()` instead
+  of the raw `authResponsePayload`, which lacked the
+  `profile.stxAddress.mainnet` property and caused silent address lookup
+  failures (Issue #226).
 - Root URL ("/") now redirects to `/send` instead of showing a blank 404 page
   for authenticated users (Issue #225).
 - NotFound page displays the attempted URL path so users know what went wrong.
 
 ### Added
 
+- `user-data.js` pure helper module with `getMainnetAddress`,
+  `getTestnetAddress`, `getNetworkAddress`, and `isValidUserData` functions
+  for safe user data extraction without importing the Stacks SDK.
+- `getSenderAddress()` helper centralises the session-based address lookup
+  that was duplicated across six components and one hook.
+- `trackAuthError()` analytics method records authentication and data shape
+  failures under the errors map with an `auth:` prefix.
+- Session restore validates user data shape on page load and tracks failures
+  in analytics when the stored session has an unexpected format.
+- handleAuth guards with `isValidUserData()` before setting user state,
+  showing an error toast and tracking the event when validation fails.
+- Defensive null guard in Header wallet address display prevents rendering
+  broken text when the address is missing.
+- Unit tests for `getNetworkAddress` (11 tests), `trackAuthError` (2 tests).
 - Centralised route constants module (`config/routes.js`) eliminates hard-coded
   path strings across the entire frontend.
 - `usePageTitle` hook updates `document.title` on every route change.
