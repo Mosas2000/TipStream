@@ -160,6 +160,8 @@ export const analytics = {
       tipsConfirmed: m.tipsConfirmed,
       tipsCancelled: m.tipsCancelled,
       tipsFailed: m.tipsFailed,
+      batchTipsStarted: m.batchTipsStarted || 0,
+      batchTipsSubmitted: m.batchTipsSubmitted || 0,
       tipCompletionRate,
       tipDropOffRate,
       sortedTabs,
