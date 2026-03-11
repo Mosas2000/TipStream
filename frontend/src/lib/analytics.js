@@ -92,6 +92,10 @@ export const analytics = {
     increment('batchTipsStarted');
   },
 
+  trackBatchTipSubmitted() {
+    increment('batchTipsSubmitted');
+  },
+
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
