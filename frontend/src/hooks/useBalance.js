@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
+import { microToStx } from '../lib/balance-utils';
 
 /**
  * Fetch and track the STX balance for a Stacks address.
@@ -10,7 +11,7 @@ import { STACKS_API_BASE } from '../config/contracts';
  * convert for display rather than dividing by a magic number.
  *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
- * @returns {{ balance: string|null, loading: boolean, error: string|null, refetch: () => Promise<void> }}
+ * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, refetch: () => Promise<void> }}
  */
 export function useBalance(address) {
     const [balance, setBalance] = useState(null);
@@ -54,5 +55,8 @@ export function useBalance(address) {
         fetchBalance();
     }, [fetchBalance]);
 
-    return { balance, loading, error, refetch: fetchBalance };
+    /** Derived STX balance — memoised to avoid re-computing on every render. */
+    const balanceStx = useMemo(() => microToStx(balance), [balance]);
+
+    return { balance, balanceStx, loading, error, refetch: fetchBalance };
 }
