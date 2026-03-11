@@ -62,10 +62,21 @@ export async function authenticate() {
     });
 }
 
+/**
+ * Return the currently stored user data from the session.
+ *
+ * Must only be called after the user has authenticated. Returns the same
+ * normalised shape as `authenticate()`.
+ *
+ * @returns {import('@stacks/connect').UserData} Normalised user data.
+ */
 export function getUserData() {
     return userSession.loadUserData();
 }
 
+/**
+ * Disconnect the active wallet session and clear stored credentials.
+ */
 export function disconnect() {
     StacksConnect.disconnect();
 }
