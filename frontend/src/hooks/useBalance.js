@@ -36,7 +36,12 @@ export function useBalance(address) {
             }
 
             const data = await res.json();
-            setBalance(data.balance);
+
+            if (typeof data?.balance !== 'string' && typeof data?.balance !== 'number') {
+                throw new Error('Unexpected balance format in API response');
+            }
+
+            setBalance(String(data.balance));
         } catch (err) {
             console.error('Failed to fetch balance:', err.message);
             setError(err.message);
