@@ -106,7 +106,7 @@ export default function SendTip({ addToast }) {
         } else if (balanceSTX !== null) {
             // Account for the platform fee when checking balance
             const microSTX = toMicroSTX(parsed.toString());
-            const totalSTX = totalDeduction(microSTX) / 1_000_000;
+            const totalSTX = microToStx(totalDeduction(microSTX));
             if (totalSTX > balanceSTX) {
                 setAmountError('Insufficient balance (tip + 0.5% fee exceeds balance)');
             } else {
@@ -128,7 +128,7 @@ export default function SendTip({ addToast }) {
         if (parsedAmount > MAX_TIP_STX) { addToast(`Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`, 'warning'); return; }
         if (balanceSTX !== null) {
             const microSTX = toMicroSTX(amount);
-            if (totalDeduction(microSTX) / 1_000_000 > balanceSTX) {
+            if (microToStx(totalDeduction(microSTX)) > balanceSTX) {
                 addToast('Insufficient balance to cover tip plus platform fee', 'warning');
                 return;
             }
