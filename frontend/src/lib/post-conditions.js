@@ -88,5 +88,6 @@ export function totalDeduction(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
  * @returns {number}
  */
 export function recipientReceives(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    return amountMicroSTX - Math.floor(amountMicroSTX * feeBps / BASIS_POINTS_DIVISOR);
+    const amt = Number(amountMicroSTX);
+    return amt - Math.floor(amt * feeBps / BASIS_POINTS_DIVISOR);
 }
