@@ -25,7 +25,7 @@ export function useBalance(address) {
             }
 
             const data = await res.json();
-            setBalance(BigInt(data.balance));
+            setBalance(data.balance);
         } catch (err) {
             console.error('Failed to fetch balance:', err.message);
             setError(err.message);
