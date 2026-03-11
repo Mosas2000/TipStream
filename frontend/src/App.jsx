@@ -4,6 +4,7 @@ import { userSession, authenticate, disconnect } from './utils/stacks';
 import Header from './components/Header';
 import SendTip from './components/SendTip';
 import SkipNav from './components/SkipNav';
+import RouteSkeleton from './components/RouteSkeleton';
 import OfflineBanner from './components/OfflineBanner';
 import MaintenancePage from './components/MaintenancePage';
 import { AnimatedHero } from './components/ui/animated-hero';
@@ -157,18 +158,7 @@ function App() {
             </nav>
 
             {/* Page content */}
-            <Suspense
-              fallback={
-                <div className="flex justify-center items-center py-20">
-                  <div className="space-y-4 w-full max-w-md animate-pulse">
-                    <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-1/3"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
-                    <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded w-full mt-4"></div>
-                  </div>
-                </div>
-              }
-            >
+            <Suspense fallback={<RouteSkeleton />}>
               <Routes>
                 <Route path={ROUTE_SEND} element={<SendTip addToast={addToast} />} />
                 <Route path={ROUTE_BATCH} element={<BatchTip addToast={addToast} />} />
