@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { userSession, authenticate, disconnect } from './utils/stacks';
 import Header from './components/Header';
 import SendTip from './components/SendTip';
@@ -175,6 +175,7 @@ function App() {
                 <Route path="/block" element={<BlockManager addToast={addToast} />} />
                 <Route path="/stats" element={<PlatformStats />} />
                 <Route path="/admin" element={<AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} />} />
+                <Route path="/" element={<Navigate to="/send" replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
