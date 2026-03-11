@@ -8,6 +8,7 @@ import {
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
+import { microToStx } from '../lib/balance-utils';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
@@ -50,7 +51,7 @@ export default function SendTip({ addToast }) {
     const senderAddress = useMemo(() => getSenderAddress(), []);
 
     const { balance, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
-    const balanceSTX = balance !== null ? Number(balance) / 1_000_000 : null;
+    const balanceSTX = microToStx(balance);
 
     useEffect(() => {
         return () => {
