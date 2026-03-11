@@ -1,3 +1,13 @@
+/**
+ * @module utils/stacks
+ * @description Stacks wallet integration utilities.
+ *
+ * Provides session management (connect, disconnect, load user data)
+ * and network configuration for the TipStream frontend. The canonical
+ * user data shape returned by `authenticate()` and `getUserData()` is
+ * `{ profile: { stxAddress: { mainnet, testnet } } }`.
+ */
+
 import * as StacksConnect from '@stacks/connect';
 import { STACKS_MAINNET, STACKS_TESTNET, STACKS_DEVNET } from '@stacks/network';
 
@@ -5,6 +15,8 @@ const { AppConfig, UserSession } = StacksConnect;
 const showConnect = StacksConnect.showConnect || StacksConnect.authenticate;
 
 const appConfig = new AppConfig(['store_write', 'publish_data']);
+
+/** Active user session instance shared across the application. */
 export const userSession = new UserSession({ appConfig });
 
 const networks = {
@@ -14,13 +26,20 @@ const networks = {
 };
 
 const networkName = import.meta.env.VITE_NETWORK || 'mainnet';
+
+/** Resolved Stacks network object based on VITE_NETWORK env variable. */
 export const network = networks[networkName] || STACKS_MAINNET;
 
+/** App metadata shown in the wallet connection prompt. */
 export const appDetails = {
     name: 'TipStream',
     icon: window.location.origin + '/logo.svg',
 };
 
+/**
+ * Check whether a compatible Stacks wallet extension is installed.
+ * @returns {boolean} `true` if Leather or Xverse is detected.
+ */
 export function isWalletInstalled() {
     return !!(window.StacksProvider || window.LeatherProvider);
 }
