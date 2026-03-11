@@ -43,3 +43,20 @@ export function isValidUserData(data) {
   const address = getMainnetAddress(data);
   return typeof address === 'string' && address.length > 0;
 }
+
+/**
+ * Return either the mainnet or testnet address based on a network name.
+ *
+ * Accepts `'mainnet'`, `'testnet'`, or `'devnet'`. Devnet is treated
+ * as testnet. Any other value falls back to mainnet.
+ *
+ * @param {object|null|undefined} data - User data object.
+ * @param {'mainnet'|'testnet'|'devnet'} [networkName='mainnet'] - Target network.
+ * @returns {string|null} The corresponding STX address, or null.
+ */
+export function getNetworkAddress(data, networkName = 'mainnet') {
+  if (networkName === 'testnet' || networkName === 'devnet') {
+    return getTestnetAddress(data);
+  }
+  return getMainnetAddress(data);
+}
