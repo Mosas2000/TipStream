@@ -1,54 +1,95 @@
 /**
- * Centralised route path constants.
+ * @module config/routes
+ * @description Centralised route path constants for the TipStream SPA.
  *
  * Every path used in navigation, redirects, and links should reference
  * these constants instead of hard-coding strings. This prevents typos,
  * makes refactors safer, and provides a single source of truth for the
  * routing table.
+ *
+ * @example
+ * import { ROUTE_SEND, DEFAULT_AUTHENTICATED_ROUTE } from './config/routes';
+ * <NavLink to={ROUTE_SEND}>Send</NavLink>
+ * <Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />
  */
 
-/** Default landing page for authenticated users. */
+/**
+ * Root path -- redirects to DEFAULT_AUTHENTICATED_ROUTE for signed-in users.
+ * @type {string}
+ */
 export const ROUTE_HOME = '/';
 
-/** Send a single STX tip. */
+/**
+ * Send a single STX tip.
+ * @type {string}
+ */
 export const ROUTE_SEND = '/send';
 
-/** Send tips to multiple recipients at once. */
+/**
+ * Send tips to multiple recipients at once.
+ * @type {string}
+ */
 export const ROUTE_BATCH = '/batch';
 
-/** Send a token-based tip (SIP-010). */
+/**
+ * Send a token-based tip (SIP-010).
+ * @type {string}
+ */
 export const ROUTE_TOKEN_TIP = '/token-tip';
 
-/** Live feed of recent tips across the platform. */
+/**
+ * Live feed of recent tips across the platform.
+ * @type {string}
+ */
 export const ROUTE_FEED = '/feed';
 
-/** Leaderboard showing top tippers and recipients. */
+/**
+ * Leaderboard showing top tippers and recipients.
+ * @type {string}
+ */
 export const ROUTE_LEADERBOARD = '/leaderboard';
 
-/** Current user's tip history (sent and received). */
+/**
+ * Current user's tip history (sent and received).
+ * @type {string}
+ */
 export const ROUTE_ACTIVITY = '/activity';
 
-/** User profile management. */
+/**
+ * User profile management.
+ * @type {string}
+ */
 export const ROUTE_PROFILE = '/profile';
 
-/** Block/unblock addresses. */
+/**
+ * Block/unblock addresses.
+ * @type {string}
+ */
 export const ROUTE_BLOCK = '/block';
 
-/** Platform-wide statistics. */
+/**
+ * Platform-wide statistics.
+ * @type {string}
+ */
 export const ROUTE_STATS = '/stats';
 
-/** Admin dashboard (owner-only). */
+/**
+ * Admin dashboard (owner-only, guarded by RequireAdmin).
+ * @type {string}
+ */
 export const ROUTE_ADMIN = '/admin';
 
 /**
  * The route that "/" redirects to when the user is authenticated.
- * Change this value to alter the default landing page.
+ * Change this single value to alter the default landing page site-wide.
+ * @type {string}
  */
 export const DEFAULT_AUTHENTICATED_ROUTE = ROUTE_SEND;
 
 /**
- * All navigable routes in display order.
- * Each entry maps a path to its human-readable label.
+ * Human-readable navigation labels keyed by route path.
+ * Used by the nav bar and any component that needs a display name for a route.
+ * @type {Record<string, string>}
  */
 export const ROUTE_LABELS = {
   [ROUTE_SEND]: 'Send Tip',
@@ -66,9 +107,10 @@ export const ROUTE_LABELS = {
 /**
  * Document title templates keyed by route path.
  *
- * Used by the usePageTitle hook to set document.title on route changes.
- * The format is "Section -- TipStream" so the page purpose appears first
- * in browser tabs and bookmarks.
+ * Consumed by the usePageTitle hook to set document.title on navigation.
+ * Format: "Section -- TipStream" so the page purpose appears first in
+ * browser tabs, bookmarks, and screen-reader announcements.
+ * @type {Record<string, string>}
  */
 export const ROUTE_TITLES = {
   [ROUTE_SEND]: 'Send Tip -- TipStream',
@@ -83,5 +125,8 @@ export const ROUTE_TITLES = {
   [ROUTE_ADMIN]: 'Admin Dashboard -- TipStream',
 };
 
-/** Fallback document title when no route-specific title is defined. */
+/**
+ * Fallback document title when no route-specific title is defined.
+ * @type {string}
+ */
 export const DEFAULT_TITLE = 'TipStream';
