@@ -5,6 +5,7 @@ import Header from './components/Header';
 import SendTip from './components/SendTip';
 import SkipNav from './components/SkipNav';
 import RouteSkeleton from './components/RouteSkeleton';
+import RequireAdmin from './components/RequireAdmin';
 import OfflineBanner from './components/OfflineBanner';
 import MaintenancePage from './components/MaintenancePage';
 import { AnimatedHero } from './components/ui/animated-hero';
@@ -169,7 +170,7 @@ function App() {
                 <Route path={ROUTE_PROFILE} element={<ProfileManager addToast={addToast} />} />
                 <Route path={ROUTE_BLOCK} element={<BlockManager addToast={addToast} />} />
                 <Route path={ROUTE_STATS} element={<PlatformStats />} />
-                <Route path={ROUTE_ADMIN} element={<AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} />} />
+                <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} /></RequireAdmin>} />
                 <Route path="/" element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
