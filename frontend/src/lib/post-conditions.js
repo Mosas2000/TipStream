@@ -76,7 +76,8 @@ export function feeForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
  * @returns {number}
  */
 export function totalDeduction(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    return amountMicroSTX + feeForTip(amountMicroSTX, feeBps);
+    const amt = Number(amountMicroSTX);
+    return amt + feeForTip(amt, feeBps);
 }
 
 /**
