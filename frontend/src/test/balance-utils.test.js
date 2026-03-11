@@ -155,3 +155,67 @@ describe('stxToMicro', () => {
     expect(stxToMicro('0.001')).toBe(1000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// formatBalance
+// ---------------------------------------------------------------------------
+describe('formatBalance', () => {
+  it('formats a basic micro-STX value with suffix', () => {
+    const result = formatBalance(1_500_000);
+    expect(result).toContain('STX');
+    // 1.5 STX -- locale-dependent separator, so just check the number part
+    expect(result).toMatch(/1[.,]5/);
+  });
+
+  it('formats a string balance from the API', () => {
+    const result = formatBalance('2000000');
+    expect(result).toContain('STX');
+    expect(result).toMatch(/2[.,]0/);
+  });
+
+  it('returns fallback for null', () => {
+    expect(formatBalance(null)).toBe('--');
+  });
+
+  it('returns fallback for undefined', () => {
+    expect(formatBalance(undefined)).toBe('--');
+  });
+
+  it('returns fallback for empty string', () => {
+    expect(formatBalance('')).toBe('--');
+  });
+
+  it('returns fallback for non-numeric string', () => {
+    expect(formatBalance('abc')).toBe('--');
+  });
+
+  it('accepts a custom fallback', () => {
+    expect(formatBalance(null, { fallback: 'N/A' })).toBe('N/A');
+  });
+
+  it('can omit the STX suffix', () => {
+    const result = formatBalance(1_000_000, { suffix: false });
+    expect(result).not.toContain('STX');
+    expect(result).toMatch(/1[.,]0/);
+  });
+
+  it('formats zero balance', () => {
+    const result = formatBalance(0);
+    expect(result).toContain('STX');
+    expect(result).toMatch(/0[.,]0/);
+  });
+
+  it('formats zero string balance', () => {
+    const result = formatBalance('0');
+    expect(result).toContain('STX');
+  });
+
+  it('respects custom decimal options', () => {
+    const result = formatBalance(1_500_000, {
+      minDecimals: 0,
+      maxDecimals: 1,
+      suffix: false,
+    });
+    expect(result).toMatch(/1[.,]5/);
+  });
+});
