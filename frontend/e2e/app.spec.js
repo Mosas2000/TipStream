@@ -112,3 +112,28 @@ test.describe('Accessibility Basics', () => {
         }
     });
 });
+
+test.describe('Routing', () => {
+    test('root URL shows the landing hero for unauthenticated visitors', async ({ page }) => {
+        await page.goto('/');
+        // Without a wallet the app renders the animated hero, not a 404
+        await expect(page.getByRole('button', { name: /Get Started|Connect/i }).first()).toBeVisible();
+    });
+
+    test('unknown path renders the 404 page', async ({ page }) => {
+        await page.goto('/some/nonexistent/path');
+        await expect(page.getByText('Page not found')).toBeVisible();
+        await expect(page.getByText('404')).toBeVisible();
+    });
+
+    test('404 page shows the attempted URL path', async ({ page }) => {
+        await page.goto('/bad/route/here');
+        await expect(page.getByText('/bad/route/here')).toBeVisible();
+    });
+
+    test('404 page has a link back to the app', async ({ page }) => {
+        await page.goto('/nope');
+        const link = page.getByRole('link', { name: /go to send tip/i });
+        await expect(link).toBeVisible();
+    });
+});
