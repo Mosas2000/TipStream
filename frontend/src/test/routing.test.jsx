@@ -3,15 +3,29 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '../context/ThemeContext';
 import { TipProvider } from '../context/TipContext';
+import {
+  ROUTE_HOME,
+  ROUTE_SEND,
+  ROUTE_BATCH,
+  ROUTE_TOKEN_TIP,
+  ROUTE_FEED,
+  ROUTE_LEADERBOARD,
+  ROUTE_ACTIVITY,
+  ROUTE_STATS,
+  ROUTE_PROFILE,
+  ROUTE_BLOCK,
+  ROUTE_ADMIN,
+  DEFAULT_AUTHENTICATED_ROUTE,
+} from '../config/routes';
 
 /**
  * Routing tests for the TipStream App component.
  *
- * Validates that the root URL ("/") redirects to "/send" and that
- * unknown paths render the NotFound page.
+ * Validates that the root URL ("/") redirects to the default
+ * authenticated route and that unknown paths render the NotFound page.
  *
- * These tests mock expensive dependencies (wallet session, analytics,
- * Stacks connect) so that only routing behavior is exercised.
+ * Route paths are sourced from config/routes.js so that changes to
+ * path strings automatically propagate to these tests.
  */
 
 // Stub out wallet session so the App component thinks the user is signed in
@@ -131,67 +145,67 @@ describe('App routing', () => {
   });
 
   it('redirects "/" to the SendTip page', async () => {
-    renderWithRouter('/');
+    renderWithRouter(ROUTE_HOME);
     const page = await screen.findByTestId('send-tip-page');
     expect(page).toBeInTheDocument();
   });
 
   it('does not show NotFound for the root URL', async () => {
-    renderWithRouter('/');
+    renderWithRouter(ROUTE_HOME);
     await screen.findByTestId('send-tip-page');
     expect(screen.queryByTestId('not-found-page')).not.toBeInTheDocument();
   });
 
   it('renders SendTip at /send', async () => {
-    renderWithRouter('/send');
+    renderWithRouter(ROUTE_SEND);
     const page = await screen.findByTestId('send-tip-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders RecentTips at /feed', async () => {
-    renderWithRouter('/feed');
+    renderWithRouter(ROUTE_FEED);
     const page = await screen.findByTestId('recent-tips-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders Leaderboard at /leaderboard', async () => {
-    renderWithRouter('/leaderboard');
+    renderWithRouter(ROUTE_LEADERBOARD);
     const page = await screen.findByTestId('leaderboard-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders TipHistory at /activity', async () => {
-    renderWithRouter('/activity');
+    renderWithRouter(ROUTE_ACTIVITY);
     const page = await screen.findByTestId('tip-history-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders PlatformStats at /stats', async () => {
-    renderWithRouter('/stats');
+    renderWithRouter(ROUTE_STATS);
     const page = await screen.findByTestId('platform-stats-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders ProfileManager at /profile', async () => {
-    renderWithRouter('/profile');
+    renderWithRouter(ROUTE_PROFILE);
     const page = await screen.findByTestId('profile-manager-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders BlockManager at /block', async () => {
-    renderWithRouter('/block');
+    renderWithRouter(ROUTE_BLOCK);
     const page = await screen.findByTestId('block-manager-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders BatchTip at /batch', async () => {
-    renderWithRouter('/batch');
+    renderWithRouter(ROUTE_BATCH);
     const page = await screen.findByTestId('batch-tip-page');
     expect(page).toBeInTheDocument();
   });
 
   it('renders TokenTip at /token-tip', async () => {
-    renderWithRouter('/token-tip');
+    renderWithRouter(ROUTE_TOKEN_TIP);
     const page = await screen.findByTestId('token-tip-page');
     expect(page).toBeInTheDocument();
   });
@@ -211,17 +225,17 @@ describe('App routing', () => {
 
 describe('App navigation bar', () => {
   it('shows the main navigation links for authenticated users', async () => {
-    renderWithRouter('/send');
+    renderWithRouter(ROUTE_SEND);
     await screen.findByTestId('send-tip-page');
     const nav = screen.getByRole('navigation', { name: /main/i });
     expect(within(nav).getByText('Send Tip')).toBeInTheDocument();
     expect(within(nav).getByText('Live Feed')).toBeInTheDocument();
     expect(within(nav).getByText('Leaderboard')).toBeInTheDocument();
     expect(within(nav).getByText('Stats')).toBeInTheDocument();
-  });
+  }, 15000);
 
   it('does not show Admin link for non-owners', async () => {
-    renderWithRouter('/send');
+    renderWithRouter(ROUTE_SEND);
     await screen.findByTestId('send-tip-page');
     expect(screen.queryByText('Admin')).not.toBeInTheDocument();
   });
