@@ -35,6 +35,51 @@ Out of scope:
 - Social engineering attacks.
 - Denial-of-service attacks against public infrastructure.
 
+## Known Security Considerations
+
+### Contract Administration
+
+The deployed TipStream contract has both direct and timelocked admin functions. The direct
+functions (`set-paused`, `set-fee-basis-points`) can bypass the 144-block timelock. This is
+documented in [docs/TIMELOCK-BYPASS-AUDIT.md](docs/TIMELOCK-BYPASS-AUDIT.md) and mitigated
+through frontend controls and operational policies.
+
+### Timelock Mechanism
+
+Administrative changes use a 144-block (~24 hour) delay:
+
+| Operation | Timelocked Function | Direct Bypass |
+|---|---|---|
+| Pause/Unpause | `propose-pause-change` / `execute-pause-change` | `set-paused` |
+| Fee Change | `propose-fee-change` / `execute-fee-change` | `set-fee-basis-points` |
+
+The frontend AdminDashboard exclusively uses the timelocked functions. Direct bypass
+functions are reserved for documented emergencies only.
+
+### Missing cancel-pause-change Function
+
+The contract has `cancel-fee-change` but no corresponding `cancel-pause-change`. If a pause
+proposal is submitted, it can only be superseded by a new proposal or waited out.
+
+### Post Conditions
+
+All STX transfers enforce `PostConditionMode.Deny` to prevent transactions from moving
+more STX than explicitly authorized. See the post-condition documentation for details.
+
+### Ownership Transfer
+
+Contract ownership uses a two-step process (`propose-new-owner` / `accept-ownership`)
+to prevent accidental transfers.
+
+### Fee Limits
+
+The contract enforces a maximum fee of 1000 basis points (10%). The current fee is 50
+basis points (0.5%).
+
+### Minimum Tip Amount
+
+Tips below 1000 microSTX (0.001 STX) are rejected to prevent dust spam.
+
 ## Security Model
 
 ### Smart Contract
@@ -72,6 +117,12 @@ Out of scope:
   secret commits before they reach the remote.
 - GitHub Actions runs a secret scan on every push and pull request.
 
+### Devnet Credentials
+
+The `settings/Devnet.toml` file contains mnemonic phrases and private keys for Clarinet
+devnet test accounts. These are sandbox-only credentials with no real value. Never use
+devnet mnemonics or keys on mainnet or testnet.
+
 ## Wallet Rotation Advisory
 
 If you believe a mnemonic has been exposed (accidentally committed,
@@ -94,6 +145,21 @@ shared in a log, or otherwise leaked):
 7. If the mnemonic was pushed to a public repository, consider using
    `git filter-repo` or BFG Repo-Cleaner to remove the commit from
    history, then force-push.  All collaborators must re-clone.
+
+## Dependencies
+
+- Frontend dependencies are audited with `npm audit` in CI
+- Stacks SDK versions are pinned to prevent supply-chain attacks
+- Contract interactions use explicit post conditions
+
+## Security Checklist for Contributors
+
+- [ ] Never commit mainnet private keys or seed phrases
+- [ ] Use `PostConditionMode.Deny` for all contract calls
+- [ ] Validate all user inputs before contract interaction
+- [ ] Use timelocked admin functions in the frontend
+- [ ] Run `npm audit` before submitting PRs
+- [ ] Test contract changes on simnet before deployment
 
 ## Incident Response Contacts
 

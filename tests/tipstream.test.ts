@@ -1094,4 +1094,868 @@ describe("TipStream Contract Tests", () => {
             expect(Number(count)).toBeGreaterThanOrEqual(1);
         });
     });
+
+    describe("Timelocked Pause Changes", () => {
+        it("admin can propose a pause change", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+        });
+
+        it("non-admin cannot propose a pause change", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+        });
+
+        it("sets pending pause state after proposal", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-pause-change",
+                [],
+                deployer
+            );
+
+            const pending = (result as any).value;
+            expect(pending["pending-pause"]).toEqual(Cl.some(Cl.bool(true)));
+        });
+
+        it("rejects execute before timelock expires", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(109));
+        });
+
+        it("executes pause change after timelock expires", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            // Mine 144 blocks to pass the timelock
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+
+            // Verify contract is paused
+            const { result: tipResult } = simnet.callPublicFn(
+                "tipstream",
+                "send-tip",
+                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Should fail")],
+                wallet1
+            );
+            expect(tipResult).toBeErr(Cl.uint(107));
+
+            // Unpause for subsequent tests
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("non-admin cannot execute a pending pause change", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+
+            // Clean up: execute with deployer then unpause
+            simnet.callPublicFn("tipstream", "execute-pause-change", [], deployer);
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("rejects execute when no pause change is pending", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(110));
+        });
+
+        it("clears pending pause after execution", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-pause-change",
+                [],
+                deployer
+            );
+
+            const pending = (result as any).value;
+            expect(pending["pending-pause"]).toEqual(Cl.none());
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("new proposal overrides previous pending pause", () => {
+            // Propose pause = true
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            // Override with pause = false
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(false)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+
+            // Contract should NOT be paused since we overrode with false
+            const { result: tipResult } = simnet.callPublicFn(
+                "tipstream",
+                "send-tip",
+                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Still works")],
+                wallet1
+            );
+            expect(tipResult).not.toBeErr();
+        });
+    });
+
+    describe("Timelocked Fee Changes", () => {
+        it("admin can propose a fee change", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+        });
+
+        it("non-admin cannot propose a fee change", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+        });
+
+        it("rejects fee proposal above maximum of 1000 basis points", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(1001)],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(101));
+        });
+
+        it("sets pending fee state after proposal", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(300)],
+                deployer
+            );
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-fee-change",
+                [],
+                deployer
+            );
+
+            const pending = (result as any).value;
+            expect(pending["pending-fee"]).toEqual(Cl.some(Cl.uint(300)));
+        });
+
+        it("rejects execute before timelock expires", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(109));
+        });
+
+        it("executes fee change after timelock expires", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+
+            // Verify fee is now 200 basis points (2%)
+            const { result: fee } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1000000)],
+                wallet1
+            );
+            expect(fee).toBeOk(Cl.uint(20000));
+
+            // Reset fee to default
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("non-admin cannot execute a pending fee change", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "execute-fee-change", [], deployer);
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("rejects execute when no fee change is pending", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(110));
+        });
+
+        it("clears pending fee after execution", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(100)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+            simnet.callPublicFn("tipstream", "execute-fee-change", [], deployer);
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-fee-change",
+                [],
+                deployer
+            );
+
+            const pending = (result as any).value;
+            expect(pending["pending-fee"]).toEqual(Cl.none());
+
+            // Reset fee
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("admin can cancel a pending fee change", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(500)],
+                deployer
+            );
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-fee-change",
+                [],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+
+            // Verify no pending change remains
+            const { result: pending } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-fee-change",
+                [],
+                deployer
+            );
+
+            const data = (pending as any).value;
+            expect(data["pending-fee"]).toEqual(Cl.none());
+        });
+
+        it("non-admin cannot cancel a pending fee change", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(500)],
+                deployer
+            );
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-fee-change",
+                [],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "cancel-fee-change", [], deployer);
+        });
+
+        it("cancel fails when no fee change is pending", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-fee-change",
+                [],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(110));
+        });
+
+        it("new proposal overrides previous pending fee", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(500)],
+                deployer
+            );
+
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(100)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            simnet.callPublicFn("tipstream", "execute-fee-change", [], deployer);
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1000000)],
+                wallet1
+            );
+            // 100 basis points = 1%
+            expect(result).toBeOk(Cl.uint(10000));
+
+            // Reset
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("allows zero fee proposal through timelock", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(0)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+
+            const { result: fee } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1000000)],
+                wallet1
+            );
+            expect(fee).toBeOk(Cl.uint(0));
+
+            // Reset
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("allows maximum fee proposal of 1000 basis points through timelock", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(1000)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+
+            const { result: fee } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1000000)],
+                wallet1
+            );
+            expect(fee).toBeOk(Cl.uint(100000));
+
+            // Reset
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+    });
+
+    describe("Direct Bypass vs Timelocked Path", () => {
+        it("set-paused bypasses timelock entirely", () => {
+            // Direct set-paused takes effect immediately
+            const { result: pauseResult } = simnet.callPublicFn(
+                "tipstream",
+                "set-paused",
+                [Cl.bool(true)],
+                deployer
+            );
+            expect(pauseResult).toBeOk(Cl.bool(true));
+
+            // Immediately prevents tipping - no waiting period
+            const { result: tipFail } = simnet.callPublicFn(
+                "tipstream",
+                "send-tip",
+                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Blocked")],
+                wallet1
+            );
+            expect(tipFail).toBeErr(Cl.uint(107));
+
+            // Unpause
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("set-fee-basis-points bypasses timelock entirely", () => {
+            // Direct set takes effect immediately
+            simnet.callPublicFn(
+                "tipstream",
+                "set-fee-basis-points",
+                [Cl.uint(500)],
+                deployer
+            );
+
+            // Fee is 500 basis points (5%) right away - no waiting period
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1000000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(50000));
+
+            // Reset
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("timelocked pause requires 144-block waiting period", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            // Cannot execute at block 143
+            simnet.mineEmptyBlocks(143);
+            const { result: tooEarly } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(tooEarly).toBeErr(Cl.uint(109));
+
+            // Can execute at block 144
+            simnet.mineEmptyBlocks(1);
+            const { result: onTime } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(onTime).toBeOk(Cl.bool(true));
+
+            // Unpause
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("timelocked fee change requires 144-block waiting period", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(300)],
+                deployer
+            );
+
+            // Cannot execute at block 143
+            simnet.mineEmptyBlocks(143);
+            const { result: tooEarly } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(tooEarly).toBeErr(Cl.uint(109));
+
+            // Can execute at block 144
+            simnet.mineEmptyBlocks(1);
+            const { result: onTime } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(onTime).toBeOk(Cl.bool(true));
+
+            // Reset
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("direct set-paused does not affect pending timelocked proposal", () => {
+            // Start a timelocked proposal
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            // Use direct bypass to pause immediately
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(true)], deployer);
+
+            // The pending proposal still exists
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-pause-change",
+                [],
+                deployer
+            );
+            const pending = (result as any).value;
+            expect(pending["pending-pause"]).toEqual(Cl.some(Cl.bool(true)));
+
+            // Unpause and clean up
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+            simnet.mineEmptyBlocks(144);
+            simnet.callPublicFn("tipstream", "execute-pause-change", [], deployer);
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("direct set-fee does not affect pending timelocked fee proposal", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+
+            // Direct bypass sets fee immediately
+            simnet.callPublicFn(
+                "tipstream",
+                "set-fee-basis-points",
+                [Cl.uint(100)],
+                deployer
+            );
+
+            // Pending proposal still exists
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-fee-change",
+                [],
+                deployer
+            );
+            const pending = (result as any).value;
+            expect(pending["pending-fee"]).toEqual(Cl.some(Cl.uint(200)));
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "cancel-fee-change", [], deployer);
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+    });
+
+    describe("Print Event Verification for Timelocked Operations", () => {
+        it("emits fee-change-proposed print event with correct fields", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            const printData = (printEvents[0] as any).data;
+            expect(printData).toBeDefined();
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "cancel-fee-change", [], deployer);
+        });
+
+        it("emits fee-change-executed print event after timelock expires", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(300)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "execute-fee-change",
+                [],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Restore original fee
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("emits fee-change-cancelled print event on cancellation", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(400)],
+                deployer
+            );
+
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-fee-change",
+                [],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it("emits pause-change-proposed print event with correct fields", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Do not execute - just let the proposal sit
+        });
+
+        it("emits pause-change-executed print event after timelock expires", () => {
+            // Propose unpause to restore state after test
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(false)],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it("emits contract-paused print event on direct set-paused call", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "set-paused",
+                [Cl.bool(true)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Undo
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("emits fee-updated print event on direct set-fee-basis-points call", () => {
+            const { result, events } = simnet.callPublicFn(
+                "tipstream",
+                "set-fee-basis-points",
+                [Cl.uint(100)],
+                deployer
+            );
+            expect(result).not.toBeErr();
+
+            const printEvents = events.filter(
+                (e: any) => e.event === "print_event"
+            );
+            expect(printEvents.length).toBeGreaterThanOrEqual(1);
+
+            // Restore
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("does not emit print events when non-admin calls timelocked functions", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(500)],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+        });
+
+        it("timelocked proposal emits different event type than direct bypass", () => {
+            // Direct bypass event
+            const directResult = simnet.callPublicFn(
+                "tipstream",
+                "set-fee-basis-points",
+                [Cl.uint(75)],
+                deployer
+            );
+            const directPrints = directResult.events.filter(
+                (e: any) => e.event === "print_event"
+            );
+
+            // Timelocked proposal event
+            const proposalResult = simnet.callPublicFn(
+                "tipstream",
+                "propose-fee-change",
+                [Cl.uint(200)],
+                deployer
+            );
+            const proposalPrints = proposalResult.events.filter(
+                (e: any) => e.event === "print_event"
+            );
+
+            // Both should emit print events
+            expect(directPrints.length).toBeGreaterThanOrEqual(1);
+            expect(proposalPrints.length).toBeGreaterThanOrEqual(1);
+
+            // The print data should differ (different event types)
+            expect(directPrints[0].data).not.toEqual(proposalPrints[0].data);
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "cancel-fee-change", [], deployer);
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+    });
 });

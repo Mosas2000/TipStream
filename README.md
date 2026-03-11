@@ -94,9 +94,14 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | `tip-a-tip` | Recursive tip referencing a previous tip ID |
 | `update-profile` | Set display name, bio, avatar URL |
 | `toggle-block-user` | Block or unblock a principal |
-| `set-fee` | Admin: update fee basis points |
-| `toggle-pause` | Admin: pause/resume contract |
-| `propose-new-owner` | Admin: initiate ownership transfer |
+| `set-fee-basis-points` | Admin: update fee basis points (direct, bypasses timelock) |
+| `set-paused` | Admin: pause/resume contract (direct, bypasses timelock) |
+| `propose-fee-change` | Admin: propose timelocked fee change (144-block delay) |
+| `execute-fee-change` | Admin: execute pending fee change after timelock |
+| `cancel-fee-change` | Admin: cancel a pending fee proposal |
+| `propose-pause-change` | Admin: propose timelocked pause change (144-block delay) |
+| `execute-pause-change` | Admin: execute pending pause change after timelock |
+| `propose-new-owner` | Admin: initiate two-step ownership transfer |
 | `accept-ownership` | Accept pending ownership transfer |
 
 **Read-only:**
@@ -111,6 +116,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | `is-user-blocked` | Check if one user has blocked another |
 | `get-contract-owner` | Current contract owner |
 | `get-pending-owner` | Pending ownership transfer target |
+| `get-pending-fee-change` | Pending fee proposal and execution height |
+| `get-pending-pause-change` | Pending pause proposal and execution height |
+| `get-multisig` | Authorized multisig contract address |
+| `get-contract-version` | Contract version and name |
 
 ### Frontend Components
 
@@ -204,7 +213,9 @@ settings/
 - Admin functions are owner-only with on-chain assertions
 - Two-step ownership transfer prevents accidental loss
 - Post conditions on all transactions restrict STX movement
-- Pause/unpause uses a timelock delay to prevent instant abuse
+- **Timelocked admin changes**: Fee and pause changes use a 144-block (~24 hour) propose-wait-execute cycle
+- **Frontend enforces timelocked paths**: The AdminDashboard never calls direct bypass functions
+- **Multisig governance**: Optional multi-signature approval layer for admin actions
 
 ### Credential Handling
 
