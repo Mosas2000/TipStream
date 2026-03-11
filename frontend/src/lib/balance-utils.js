@@ -89,3 +89,16 @@ export function formatBalance(microStx, options = {}) {
 
   return suffix ? `${formatted} STX` : formatted;
 }
+
+/**
+ * Check whether a value can be safely used as a balance.
+ *
+ * Returns `true` only if the value parses to a finite, non-negative number.
+ *
+ * @param {unknown} value - Value to check.
+ * @returns {boolean}
+ */
+export function isValidBalance(value) {
+  const n = parseBalance(value);
+  return n !== null && n >= 0;
+}
