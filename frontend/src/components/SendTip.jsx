@@ -8,7 +8,7 @@ import {
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
-import { microToStx } from '../lib/balance-utils';
+import { microToStx, formatBalance } from '../lib/balance-utils';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
@@ -210,7 +210,7 @@ export default function SendTip({ addToast }) {
                             <p className="text-xs text-gray-500 dark:text-gray-400">Your Balance</p>
                             <p className="text-lg font-bold text-gray-900 dark:text-white">
                                 {balanceLoading ? 'Loading...' : balanceSTX !== null
-                                    ? `${balanceSTX.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} STX`
+                                    ? formatBalance(balance)
                                     : 'Unavailable'}
                             </p>
                         </div>
