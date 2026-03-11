@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { userSession, authenticate, disconnect, getMainnetAddress } from './utils/stacks';
+import { userSession, authenticate, disconnect, getMainnetAddress, isValidUserData } from './utils/stacks';
 import Header from './components/Header';
 import SendTip from './components/SendTip';
 import SkipNav from './components/SkipNav';
@@ -69,6 +69,11 @@ function App() {
     setAuthLoading(true);
     try {
       const data = await authenticate();
+      if (!isValidUserData(data)) {
+        console.error('authenticate() returned unexpected data shape:', data);
+        addToast('Wallet connected but returned unexpected data. Please try again.', 'error');
+        return;
+      }
       setUserData(data);
       analytics.trackWalletConnect();
     } catch (error) {
