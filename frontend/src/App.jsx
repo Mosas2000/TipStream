@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { userSession, authenticate, disconnect } from './utils/stacks';
+import { userSession, authenticate, disconnect, getMainnetAddress } from './utils/stacks';
 import Header from './components/Header';
 import SendTip from './components/SendTip';
 import SkipNav from './components/SkipNav';
@@ -42,7 +42,7 @@ function App() {
   const location = useLocation();
   const { healthy, error: healthError, checking: healthChecking, retry: retryHealth } = useContractHealth();
 
-  const userAddress = userData?.profile?.stxAddress?.mainnet || null;
+  const userAddress = getMainnetAddress(userData);
   const { notifications, unreadCount, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
   const { isOwner } = useAdmin(userAddress);
 
