@@ -1,0 +1,23 @@
+# TipStream Mainnet Configuration
+# Copy this file to Mainnet.toml and fill in your credentials.
+#
+# SECURITY: Mainnet.toml is listed in .gitignore and must NEVER be committed.
+# Each wallet mnemonic controls real STX funds on the Stacks mainnet.
+# Store mnemonics in a password manager or hardware wallet backup,
+# not in plaintext files shared across machines.
+
+[network]
+name = "mainnet"
+stacks_node_rpc_address = "https://api.hiro.so"
+deployment_fee_rate = 1
+
+[accounts.deployer]
+mnemonic = "<YOUR DEPLOYER MNEMONIC HERE>"
+# stx_address: <deployer SP address>
+
+# Add additional wallets below as needed.
+# Each entry must have a unique name and its own mnemonic.
+#
+# [accounts.wallet_1]
+# mnemonic = "<WALLET 1 MNEMONIC HERE>"
+# stx_address: <wallet_1 SP address>

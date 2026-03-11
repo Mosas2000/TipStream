@@ -148,6 +148,7 @@ async function runTestTip() {
         // Sanitize the error output to ensure mnemonics and private keys
         // are never leaked to logs or CI output.
         let safeMessage = (error.message || String(error));
+        safeMessage = safeMessage.replace(/[0-9a-f]{64}/gi, '[REDACTED_KEY]');
         if (mnemonic) {
             safeMessage = safeMessage.replace(new RegExp(mnemonic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]');
         }

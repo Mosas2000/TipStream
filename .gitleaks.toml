@@ -1,0 +1,52 @@
+# Gitleaks configuration for TipStream
+# Detects accidentally committed secrets such as mnemonics or private keys.
+# Run locally:  gitleaks detect --source . --config .gitleaks.toml
+# CI:           integrate via GitHub Actions or pre-commit hook.
+
+title = "TipStream secret scanning rules"
+
+# BIP-39 mnemonic phrases (12 or 24 words separated by spaces)
+[[rules]]
+id = "bip39-mnemonic"
+description = "Potential BIP-39 mnemonic phrase"
+regex = '''(?i)mnemonic\s*=\s*"[a-z ]{20,}"'''
+tags = ["key", "mnemonic"]
+
+[[rules.allowlist]]
+paths = [
+    '''settings/Devnet\.toml''',
+    '''settings/.*\.example''',
+]
+
+# Stacks private key (64-hex + 01 suffix)
+[[rules]]
+id = "stacks-private-key"
+description = "Stacks private key"
+regex = '''(?i)(secret_key|private_key|senderKey)\s*[:=]\s*["\']?[0-9a-f]{64,66}["\']?'''
+tags = ["key", "private-key"]
+
+[[rules.allowlist]]
+paths = [
+    '''settings/Devnet\.toml''',
+]
+
+# Generic high-entropy secrets
+[[rules]]
+id = "generic-secret"
+description = "Hardcoded secret or API key assignment"
+regex = '''(?i)(api_key|apikey|secret|token|password)\s*[:=]\s*["'][A-Za-z0-9/+=]{16,}["']'''
+tags = ["key", "generic"]
+
+[[rules.allowlist]]
+paths = [
+    '''\.env\.example''',
+    '''settings/.*\.example''',
+]
+
+[allowlist]
+paths = [
+    '''node_modules/''',
+    '''frontend/dist/''',
+    '''.cache/''',
+    '''\.gitleaks\.toml''',
+]

@@ -51,6 +51,12 @@ timestamps the deployment.
 bash scripts/deploy.sh
 ```
 
+## Hooks
+
+| Hook | Purpose |
+|---|---|
+| `hooks/pre-commit` | Block commits containing mnemonic phrases |
+
 ## setup-hooks.sh
 
 Install the git pre-commit hook that runs secret scanning before each
@@ -68,3 +74,12 @@ the pre-commit hook and CI secret-scan workflow.
 ```bash
 bash scripts/verify-no-secrets.sh
 ```
+
+## Security Notes
+
+- `deploy.sh` validates that `settings/Mainnet.toml` exists and is not
+  tracked by git before proceeding.
+- `test-contract.cjs` reads the mnemonic from the `MNEMONIC` environment
+  variable.  Never pass mnemonics as command-line arguments (they appear
+  in shell history and process listings).
+- Run `verify-no-secrets.sh` at any time to audit the repository state.
