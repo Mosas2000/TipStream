@@ -50,7 +50,12 @@ function App() {
 
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
-      setUserData(userSession.loadUserData());
+      const data = userSession.loadUserData();
+      if (isValidUserData(data)) {
+        setUserData(data);
+      } else {
+        console.warn('Session present but user data has unexpected shape:', data);
+      }
     }
     analytics.trackSession();
   }, []);
