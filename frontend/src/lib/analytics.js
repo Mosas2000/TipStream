@@ -12,6 +12,7 @@ const DEFAULT_METRICS = {
   batchTipsStarted: 0,
   batchTipsSubmitted: 0,
   batchTipsConfirmed: 0,
+  batchTipsFailed: 0,
   tabNavigations: {},
   routeRedirects: {},
   errors: {},
