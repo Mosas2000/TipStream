@@ -88,6 +88,10 @@ export const analytics = {
     increment('tipsFailed');
   },
 
+  trackBatchTipStarted() {
+    increment('batchTipsStarted');
+  },
+
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
