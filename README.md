@@ -82,6 +82,26 @@ Frontend (React + Vite)
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 
+### Frontend Routes
+
+| Path | Page | Description |
+|---|---|---|
+| `/` | (redirect) | Redirects authenticated users to `/send` |
+| `/send` | Send Tip | Send a single STX tip |
+| `/batch` | Batch Tip | Tip up to 50 recipients at once |
+| `/token-tip` | Token Tip | Send a SIP-010 token tip |
+| `/feed` | Live Feed | Real-time feed of recent tips |
+| `/leaderboard` | Leaderboard | Top senders and receivers |
+| `/activity` | My Activity | Personal tip history |
+| `/profile` | Profile | Manage display name, bio, avatar |
+| `/block` | Block Manager | Block/unblock addresses |
+| `/stats` | Platform Stats | Aggregate platform metrics |
+| `/admin` | Admin Dashboard | Owner-only pause/fee controls |
+| `*` | 404 | Shows the attempted path and a link home |
+
+Route paths are centralised in `frontend/src/config/routes.js`. Import the
+constants instead of hard-coding path strings.
+
 ### Smart Contract Functions
 
 **Public (state-changing):**
