@@ -219,3 +219,50 @@ describe('formatBalance', () => {
     expect(result).toMatch(/1[.,]5/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// isValidBalance
+// ---------------------------------------------------------------------------
+describe('isValidBalance', () => {
+  it('returns true for a positive number', () => {
+    expect(isValidBalance(1000)).toBe(true);
+  });
+
+  it('returns true for a positive string', () => {
+    expect(isValidBalance('1500000')).toBe(true);
+  });
+
+  it('returns true for zero', () => {
+    expect(isValidBalance(0)).toBe(true);
+    expect(isValidBalance('0')).toBe(true);
+  });
+
+  it('returns false for null', () => {
+    expect(isValidBalance(null)).toBe(false);
+  });
+
+  it('returns false for undefined', () => {
+    expect(isValidBalance(undefined)).toBe(false);
+  });
+
+  it('returns false for empty string', () => {
+    expect(isValidBalance('')).toBe(false);
+  });
+
+  it('returns false for non-numeric string', () => {
+    expect(isValidBalance('abc')).toBe(false);
+  });
+
+  it('returns false for negative numbers', () => {
+    expect(isValidBalance(-1)).toBe(false);
+    expect(isValidBalance('-500')).toBe(false);
+  });
+
+  it('returns false for Infinity', () => {
+    expect(isValidBalance(Infinity)).toBe(false);
+  });
+
+  it('returns false for NaN', () => {
+    expect(isValidBalance(NaN)).toBe(false);
+  });
+});
