@@ -12,7 +12,7 @@ import {
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
-import { microToStx, formatBalance } from '../lib/balance-utils';
+import { formatBalance } from '../lib/balance-utils';
 import { useBalance } from '../hooks/useBalance';
 import { useTipContext } from '../context/TipContext';
 import { Users, Plus, Trash2, Send, Loader2, AlertTriangle } from 'lucide-react';
@@ -35,8 +35,7 @@ export default function BatchTip({ addToast }) {
 
     const senderAddress = useMemo(() => getSenderAddress(), []);
 
-    const { balance, loading: balanceLoading } = useBalance(senderAddress);
-    const balanceSTX = microToStx(balance);
+    const { balance, balanceStx: balanceSTX, loading: balanceLoading } = useBalance(senderAddress);
 
     const totalAmount = useMemo(() => {
         return recipients.reduce((sum, r) => {
