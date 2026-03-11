@@ -11,6 +11,7 @@ import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
 import { useAdmin } from './hooks/useAdmin';
+import { usePageTitle } from './hooks/usePageTitle';
 import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
@@ -40,6 +41,8 @@ function App() {
   const userAddress = userData?.profile?.stxAddress?.mainnet || null;
   const { notifications, unreadCount, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
   const { isOwner } = useAdmin(userAddress);
+
+  usePageTitle();
 
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
