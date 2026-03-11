@@ -10,6 +10,7 @@ const DEFAULT_METRICS = {
   tipsCancelled: 0,
   tipsFailed: 0,
   tabNavigations: {},
+  routeRedirects: {},
   errors: {},
   sessions: 0,
   firstSeen: null,
@@ -87,6 +88,11 @@ export const analytics = {
 
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
+  },
+
+  trackRouteRedirect(from, to) {
+    const key = `${from} -> ${to}`;
+    incrementMap('routeRedirects', key);
   },
 
   trackError(component, message) {
