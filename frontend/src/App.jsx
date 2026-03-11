@@ -55,6 +55,7 @@ function App() {
         setUserData(data);
       } else {
         console.warn('Session present but user data has unexpected shape:', data);
+        analytics.trackAuthError('session_restore_invalid_shape');
       }
     }
     analytics.trackSession();
