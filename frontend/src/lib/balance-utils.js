@@ -27,3 +27,17 @@ export function parseBalance(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
+
+/**
+ * Convert a micro-STX value to STX.
+ *
+ * Accepts the same input types as `parseBalance`. Returns `null` when
+ * the input cannot be parsed.
+ *
+ * @param {string|number|bigint|null|undefined} microStx - Amount in micro-STX.
+ * @returns {number|null} Amount in STX, or null.
+ */
+export function microToStx(microStx) {
+  const parsed = parseBalance(microStx);
+  return parsed !== null ? parsed / MICRO_STX : null;
+}
