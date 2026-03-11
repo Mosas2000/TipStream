@@ -5,7 +5,7 @@ import {
     uintCV,
     principalCV,
 } from '@stacks/transactions';
-import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
+import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';

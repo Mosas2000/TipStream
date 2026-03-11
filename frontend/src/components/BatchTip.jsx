@@ -9,7 +9,7 @@ import {
     PostConditionMode,
     Pc,
 } from '@stacks/transactions';
-import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
+import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
 import { useBalance } from '../hooks/useBalance';

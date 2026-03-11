@@ -6,7 +6,7 @@ import {
     principalCV,
     PostConditionMode,
 } from '@stacks/transactions';
-import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
+import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_USER_BLOCKED, FN_TOGGLE_BLOCK_USER } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { ShieldBan, Search, UserX, UserCheck, Loader2 } from 'lucide-react';
