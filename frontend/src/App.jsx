@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { userSession, authenticate, disconnect } from './utils/stacks';
 import Header from './components/Header';
@@ -10,7 +10,8 @@ import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle } from 'lucide-react';
+import { useAdmin } from './hooks/useAdmin';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
@@ -21,6 +22,7 @@ const BlockManager = lazy(() => import('./components/BlockManager'));
 const BatchTip = lazy(() => import('./components/BatchTip'));
 const TokenTip = lazy(() => import('./components/TokenTip'));
 const NotFound = lazy(() => import('./components/NotFound'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -31,6 +33,7 @@ function App() {
 
   const userAddress = userData?.profile?.stxAddress?.mainnet || null;
   const { notifications, unreadCount, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
+  const { isOwner } = useAdmin(userAddress);
 
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
@@ -68,17 +71,23 @@ function App() {
     }
   };
 
-  const navItems = [
-    { path: '/send', label: 'Send Tip', icon: Zap },
-    { path: '/batch', label: 'Batch', icon: Users },
-    { path: '/token-tip', label: 'Token Tip', icon: Coins },
-    { path: '/feed', label: 'Live Feed', icon: Radio },
-    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { path: '/activity', label: 'My Activity', icon: User },
-    { path: '/profile', label: 'Profile', icon: UserCircle },
-    { path: '/block', label: 'Block', icon: ShieldBan },
-    { path: '/stats', label: 'Stats', icon: BarChart3 },
-  ];
+  const navItems = useMemo(() => {
+    const items = [
+      { path: '/send', label: 'Send Tip', icon: Zap },
+      { path: '/batch', label: 'Batch', icon: Users },
+      { path: '/token-tip', label: 'Token Tip', icon: Coins },
+      { path: '/feed', label: 'Live Feed', icon: Radio },
+      { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+      { path: '/activity', label: 'My Activity', icon: User },
+      { path: '/profile', label: 'Profile', icon: UserCircle },
+      { path: '/block', label: 'Block', icon: ShieldBan },
+      { path: '/stats', label: 'Stats', icon: BarChart3 },
+    ];
+    if (isOwner) {
+      items.push({ path: '/admin', label: 'Admin', icon: Shield });
+    }
+    return items;
+  }, [isOwner]);
 
   if (healthy === false) {
     return (
@@ -165,6 +174,7 @@ function App() {
                 <Route path="/profile" element={<ProfileManager addToast={addToast} />} />
                 <Route path="/block" element={<BlockManager addToast={addToast} />} />
                 <Route path="/stats" element={<PlatformStats />} />
+                <Route path="/admin" element={<AdminDashboard userAddress={userData.profile.stxAddress.mainnet} addToast={addToast} />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

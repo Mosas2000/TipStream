@@ -2,6 +2,9 @@
 # WARNING: These are standard Clarinet devnet test accounts.
 # They hold NO real value and exist only in the local devnet sandbox.
 # NEVER use these mnemonics or keys on mainnet or testnet.
+#
+# If you need mainnet or testnet credentials, copy the corresponding
+# .example file in this directory and fill in your own mnemonic.
 # See: https://docs.hiro.so/clarinet/guides/clarinet-deploy
 # ======================================================================
 

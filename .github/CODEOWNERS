@@ -1,0 +1,16 @@
+# Code owners for TipStream
+# These users are automatically requested for review on PRs
+# that touch the specified paths.
+
+# Default owner for all files
+* @Mosas2000
+
+# Security-sensitive paths require explicit review
+.gitignore @Mosas2000
+.gitleaks.toml @Mosas2000
+.env.example @Mosas2000
+settings/ @Mosas2000
+scripts/ @Mosas2000
+SECURITY.md @Mosas2000
+contracts/ @Mosas2000
+.github/workflows/ @Mosas2000

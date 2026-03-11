@@ -1,0 +1,37 @@
+#!/bin/bash
+# pre-commit hook: scan staged files for potential secrets
+# Install by copying to .git/hooks/pre-commit and making it executable:
+#   cp scripts/hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+
+set -euo pipefail
+
+RED='\033[0;31m'
+NC='\033[0m'
+
+# Pattern matches 12+ lowercase words separated by single spaces
+# (the shape of a BIP-39 mnemonic phrase).
+MNEMONIC_RE='mnemonic\s*=\s*"[a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+ [a-z]+'
+
+# Check staged files only (skip binary files)
+MATCHES=$(git diff --cached --name-only -z | xargs -0 git diff --cached -U0 -- 2>/dev/null | grep -iE "$MNEMONIC_RE" || true)
+
+if [ -n "$MATCHES" ]; then
+    echo -e "${RED}BLOCKED: staged changes appear to contain a mnemonic phrase.${NC}"
+    echo ""
+    echo "Matched content:"
+    echo "$MATCHES"
+    echo ""
+    echo "If this is intentional (e.g. a devnet config), bypass with:"
+    echo "  git commit --no-verify"
+    exit 1
+fi
+
+# If gitleaks is available, run a fast staged scan
+if command -v gitleaks &> /dev/null; then
+    gitleaks protect --staged --config .gitleaks.toml --no-banner 2>/dev/null || {
+        echo -e "${RED}BLOCKED: gitleaks found potential secrets in staged files.${NC}"
+        echo "Review the output above and remove secrets before committing."
+        exit 1
+    }
+fi
