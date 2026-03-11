@@ -7,7 +7,7 @@ import {
     stringUtf8CV,
     PostConditionMode,
 } from '@stacks/transactions';
-import { network, appDetails, userSession } from '../utils/stacks';
+import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PROFILE, FN_UPDATE_PROFILE } from '../config/contracts';
 import { User, Save, Loader2 } from 'lucide-react';
 
@@ -19,13 +19,7 @@ export default function ProfileManager({ addToast }) {
     const [saving, setSaving] = useState(false);
     const [profileLoaded, setProfileLoaded] = useState(false);
 
-    const senderAddress = useMemo(() => {
-        try {
-            return userSession.loadUserData().profile.stxAddress.mainnet;
-        } catch {
-            return null;
-        }
-    }, []);
+    const senderAddress = useMemo(() => getSenderAddress(), []);
 
     useEffect(() => {
         if (!senderAddress) {
