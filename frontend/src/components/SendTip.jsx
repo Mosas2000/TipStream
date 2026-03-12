@@ -201,6 +201,10 @@ export default function SendTip({ addToast }) {
         addToast('Tip confirmed on-chain!', 'success');
     }, [addToast]);
 
+    const handleTxFailed = useCallback((reason) => {
+        addToast(`Transaction failed: ${reason}`, 'error');
+    }, [addToast]);
+
     return (
         <div className="max-w-md mx-auto">
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
