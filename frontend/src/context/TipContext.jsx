@@ -93,6 +93,15 @@ export function TipProvider({ children }) {
     dispatch({ type: 'REFRESH' });
   }, []);
 
+  // Fetch events on mount and whenever refreshCounter bumps.
+  useEffect(() => { refreshEvents(); }, [refreshEvents, state.refreshCounter]);
+
+  // Single polling interval shared across all consumers.
+  useEffect(() => {
+    const id = setInterval(refreshEvents, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [refreshEvents]);
+
   return (
     <TipContext.Provider value={{ ...state, notifyTipSent, triggerRefresh }}>
       {children}
