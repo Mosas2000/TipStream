@@ -201,6 +201,9 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && path.match(/^\/api\/tips\/\d+$/)) {
     const tipId = parseInt(path.split("/api/tips/")[1], 10);
+    if (isNaN(tipId) || tipId < 0) {
+      return sendJson(res, 400, { error: "invalid tip ID" });
+    }
     const allEvents = loadEvents();
     const tip = allEvents.map(parseTipEvent).find((t) => t && t.tipId === tipId);
     if (!tip) return sendJson(res, 404, { error: "tip not found" });
