@@ -103,6 +103,10 @@ export const analytics = {
     increment('batchTipsConfirmed');
   },
 
+  trackBatchTipFailed() {
+    increment('batchTipsFailed');
+  },
+
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
