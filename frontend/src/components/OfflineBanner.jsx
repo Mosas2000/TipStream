@@ -13,7 +13,7 @@ export default function OfflineBanner() {
     if (isOnline) return null;
 
     return (
-        <div className="inset-x-0 z-50 bg-red-600 text-white text-center py-2 px-4 text-sm font-medium shadow-lg" role="alert">
+        <div className="sticky top-0 inset-x-0 z-50 bg-red-600 text-white text-center py-2 px-4 text-sm font-medium shadow-lg" role="alert">
             <div className="flex items-center justify-center gap-2">
                 <WifiOff className="w-4 h-4" aria-hidden="true" />
                 <span>You are offline. Some features may not work until your connection is restored.</span>
