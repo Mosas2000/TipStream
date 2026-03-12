@@ -14,6 +14,13 @@ import CopyButton from './ui/copy-button';
 const PAGE_SIZE = 10;
 const API_LIMIT = 50;
 
+/**
+ * RecentTips -- displays a live feed of on-chain tip events with search,
+ * filtering, pagination, and a tip-back modal for reciprocating tips.
+ *
+ * @param {Object}   props
+ * @param {Function} props.addToast - Callback to display a toast notification.
+ */
 export default function RecentTips({ addToast }) {
     const { refreshCounter } = useTipContext();
     const [tips, setTips] = useState([]);
