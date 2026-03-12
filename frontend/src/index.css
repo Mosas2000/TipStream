@@ -81,6 +81,14 @@ body {
   animation: slide-down 0.3s ease-out forwards;
 }
 
+/* ── Reduced motion preference ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-slide-down {
+    animation: none;
+  }
+}
+
 /* ── Pulse glow for live indicator ─────────────────────────── */
 @keyframes pulse-glow {
   0%, 100% {
