@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Tip-back modal in `RecentTips` accepted zero, negative, and non-numeric
+  amounts before opening the wallet prompt. Client-side validation now
+  blocks invalid submissions with real-time feedback (Issue #233).
+
+### Added (Issue #233)
+
+- `validateTipBackAmount` function exported from `RecentTips` for
+  testability. Rejects empty, NaN, non-positive, below-minimum, and
+  above-maximum values, returning a descriptive error string.
+- `MIN_TIP_STX` (0.001) and `MAX_TIP_STX` (10,000) constants exported
+  from `RecentTips`, matching the existing `SendTip` constraints.
+- Real-time validation on the tip-back amount input via
+  `handleTipBackAmountChange`, which updates the error state on each
+  keystroke.
+- Validation guard at the top of `handleTipBack` that prevents the
+  `openContractCall` wallet prompt from opening when the amount is invalid,
+  and surfaces a toast notification to the user.
+- Red border, `aria-invalid`, and `aria-describedby` on the amount input
+  when a validation error exists.
+- Error message element (`<p>`) below the amount input displaying the
+  current validation error text.
+- Send button disabled state tied to `tipBackError` presence in addition to
+  the existing `sending` flag.
+- Accessible labels (`<label htmlFor>` / `id`) on both the amount and
+  message inputs inside the tip-back modal.
+- `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` on the
+  tip-back modal overlay for screen readers.
+- `data-testid` attributes on the modal container, amount input, error
+  message, send button, and cancel button for deterministic test targeting.
+- State reset (amount, message, error) when the tip-back modal opens,
+  ensuring a clean slate for each interaction.
+- JSDoc documentation on `handleTipBack` describing its validation and
+  contract-call flow.
+- `frontend/src/test/RecentTips.tipback.test.jsx` with unit tests covering
+  boundary constants, empty/missing values, non-numeric/non-positive
+  values, minimum and maximum boundaries, valid amounts, and error message
+  format.
+
+### Fixed
+
 - `TxStatus` polling restarts on every parent render due to unstable
   callback references. The `checkStatus` `useCallback` dependency array
   included `onConfirmed` and `onFailed`, but `SendTip` passed inline arrow
