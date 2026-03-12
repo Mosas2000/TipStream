@@ -98,4 +98,32 @@ describe('TxStatus', () => {
             expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
         });
     });
+
+    // -- Callback behavior ------------------------------------------------
+
+    describe('callbacks', () => {
+        it('invokes onConfirmed when the transaction succeeds', async () => {
+            const onConfirmed = vi.fn();
+            mockFetchWith({ tx_status: 'success', tx_id: MOCK_TX_ID });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} onConfirmed={onConfirmed} />);
+            });
+
+            expect(onConfirmed).toHaveBeenCalledTimes(1);
+            expect(onConfirmed).toHaveBeenCalledWith(
+                expect.objectContaining({ tx_status: 'success' }),
+            );
+        });
+
+        it('shows Confirmed on-chain after success', async () => {
+            mockFetchWith({ tx_status: 'success', tx_id: MOCK_TX_ID });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            expect(screen.getByText('Confirmed on-chain')).toBeInTheDocument();
+        });
+    });
 });
