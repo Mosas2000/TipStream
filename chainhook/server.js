@@ -234,6 +234,15 @@ const server = http.createServer(async (req, res) => {
   sendJson(res, 404, { error: "not found" });
 });
 
-server.listen(PORT, () => {
-  console.log(`Chainhook callback server running on port ${PORT}`);
-});
+export { server };
+
+// Only start listening when executed directly (not imported by tests).
+const isMain =
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1]}`;
+
+if (isMain) {
+  server.listen(PORT, () => {
+    console.log(`Chainhook callback server running on port ${PORT}`);
+  });
+}
