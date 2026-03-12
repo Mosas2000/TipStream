@@ -249,4 +249,50 @@ describe('TxStatus', () => {
             expect(onConfirmedA).not.toHaveBeenCalled();
         });
     });
+
+    // -- Error handling ---------------------------------------------------
+
+    describe('error handling', () => {
+        it('continues polling after a network error', async () => {
+            // First fetch succeeds (pending), then a network error, then recover.
+            global.fetch = vi.fn()
+                .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tx_status: 'pending' }) })
+                .mockRejectedValueOnce(new Error('Network failure'))
+                .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tx_status: 'pending' }) });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            // Advance through one poll cycle (network error silently caught).
+            await act(async () => {
+                vi.advanceTimersByTime(8000);
+            });
+
+            // Advance through another cycle (recovery).
+            await act(async () => {
+                vi.advanceTimersByTime(8000);
+            });
+
+            // Should still be pending -- not crashed.
+            expect(screen.getByText('Pending confirmation...')).toBeInTheDocument();
+            expect(global.fetch).toHaveBeenCalledTimes(3);
+        });
+
+        it('keeps polling when response is not ok', async () => {
+            global.fetch = vi.fn(() =>
+                Promise.resolve({ ok: false }),
+            );
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            await act(async () => {
+                vi.advanceTimersByTime(8000);
+            });
+
+            expect(screen.getByText('Pending confirmation...')).toBeInTheDocument();
+        });
+    });
 });
