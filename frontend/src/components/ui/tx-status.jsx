@@ -21,6 +21,8 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const [status, setStatus] = useState('pending');
   const [pollCount, setPollCount] = useState(0);
 
+  // Store callbacks in refs so the polling loop is not restarted when the
+  // parent passes new arrow-function references on every render (see #232).
   const onConfirmedRef = useRef(onConfirmed);
   const onFailedRef = useRef(onFailed);
 
