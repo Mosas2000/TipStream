@@ -37,6 +37,7 @@ export default function RecentTips({ addToast }) {
     const [tipBackTarget, setTipBackTarget] = useState(null);
     const [tipBackAmount, setTipBackAmount] = useState('0.5');
     const [tipBackMessage, setTipBackMessage] = useState('');
+    const [tipBackError, setTipBackError] = useState('');
     const [sending, setSending] = useState(false);
     const [lastRefresh, setLastRefresh] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
