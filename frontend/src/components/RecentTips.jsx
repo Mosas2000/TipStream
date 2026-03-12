@@ -383,6 +383,7 @@ export default function RecentTips({ addToast }) {
                         </div>
                         <div className="flex gap-3">
                             <button onClick={() => setTipBackTarget(null)}
+                                data-testid="tipback-cancel-btn"
                                 className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
                             <button onClick={() => handleTipBack(tipBackTarget)} disabled={sending || !!tipBackError}
                                 data-testid="tipback-send-btn"
