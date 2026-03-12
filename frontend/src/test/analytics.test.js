@@ -176,6 +176,21 @@ describe('Analytics', () => {
         expect(summary.averageBatchSize).toBe('0.0');
     });
 
+    it('sorts batch sizes by frequency descending', () => {
+        analytics.trackBatchSize(2);
+        analytics.trackBatchSize(5);
+        analytics.trackBatchSize(5);
+        analytics.trackBatchSize(5);
+        analytics.trackBatchSize(10);
+        analytics.trackBatchSize(10);
+        const summary = analytics.getSummary();
+        expect(summary.sortedBatchSizes).toEqual([
+            ['5', 3],
+            ['10', 2],
+            ['2', 1],
+        ]);
+    });
+
     it('records firstSeen timestamp', () => {
         analytics.trackSession();
         const summary = analytics.getSummary();
