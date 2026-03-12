@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- Chainhook `parseBody` now enforces a 10 MB request body size limit.
+  Oversized payloads are rejected with HTTP 413, preventing memory
+  exhaustion from multi-gigabyte POST requests (Issue #229).
+- `Content-Length` header is checked before body parsing begins,
+  allowing early rejection without buffering any data.
+- `/api/tips/user/:address` endpoint now validates the address against
+  a Stacks address regex (`SP|SM|ST` prefix + 33-41 alphanumeric chars),
+  rejecting malformed or arbitrarily long strings with HTTP 400
+  (Issue #229).
+- `/api/tips` query parameters `limit` and `offset` are now validated:
+  limit must be 1-100, offset must be non-negative. Invalid values
+  return HTTP 400 with descriptive error messages.
+- `/api/tips/:id` endpoint adds a defensive non-negative integer check
+  on the parsed tip ID.
+
+### Added
+
+- `chainhook/validation.js` module exporting `MAX_BODY_SIZE`,
+  `STACKS_ADDRESS_RE`, `isValidStacksAddress`, and `sanitizeQueryInt`
+  helpers for server-side input validation.
+- `chainhook/server.js` now exports `parseBody`, `extractEvents`,
+  `parseTipEvent`, and `sendJson` for unit testing. Server startup
+  is guarded behind a main-module check so imports do not start the
+  HTTP listener.
+- JSDoc comments on all exported server functions.
+- `chainhook/validation.test.js` with 25 tests covering the
+  `MAX_BODY_SIZE` constant, `STACKS_ADDRESS_RE` positive and negative
+  cases, `isValidStacksAddress` type guards, and `sanitizeQueryInt`
+  bounds checking.
+- `chainhook/server.test.js` with 16 tests covering `parseBody`
+  (valid JSON, invalid JSON, empty body, oversized body, boundary
+  size), `extractEvents` (empty payload, SmartContractEvent,
+  print_event, unrecognised type, contract_event fallback, multi-tx
+  blocks), and `parseTipEvent` (valid tip, non-tip, missing/string
+  event).
+- `npm test` script in `chainhook/package.json`.
+
 ### Fixed
 
 - `loadMetrics()` now deep-copies all nested object fields (`pageViews`,
