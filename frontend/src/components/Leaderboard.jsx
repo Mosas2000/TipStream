@@ -1,7 +1,5 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
+import { useMemo, useState } from 'react';
 import { formatSTX, formatAddress } from '../lib/utils';
-import { parseTipEvent } from '../lib/parseTipEvent';
 import { buildLeaderboardStats } from '../lib/buildLeaderboardStats';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
