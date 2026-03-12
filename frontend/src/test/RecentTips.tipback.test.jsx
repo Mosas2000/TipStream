@@ -3,7 +3,7 @@ import {
     validateTipBackAmount,
     MIN_TIP_STX,
     MAX_TIP_STX,
-} from '../components/RecentTips';
+} from '../lib/tipBackValidation';
 
 // ---------------------------------------------------------------------------
 // Unit tests for the exported validateTipBackAmount function and constants.
