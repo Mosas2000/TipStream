@@ -74,5 +74,21 @@ describe('validateTipBackAmount', () => {
         it('accepts a value just below MAX_TIP_STX', () => {
             expect(validateTipBackAmount('9999')).toBe('');
         });
+    describe('valid amounts', () => {
+        it('accepts a typical tip amount', () => {
+            expect(validateTipBackAmount('0.5')).toBe('');
+        });
+
+        it('accepts a whole-number amount', () => {
+            expect(validateTipBackAmount('10')).toBe('');
+        });
+
+        it('accepts a small fractional amount', () => {
+            expect(validateTipBackAmount('0.005')).toBe('');
+        });
+
+        it('accepts the default tip-back amount of 0.5', () => {
+            expect(validateTipBackAmount('0.5')).toBe('');
+        });
     });
 });
