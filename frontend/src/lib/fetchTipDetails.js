@@ -55,6 +55,7 @@ export async function fetchTipDetail(tipId) {
     if (cached && Date.now() < cached.expiresAt) {
         return cached.value;
     }
+    const staleValue = cached?.value ?? null;
 
     try {
         const result = await fetchCallReadOnlyFunction({
@@ -75,7 +76,7 @@ export async function fetchTipDetail(tipId) {
         return parsed.value;
     } catch (err) {
         console.error(`Failed to fetch tip #${tipId}:`, err.message || err);
-        return null;
+        return staleValue;
     }
 }
 
