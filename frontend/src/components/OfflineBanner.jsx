@@ -1,6 +1,12 @@
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { WifiOff } from 'lucide-react';
 
+/**
+ * OfflineBanner -- renders a notification bar when the user loses connectivity.
+ *
+ * The component participates in normal document flow so that sibling elements
+ * (such as the sticky Header) are pushed down rather than overlapped.
+ */
 export default function OfflineBanner() {
     const isOnline = useOnlineStatus();
 
