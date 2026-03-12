@@ -28,14 +28,21 @@ describe('validateTipBackAmount', () => {
         });
 
         it('rejects a whitespace-only string', () => {
-                           TipBackAmount('   ')).toBe('Amount is required');
+            expect(validateTipBackAmount('   ')).toBe('Amount is required');
         });
 
-        i        i        i        i        i        i        i        i        i     ined)).toBe('Amount is required');
+        it('rejects undefined', () => {
+            expect(validateTipBackAmount(undefined)).toBe('Amount is required');
         });
 
         it('rejects null', () => {
-            expect(validateTipBackAmount(null)).toBe('Amount is required            expect(validateTipBackAmount(null)).toBe('Amount isti            expect(validateTipBackAmount(null)).toBe('Amount is required        expect(validateTipBackAmount('abc')).toBe('Amount must be a positive number');
+            expect(validateTipBackAmount(null)).toBe('Amount is required');
+        });
+    });
+
+    describe('non-numeric and non-positive values', () => {
+        it('rejects non-numeric input', () => {
+            expect(validateTipBackAmount('abc')).toBe('Amount must be a positive number');
         });
 
         it('rejects zero', () => {
@@ -49,7 +56,10 @@ describe('validateTipBackAmount', () => {
 
     describe('minimum amount boundary', () => {
         it('rejects a value below MIN_TIP_STX', () => {
-                                          0.0001')).toMatc                                          0.0001')).toMatc                value', () => {
+            expect(validateTipBackAmount('0.0001')).toMatch(/minimum tip/i);
+        });
+
+        it('accepts the exact MIN_TIP_STX value', () => {
             expect(validateTipBackAmount(String(MIN_TIP_STX))).toBe('');
         });
 
@@ -90,7 +100,9 @@ describe('validateTipBackAmount', () => {
         });
     });
 
-    describe('error message format    describe('error me'includes the minimum value in the    describe('error message format    describe('error me'includes the mini0.    ');
+    describe('error message format', () => {
+        it('includes the minimum value in the error message', () => {
+            const error = validateTipBackAmount('0.0001');
             expect(error).toContain(String(MIN_TIP_STX));
             expect(error).toContain('STX');
         });
