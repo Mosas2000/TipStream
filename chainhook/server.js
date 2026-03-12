@@ -28,6 +28,12 @@ function saveEvents(events) {
   writeFileSync(DB_FILE, JSON.stringify(events, null, 2));
 }
 
+/**
+ * Read and parse a JSON request body from a readable stream.
+ * Rejects if the body exceeds MAX_BODY_SIZE or contains invalid JSON.
+ * @param {import('node:http').IncomingMessage} req
+ * @returns {Promise<object>}
+ */
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -52,6 +58,12 @@ function parseBody(req) {
   });
 }
 
+/**
+ * Extract on-chain events from a Chainhook webhook payload.
+ * Filters for SmartContractEvent and print_event types only.
+ * @param {object} payload - The parsed Chainhook webhook body.
+ * @returns {Array<object>} Extracted event objects.
+ */
 function extractEvents(payload) {
   const events = [];
   const apply = payload.apply || [];
@@ -81,11 +93,23 @@ function extractEvents(payload) {
   return events;
 }
 
+/**
+ * Send a JSON response with the given status code.
+ * @param {import('node:http').ServerResponse} res
+ * @param {number} statusCode
+ * @param {object} data
+ */
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
 }
 
+/**
+ * Parse a raw on-chain event into a structured tip object.
+ * Returns null if the event is not a tip-sent event.
+ * @param {object} event - A raw event from extractEvents.
+ * @returns {object|null}
+ */
 function parseTipEvent(event) {
   const val = event.event;
   if (!val || typeof val !== "object") return null;
