@@ -150,6 +150,17 @@ describe('Analytics', () => {
         expect(summary.batchCompletionRate).toBe('33.3');
     });
 
+    it('tracks batch sizes as a frequency map', () => {
+        analytics.trackBatchSize(3);
+        analytics.trackBatchSize(3);
+        analytics.trackBatchSize(5);
+        analytics.trackBatchSize(10);
+        const metrics = analytics.getMetrics();
+        expect(metrics.batchSizes['3']).toBe(2);
+        expect(metrics.batchSizes['5']).toBe(1);
+        expect(metrics.batchSizes['10']).toBe(1);
+    });
+
     it('records firstSeen timestamp', () => {
         analytics.trackSession();
         const summary = analytics.getSummary();
