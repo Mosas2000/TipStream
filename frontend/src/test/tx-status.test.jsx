@@ -200,4 +200,53 @@ describe('TxStatus', () => {
             expect(onFailed).not.toHaveBeenCalled();
         });
     });
+
+    // -- Ref stability (Issue #232 core fix) ------------------------------
+
+    describe('callback ref stability', () => {
+        it('does not restart polling when callback references change', async () => {
+            const onConfirmedA = vi.fn();
+            const onConfirmedB = vi.fn();
+
+            const { rerender } = render(
+                <TxStatus txId={MOCK_TX_ID} onConfirmed={onConfirmedA} />,
+            );
+            await act(async () => {});
+
+            const callsAfterMount = global.fetch.mock.calls.length;
+
+            // Re-render with a new callback reference -- should NOT trigger
+            // an extra fetch because checkStatus no longer depends on it.
+            await act(async () => {
+                rerender(<TxStatus txId={MOCK_TX_ID} onConfirmed={onConfirmedB} />);
+            });
+
+            expect(global.fetch.mock.calls.length).toBe(callsAfterMount);
+        });
+
+        it('invokes the latest callback even after reference change', async () => {
+            const onConfirmedA = vi.fn();
+            const onConfirmedB = vi.fn();
+
+            const { rerender } = render(
+                <TxStatus txId={MOCK_TX_ID} onConfirmed={onConfirmedA} />,
+            );
+            await act(async () => {});
+
+            // Swap callback
+            await act(async () => {
+                rerender(<TxStatus txId={MOCK_TX_ID} onConfirmed={onConfirmedB} />);
+            });
+
+            // Now simulate a success poll
+            mockFetchWith({ tx_status: 'success', tx_id: MOCK_TX_ID });
+            await act(async () => {
+                vi.advanceTimersByTime(8000);
+            });
+
+            // The latest callback (B) should be called, not A.
+            expect(onConfirmedB).toHaveBeenCalledTimes(1);
+            expect(onConfirmedA).not.toHaveBeenCalled();
+        });
+    });
 });
