@@ -70,3 +70,38 @@ export function parseRawEvents(results) {
         })
         .filter(Boolean);
 }
+
+/**
+ * Fetch contract events from the Stacks API with auto-pagination.
+ *
+ * Returns all parsed events and metadata about the total available and
+ * the furthest offset reached, so callers can request additional pages.
+ *
+ * @param {Object}  options
+ * @param {number}  [options.startOffset=0]  - API offset to start from.
+ * @param {number}  [options.maxPages=MAX_INITIAL_PAGES] - Cap on pages.
+ * @returns {Promise<{events: Array, apiOffset: number, total: number, hasMore: boolean}>}
+ */
+export async function fetchAllContractEvents({ startOffset = 0, maxPages = MAX_INITIAL_PAGES } = {}) {
+    let accumulated = [];
+    let currentOffset = startOffset;
+    let total = 0;
+
+    for (let page = 0; page < maxPages; page++) {
+        const data = await fetchEventsPage(currentOffset);
+        total = data.total;
+        accumulated = accumulated.concat(data.results);
+        currentOffset += data.results.length;
+
+        if (currentOffset >= total || data.results.length < PAGE_LIMIT) break;
+    }
+
+    const events = parseRawEvents(accumulated);
+
+    return {
+        events,
+        apiOffset: currentOffset,
+        total,
+        hasMore: currentOffset < total,
+    };
+}
