@@ -368,10 +368,20 @@ describe('fetchTipMessages', () => {
     it('ignores invalid tip IDs in a batch', async () => {
         mockTipResult('valid only');
 
-        const result = await fetchTipMessages([0, '0', null, undefined, 'abc', 9]);
+        const result = await fetchTipMessages([0, '0', null, undefined, 'abc', -1, '1.5', 9]);
 
         expect(fetchCallReadOnlyFunction).toHaveBeenCalledTimes(1);
         expect(result.size).toBe(1);
         expect(result.get('9')).toBe('valid only');
+    });
+
+    it('canonicalizes valid string IDs with surrounding whitespace', async () => {
+        mockTipResult('trimmed');
+
+        const result = await fetchTipMessages([' 12 ']);
+
+        expect(fetchCallReadOnlyFunction).toHaveBeenCalledTimes(1);
+        expect(result.has('12')).toBe(true);
+        expect(result.has(' 12 ')).toBe(false);
     });
 });
