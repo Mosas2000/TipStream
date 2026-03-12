@@ -119,6 +119,18 @@ describe('Analytics', () => {
         expect(summary.batchDropOffRate).toBe('0.0');
     });
 
+    it('computes batch completion rate from started and confirmed', () => {
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipConfirmed();
+        analytics.trackBatchTipConfirmed();
+        const summary = analytics.getSummary();
+        expect(summary.batchCompletionRate).toBe('50.0');
+        expect(summary.batchDropOffRate).toBe('50.0');
+    });
+
     it('records firstSeen timestamp', () => {
         analytics.trackSession();
         const summary = analytics.getSummary();
