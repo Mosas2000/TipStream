@@ -38,6 +38,14 @@ export default function OfflineBanner() {
             <div className="flex items-center justify-center gap-2">
                 <WifiOff className="w-4 h-4" aria-hidden="true" />
                 <span>You are offline. Some features may not work until your connection is restored.</span>
+                <button
+                    type="button"
+                    onClick={() => setDismissed(true)}
+                    className="ml-2 p-0.5 rounded hover:bg-red-700 transition-colors"
+                    aria-label="Dismiss offline notification"
+                >
+                    <X className="w-4 h-4" aria-hidden="true" />
+                </button>
             </div>
         </div>
     );
