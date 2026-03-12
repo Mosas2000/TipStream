@@ -203,6 +203,7 @@ export default function BatchTip({ addToast }) {
             });
         } catch (err) {
             console.error('Batch tip failed:', err.message || err);
+            analytics.trackBatchTipFailed();
             addToast?.('Failed to send batch tips. Please try again.', 'error');
             setSending(false);
         }
