@@ -161,6 +161,21 @@ describe('Analytics', () => {
         expect(metrics.batchSizes['10']).toBe(1);
     });
 
+    it('computes average batch size from recorded sizes', () => {
+        // 2 batches of 3, 1 batch of 5, 1 batch of 10 → (6+5+10)/4 = 5.25
+        analytics.trackBatchSize(3);
+        analytics.trackBatchSize(3);
+        analytics.trackBatchSize(5);
+        analytics.trackBatchSize(10);
+        const summary = analytics.getSummary();
+        expect(summary.averageBatchSize).toBe('5.3');
+    });
+
+    it('returns zero average batch size when no batches recorded', () => {
+        const summary = analytics.getSummary();
+        expect(summary.averageBatchSize).toBe('0.0');
+    });
+
     it('records firstSeen timestamp', () => {
         analytics.trackSession();
         const summary = analytics.getSummary();
