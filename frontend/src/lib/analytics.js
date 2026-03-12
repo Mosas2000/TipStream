@@ -159,6 +159,9 @@ export const analytics = {
     const batchCompletionRate = batchStarted > 0
       ? ((batchConfirmed / batchStarted) * 100).toFixed(1)
       : '0.0';
+    const batchDropOffRate = batchStarted > 0
+      ? (((batchStarted - batchConfirmed) / batchStarted) * 100).toFixed(1)
+      : '0.0';
 
     const sortedTabs = Object.entries(m.tabNavigations || {})
       .sort((a, b) => b[1] - a[1]);
@@ -187,6 +190,7 @@ export const analytics = {
       batchTipsFailed: m.batchTipsFailed || 0,
       batchTipsCancelled: m.batchTipsCancelled || 0,
       batchCompletionRate,
+      batchDropOffRate,
       tipCompletionRate,
       tipDropOffRate,
       sortedTabs,
