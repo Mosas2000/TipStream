@@ -158,18 +158,18 @@ export default function RecentTips({ addToast }) {
     const hasActiveFilters = searchQuery || minAmount || maxAmount || sortBy !== 'newest';
     const clearFilters = () => { setSearchQuery(''); setMinAmount(''); setMaxAmount(''); setSortBy('newest'); setOffset(0); };
 
-    if (loading) return (
+    if (eventsLoading) return (
         <div className="space-y-4 animate-pulse">
             {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl" />)}
         </div>
     );
 
-    if (error) return (
+    if (eventsError) return (
         <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Live Feed</h2>
             <div className="text-center py-12 bg-red-50 dark:bg-red-900/10 rounded-xl border-2 border-dashed border-red-200 dark:border-red-900/30">
-                <p className="text-red-500 text-sm mb-4">{error}</p>
-                <button onClick={fetchRecentTips} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
+                <p className="text-red-500 text-sm mb-4">{eventsError}</p>
+                <button onClick={refreshEvents} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
             </div>
         </div>
     );
@@ -187,8 +187,8 @@ export default function RecentTips({ addToast }) {
                     )}
                 </div>
                 <div className="flex items-center gap-3">
-                    {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={fetchRecentTips} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    {lastEventRefresh && <span className="text-xs text-gray-400">{lastEventRefresh.toLocaleTimeString()}</span>}
+                    <button onClick={refreshEvents} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
@@ -230,8 +230,8 @@ export default function RecentTips({ addToast }) {
                         </div>
                     </div>
                 )}
-                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {tips.length} tips{totalApiEvents !== null && totalApiEvents > tips.length ? ` (${totalApiEvents} total on-chain)` : ''}</p>}
-                {!hasActiveFilters && totalApiEvents !== null && <p className="text-xs text-gray-500 dark:text-gray-400">Loaded {tips.length} of {totalApiEvents} on-chain events</p>}
+                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {enrichedTips.length} tips{eventsMeta.total > enrichedTips.length ? ` (${eventsMeta.total} total on-chain)` : ''}</p>}
+                {!hasActiveFilters && eventsMeta.total > 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Loaded {enrichedTips.length} of {eventsMeta.total} on-chain events</p>}
             </div>
 
             {/* Tip cards */}
@@ -290,9 +290,9 @@ export default function RecentTips({ addToast }) {
             )}
 
             {/* Load More from API */}
-            {hasMore && (
+            {eventsMeta.hasMore && (
                 <div className="flex justify-center mt-4">
-                    <button onClick={loadMoreTips} disabled={loadingMore}
+                    <button onClick={handleLoadMore} disabled={loadingMore}
                         className="px-6 py-2.5 text-sm font-semibold bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                         {loadingMore ? 'Loading...' : 'Load More Tips'}
                     </button>
