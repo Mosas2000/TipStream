@@ -90,5 +90,22 @@ describe('validateTipBackAmount', () => {
         it('accepts the default tip-back amount of 0.5', () => {
             expect(validateTipBackAmount('0.5')).toBe('');
         });
+    describe('error message format', () => {
+        it('includes the minimum value in the error message', () => {
+            const error = validateTipBackAmount('0.0001');
+            expect(error).toContain(String(MIN_TIP_STX));
+            expect(error).toContain('STX');
+        });
+
+        it('includes a formatted maximum value in the error message', () => {
+            const error = validateTipBackAmount('99999');
+            expect(error).toContain('STX');
+            // MAX_TIP_STX is 10000; toLocaleString may add commas
+            expect(error).toMatch(/10[,.]?000/);
+        });
+
+        it('returns an empty string for valid input', () => {
+            expect(validateTipBackAmount('1')).toStrictEqual('');
+        });
     });
 });
