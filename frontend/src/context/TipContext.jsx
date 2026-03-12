@@ -38,6 +38,14 @@ function tipReducer(state, action) {
 export function TipProvider({ children }) {
   const [state, dispatch] = useReducer(tipReducer, initialState);
 
+  // ---- Shared event cache ------------------------------------------------
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState(null);
+  const [eventsMeta, setEventsMeta] = useState({ apiOffset: 0, total: 0, hasMore: false });
+  const [lastEventRefresh, setLastEventRefresh] = useState(null);
+  const fetchIdRef = useRef(0);
+
   const notifyTipSent = useCallback(() => {
     dispatch({ type: 'TIP_SENT' });
   }, []);
