@@ -21,7 +21,7 @@ describe('validate-csp.cjs', () => {
 
   it('reports the correct number of directives', () => {
     const output = execFileSync('node', [SCRIPT], { encoding: 'utf-8' });
-    assert.ok(output.includes('9 directives'));
+    assert.ok(output.includes('11 directives'));
   });
 
   it('lists all three configuration sources', () => {
