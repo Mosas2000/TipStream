@@ -1,14 +1,33 @@
 import { useState, useEffect } from 'react';
 import CopyButton from './ui/copy-button';
 import NotificationBell from './NotificationBell';
+import { BANNER_HEIGHT_CLASS } from './OfflineBanner';
 import { useTheme } from '../context/ThemeContext';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { NETWORK_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { getMainnetAddress } from '../utils/stacks';
 import { Sun, Moon } from 'lucide-react';
 
+/**
+ * Site header with wallet controls, theme toggle, and notification bell.
+ *
+ * The header uses sticky positioning and adjusts its top offset based on
+ * the browser's connectivity state so that it does not overlap the
+ * OfflineBanner when the user loses network connectivity.
+ *
+ * @param {Object} props
+ * @param {Object|null} props.userData - Authenticated user session data.
+ * @param {Function} props.onAuth - Callback for connect/disconnect action.
+ * @param {boolean} props.authLoading - Whether authentication is in progress.
+ * @param {Array} props.notifications - List of notification objects.
+ * @param {number} props.unreadCount - Number of unread notifications.
+ * @param {Function} props.onMarkNotificationsRead - Callback to mark all read.
+ * @param {boolean} props.notificationsLoading - Whether notifications are loading.
+ */
 export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading }) {
     const { theme, toggleTheme } = useTheme();
+    const isOnline = useOnlineStatus();
     const [apiReachable, setApiReachable] = useState(null);
 
     useEffect(() => {
@@ -28,8 +47,13 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
 
     const networkLabel = NETWORK_NAME.charAt(0).toUpperCase() + NETWORK_NAME.slice(1);
 
+    // When the OfflineBanner is visible it occupies layout space above the
+    // header.  Shift the header down by the banner's height so the two sticky
+    // elements do not overlap.  When online, the header sits flush at the top.
+    const stickyTop = isOnline ? 'top-0' : BANNER_HEIGHT_CLASS;
+
     return (
-        <nav className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5" aria-label="Site header">
+        <nav data-testid="site-header" className={`sticky ${stickyTop} z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5 transition-[top] duration-300 ease-in-out`} aria-label="Site header">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Logo */}

@@ -32,6 +32,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `validate:csp` npm script in root `package.json` for running the
   consistency check.
 
+### Fixed
+
+- `OfflineBanner` no longer uses `fixed top-0` positioning, which caused
+  it to overlap the sticky `Header` when the user went offline. Both
+  elements occupied the same viewport position with the same z-index,
+  making navigation, wallet controls, and the disconnect button
+  inaccessible (Issue #231).
+- `OfflineBanner` now uses `sticky top-0` with a higher z-index (`z-[60]`)
+  and renders in normal document flow before the Header, pushing it down
+  naturally when visible.
+- `Header` component conditionally adjusts its sticky `top` offset based
+  on the `useOnlineStatus` hook value, shifting down by the banner height
+  when offline to prevent stacking under the banner during scroll.
+- Header offset transition animated with `transition-[top] duration-300`
+  for smooth visual adjustment on connectivity changes.
+
+### Added (Issue #231)
+
+- Dismiss button on the `OfflineBanner` allowing users to manually close
+  the offline warning. The dismissed state resets when connectivity
+  returns so the banner reappears on the next offline transition.
+- `BANNER_HEIGHT_CLASS` exported constant from `OfflineBanner` for shared
+  height reference between components.
+- `data-testid` attributes on both `OfflineBanner` and `Header` nav
+  elements for reliable test targeting.
+- `aria-live="assertive"` on the offline banner for explicit screen
+  reader announcement.
+- `@keyframes slide-down` animation in `index.css` for the banner
+  entrance effect.
+- `@media (prefers-reduced-motion: reduce)` rule disabling all custom
+  animations for accessibility compliance.
+- JSDoc documentation on `OfflineBanner`, `Header`, and `useOnlineStatus`.
+- `OfflineBanner.test.jsx` with 14 tests covering visibility, positioning,
+  accessibility, animation, exported constants, and dismiss behavior.
+- `Header.test.jsx` with 12 tests covering offline positioning, layout,
+  accessibility, and content rendering.
+- `useOnlineStatus.test.jsx` with 6 tests covering initial state, event
+  handling, rapid toggling, and cleanup on unmount.
+
 ### Security (prior)
 
 - Chainhook `parseBody` now enforces a 10 MB request body size limit.
