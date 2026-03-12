@@ -24,6 +24,8 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const onConfirmedRef = useRef(onConfirmed);
   const onFailedRef = useRef(onFailed);
 
+  useEffect(() => { onConfirmedRef.current = onConfirmed; }, [onConfirmed]);
+
   const checkStatus = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/extended/v1/tx/${txId}`);
