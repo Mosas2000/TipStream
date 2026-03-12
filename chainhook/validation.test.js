@@ -11,3 +11,9 @@ describe("MAX_BODY_SIZE", () => {
     assert.strictEqual(MAX_BODY_SIZE, 10 * 1024 * 1024);
   });
 });
+
+describe("STACKS_ADDRESS_RE", () => {
+  it("matches a valid SP mainnet address", () => {
+    assert.ok(STACKS_ADDRESS_RE.test("SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T"));
+  });
+});
