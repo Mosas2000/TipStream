@@ -33,7 +33,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
     const stickyTop = isOnline ? 'top-0' : BANNER_HEIGHT_CLASS;
 
     return (
-        <nav className={`sticky ${stickyTop} z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5 transition-[top] duration-300 ease-in-out`} aria-label="Site header">
+        <nav data-testid="site-header" className={`sticky ${stickyTop} z-50 bg-gray-900/95 backdrop-blur-md border-b border-white/5 transition-[top] duration-300 ease-in-out`} aria-label="Site header">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Logo */}
