@@ -97,7 +97,17 @@ const CONCURRENCY_LIMIT = 5;
  */
 export async function fetchTipMessages(tipIds) {
     const messages = new Map();
-    const queue = [...tipIds];
+    const queue = [
+        ...new Set(
+            tipIds
+                .map(id => String(id))
+                .filter(id => id && id !== '0' && Number.isFinite(Number(id)) && Number(id) > 0),
+        ),
+    ];
+
+    if (queue.length === 0) {
+        return messages;
+    }
 
     async function worker() {
         while (queue.length > 0) {
