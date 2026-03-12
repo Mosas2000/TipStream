@@ -119,6 +119,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && path === "/api/chainhook/events") {
+    // Early rejection based on Content-Length header
+    const contentLength = parseInt(req.headers["content-length"], 10);
+    if (contentLength > MAX_BODY_SIZE) {
+      return sendJson(res, 413, { error: "payload too large" });
+    }
+
     if (AUTH_TOKEN) {
       const auth = req.headers.authorization || "";
       if (auth !== `Bearer ${AUTH_TOKEN}`) {
