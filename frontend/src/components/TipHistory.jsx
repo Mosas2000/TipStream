@@ -119,24 +119,24 @@ export default function TipHistory({ userAddress }) {
         try { await contextLoadMore(); } finally { setLoadingMore(false); }
     };
 
-    const filteredTips = tips.filter(t => {
+    const filteredTips = enrichedTips.filter(t => {
         if (tab === 'sent' && t.direction !== 'sent') return false;
         if (tab === 'received' && t.direction !== 'received') return false;
         if (categoryFilter !== 'all' && t.category !== Number(categoryFilter)) return false;
         return true;
     });
 
-    if (loading) return (
+    if (eventsLoading || statsLoading) return (
         <div className="flex flex-col items-center justify-center py-16">
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-white mb-4" />
             <p className="text-gray-500 dark:text-gray-400 text-sm">Loading activity...</p>
         </div>
     );
 
-    if (error) return (
+    if (eventsError) return (
         <div className="max-w-md mx-auto text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-red-100 dark:border-red-900/30 p-8">
-            <p className="text-red-500 text-sm mb-4">{error}</p>
-            <button onClick={() => { setError(null); setLoading(true); fetchData(); }}
+            <p className="text-red-500 text-sm mb-4">{eventsError}</p>
+            <button onClick={refreshEvents}
                 className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">
                 Retry
             </button>
@@ -154,8 +154,8 @@ export default function TipHistory({ userAddress }) {
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Activity</h2>
                 <div className="flex items-center gap-3">
-                    {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={fetchData} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    {lastEventRefresh && <span className="text-xs text-gray-400">{lastEventRefresh.toLocaleTimeString()}</span>}
+                    <button onClick={refreshEvents} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
@@ -233,14 +233,14 @@ export default function TipHistory({ userAddress }) {
             </div>
 
             {/* Load More from API */}
-            {hasMore && (
+            {eventsMeta.hasMore && (
                 <div className="flex flex-col items-center gap-2 mt-4">
-                    <button onClick={loadMoreTips} disabled={loadingMore}
+                    <button onClick={handleLoadMore} disabled={loadingMore}
                         className="px-6 py-2.5 text-sm font-semibold bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                         {loadingMore ? 'Loading...' : 'Load More Activity'}
                     </button>
-                    {totalApiEvents !== null && (
-                        <span className="text-xs text-gray-400">Showing {tips.length} of {totalApiEvents} on-chain events</span>
+                    {eventsMeta.total > 0 && (
+                        <span className="text-xs text-gray-400">Showing {enrichedTips.length} of {eventsMeta.total} on-chain events</span>
                     )}
                 </div>
             )}
