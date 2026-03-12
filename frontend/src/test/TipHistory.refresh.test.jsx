@@ -73,6 +73,48 @@ describe('TipHistory refresh behavior', () => {
         expect(clearTipCache).not.toHaveBeenCalled();
     });
 
+    it('deduplicates repeated tip IDs before message enrichment fetch', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        useTipContext.mockReturnValue({
+            events: [
+                {
+                    event: 'tip-sent',
+                    tipId: '1',
+                    sender: 'SP1SENDER',
+                    recipient: 'SP2RECIPIENT',
+                    amount: '1000000',
+                    fee: '50000',
+                    timestamp: 1700000000,
+                    txId: '0xaaa',
+                },
+                {
+                    event: 'tip-sent',
+                    tipId: '1',
+                    sender: 'SP1SENDER',
+                    recipient: 'SP2RECIPIENT',
+                    amount: '1000000',
+                    fee: '50000',
+                    timestamp: 1700000001,
+                    txId: '0xbbb',
+                },
+            ],
+            eventsLoading: false,
+            eventsError: null,
+            eventsMeta: { total: 2, hasMore: false },
+            lastEventRefresh: new Date('2026-03-12T12:00:00Z'),
+            refreshEvents,
+            loadMoreEvents: vi.fn(),
+        });
+
+        render(<TipHistory userAddress="SP1SENDER" />);
+
+        await waitFor(() => {
+            expect(fetchTipMessages).toHaveBeenCalledWith(['1']);
+        });
+
+        consoleSpy.mockRestore();
+    });
+
     it('clears the tip cache when user clicks Refresh', async () => {
         render(<TipHistory userAddress="SP1SENDER" />);
 
