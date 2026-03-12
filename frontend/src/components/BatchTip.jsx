@@ -186,6 +186,7 @@ export default function BatchTip({ addToast }) {
                 postConditionMode: PostConditionMode.Deny,
                 onFinish: (data) => {
                     setSending(false);
+                    analytics.trackBatchTipConfirmed();
                     setRecipients([emptyRecipient()]);
                     setErrors({});
                     notifyTipSent();
