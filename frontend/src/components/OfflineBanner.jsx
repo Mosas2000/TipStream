@@ -7,6 +7,8 @@ import { WifiOff, X } from 'lucide-react';
  * Used by sibling components to adjust their own offsets when the banner
  * is visible. The value corresponds to py-2 (0.5rem * 2) + line-height
  * which gives roughly 2rem / 32px.
+ *
+ * @type {string}
  */
 export const BANNER_HEIGHT_CLASS = 'top-8';
 
