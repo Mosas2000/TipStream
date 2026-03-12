@@ -45,7 +45,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
     } catch {
       // Network error, keep polling
     }
-  }, [txId, onConfirmed, onFailed]);
+  }, [txId]);
 
   useEffect(() => {
     if (status !== 'pending' || pollCount >= MAX_POLLS) return;
