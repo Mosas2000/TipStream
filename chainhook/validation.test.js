@@ -28,4 +28,24 @@ describe("STACKS_ADDRESS_RE", () => {
   it("matches case-insensitively", () => {
     assert.ok(STACKS_ADDRESS_RE.test("sp31pkqvqzvzck3fm3nh67cgd6g1fmr17vqvs2w5t"));
   });
+
+  it("rejects an empty string", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test(""), false);
+  });
+
+  it("rejects a string with wrong prefix", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("BT1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"), false);
+  });
+
+  it("rejects a string that is too short", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("SP123"), false);
+  });
+
+  it("rejects a string that is too long", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("SP" + "A".repeat(50)), false);
+  });
+
+  it("rejects a string with special characters", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("SP31PKQVQZ!ZCK3FM3NH67"), false);
+  });
 });
