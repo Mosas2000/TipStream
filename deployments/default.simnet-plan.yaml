@@ -73,49 +73,4 @@ plan:
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/tipstream.clar
             clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-badges
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-badges.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-token
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-token.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-dao
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-dao.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-escrow
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-escrow.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-multisig
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-multisig.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-referral
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-referral.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-rewards
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-rewards.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-subscription
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-subscription.clar
-            clarity-version: 2
-        - emulated-contract-publish:
-            contract-name: tipstream-vault
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/tipstream-vault.clar
-            clarity-version: 2
       epoch: "3.0"

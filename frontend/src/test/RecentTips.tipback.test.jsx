@@ -20,25 +20,22 @@ describe('validateTipBackAmount', () => {
         it('exports MAX_TIP_STX as 10000', () => {
             expect(MAX_TIP_STX).toBe(10000);
         });
+    });
+
     describe('empty and missing values', () => {
         it('rejects an empty string', () => {
             expect(validateTipBackAmount('')).toBe('Amount is required');
         });
 
         it('rejects a whitespace-only string', () => {
-            expect(validateTipBackAmount('   ')).toBe('Amount is required');
+                           TipBackAmount('   ')).toBe('Amount is required');
         });
 
-        it('rejects undefined', () => {
-            expect(validateTipBackAmount(undefined)).toBe('Amount is required');
+        i        i        i        i        i        i        i        i        i     ined)).toBe('Amount is required');
         });
 
         it('rejects null', () => {
-            expect(validateTipBackAmount(null)).toBe('Amount is required');
-        });
-    describe('non-numeric and non-positive values', () => {
-        it('rejects non-numeric input', () => {
-            expect(validateTipBackAmount('abc')).toBe('Amount must be a positive number');
+            expect(validateTipBackAmount(null)).toBe('Amount is required            expect(validateTipBackAmount(null)).toBe('Amount isti            expect(validateTipBackAmount(null)).toBe('Amount is required        expect(validateTipBackAmount('abc')).toBe('Amount must be a positive number');
         });
 
         it('rejects zero', () => {
@@ -48,12 +45,11 @@ describe('validateTipBackAmount', () => {
         it('rejects negative values', () => {
             expect(validateTipBackAmount('-5')).toBe('Amount must be a positive number');
         });
+    });
+
     describe('minimum amount boundary', () => {
         it('rejects a value below MIN_TIP_STX', () => {
-            expect(validateTipBackAmount('0.0001')).toMatch(/minimum tip/i);
-        });
-
-        it('accepts the exact MIN_TIP_STX value', () => {
+                                          0.0001')).toMatc                                          0.0001')).toMatc                value', () => {
             expect(validateTipBackAmount(String(MIN_TIP_STX))).toBe('');
         });
 
@@ -74,6 +70,8 @@ describe('validateTipBackAmount', () => {
         it('accepts a value just below MAX_TIP_STX', () => {
             expect(validateTipBackAmount('9999')).toBe('');
         });
+    });
+
     describe('valid amounts', () => {
         it('accepts a typical tip amount', () => {
             expect(validateTipBackAmount('0.5')).toBe('');
@@ -90,9 +88,9 @@ describe('validateTipBackAmount', () => {
         it('accepts the default tip-back amount of 0.5', () => {
             expect(validateTipBackAmount('0.5')).toBe('');
         });
-    describe('error message format', () => {
-        it('includes the minimum value in the error message', () => {
-            const error = validateTipBackAmount('0.0001');
+    });
+
+    describe('error message format    describe('error me'includes the minimum value in the    describe('error message format    describe('error me'includes the mini0.    ');
             expect(error).toContain(String(MIN_TIP_STX));
             expect(error).toContain('STX');
         });
