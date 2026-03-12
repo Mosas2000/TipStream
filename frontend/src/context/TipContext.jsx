@@ -103,7 +103,19 @@ export function TipProvider({ children }) {
   }, [refreshEvents]);
 
   return (
-    <TipContext.Provider value={{ ...state, notifyTipSent, triggerRefresh }}>
+    <TipContext.Provider value={{
+      ...state,
+      notifyTipSent,
+      triggerRefresh,
+      // Shared event cache
+      events,
+      eventsLoading,
+      eventsError,
+      eventsMeta,
+      lastEventRefresh,
+      refreshEvents,
+      loadMoreEvents,
+    }}>
       {children}
     </TipContext.Provider>
   );
