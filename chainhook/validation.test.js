@@ -49,3 +49,33 @@ describe("STACKS_ADDRESS_RE", () => {
     assert.strictEqual(STACKS_ADDRESS_RE.test("SP31PKQVQZ!ZCK3FM3NH67"), false);
   });
 });
+
+describe("isValidStacksAddress", () => {
+  it("returns true for a valid SP address", () => {
+    assert.strictEqual(isValidStacksAddress("SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T"), true);
+  });
+
+  it("returns true for a valid ST address", () => {
+    assert.strictEqual(isValidStacksAddress("ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"), true);
+  });
+
+  it("returns false for null", () => {
+    assert.strictEqual(isValidStacksAddress(null), false);
+  });
+
+  it("returns false for undefined", () => {
+    assert.strictEqual(isValidStacksAddress(undefined), false);
+  });
+
+  it("returns false for a number", () => {
+    assert.strictEqual(isValidStacksAddress(12345), false);
+  });
+
+  it("returns false for an empty string", () => {
+    assert.strictEqual(isValidStacksAddress(""), false);
+  });
+
+  it("returns false for a malformed address", () => {
+    assert.strictEqual(isValidStacksAddress("not-an-address"), false);
+  });
+});
