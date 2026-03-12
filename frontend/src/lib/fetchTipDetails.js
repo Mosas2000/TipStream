@@ -51,8 +51,9 @@ const tipCache = new Map();
  */
 export async function fetchTipDetail(tipId) {
     const cacheKey = String(tipId);
-    if (tipCache.has(cacheKey)) {
-        return tipCache.get(cacheKey);
+    const cached = tipCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+        return cached.value;
     }
 
     try {
@@ -70,7 +71,7 @@ export async function fetchTipDetail(tipId) {
             return null;
         }
 
-        tipCache.set(cacheKey, parsed.value);
+        tipCache.set(cacheKey, { value: parsed.value, expiresAt: Date.now() + CACHE_TTL_MS });
         return parsed.value;
     } catch (err) {
         console.error(`Failed to fetch tip #${tipId}:`, err.message || err);
