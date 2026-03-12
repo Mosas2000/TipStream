@@ -156,6 +156,7 @@ export default function BatchTip({ addToast }) {
 
     const handleSendBatch = async () => {
         setShowConfirm(false);
+        analytics.trackBatchTipSubmitted();
 
         setSending(true);
         try {
