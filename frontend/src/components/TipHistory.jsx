@@ -1,9 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
 import { network } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_GET_USER_STATS } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
-import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
