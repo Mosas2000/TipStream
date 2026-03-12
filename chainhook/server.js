@@ -165,8 +165,18 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && path === "/api/tips") {
-    const limit = parseInt(url.searchParams.get("limit") || "20", 10);
-    const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+    const rawLimit = url.searchParams.get("limit") || "20";
+    const rawOffset = url.searchParams.get("offset") || "0";
+    const limit = parseInt(rawLimit, 10);
+    const offset = parseInt(rawOffset, 10);
+
+    if (isNaN(limit) || limit < 1 || limit > 100) {
+      return sendJson(res, 400, { error: "limit must be between 1 and 100" });
+    }
+    if (isNaN(offset) || offset < 0) {
+      return sendJson(res, 400, { error: "offset must be a non-negative integer" });
+    }
+
     const allEvents = loadEvents();
     const tips = allEvents
       .map(parseTipEvent)
