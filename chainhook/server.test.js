@@ -41,4 +41,13 @@ describe("parseBody", () => {
       message: "Request body too large",
     });
   });
+
+  it("accepts a body exactly at MAX_BODY_SIZE", async () => {
+    // Build a JSON string that is exactly MAX_BODY_SIZE bytes
+    const padding = "x".repeat(MAX_BODY_SIZE - 17); // {"data":"..."}
+    const json = JSON.stringify({ data: padding });
+    const stream = createStream(Buffer.from(json));
+    const result = await parseBody(stream);
+    assert.strictEqual(result.data, padding);
+  });
 });
