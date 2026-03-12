@@ -1,3 +1,12 @@
+/**
+ * TipContext -- global state for coordinating tip events across the app.
+ *
+ * Provides a refresh counter that signals consumers to re-read data,
+ * and a shared event cache so that multiple components do not independently
+ * poll the same Stacks API endpoint.
+ *
+ * @module context/TipContext
+ */
 import { createContext, useContext, useReducer, useCallback } from 'react';
 
 const TipContext = createContext(null);
