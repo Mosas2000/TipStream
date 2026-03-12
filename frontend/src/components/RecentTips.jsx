@@ -7,34 +7,13 @@ import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditio
 import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
+import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackValidation';
 import { useTipContext } from '../context/TipContext';
 import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
 const PAGE_SIZE = 10;
 const API_LIMIT = 50;
-
-/** Minimum acceptable tip-back amount in STX. Matches SendTip constraint. */
-export const MIN_TIP_STX = 0.001;
-
-/** Maximum acceptable tip-back amount in STX. Matches SendTip constraint. */
-export const MAX_TIP_STX = 10000;
-
-/**
- * Validate the tip-back amount and return an error message string.
- * Returns an empty string when the amount is valid.
- *
- * @param {string} value - Raw input value from the amount field.
- * @returns {string} Error message, or '' if valid.
- */
-export function validateTipBackAmount(value) {
-    if (!value || value.trim() === '') return 'Amount is required';
-    const parsed = parseFloat(value);
-    if (isNaN(parsed) || parsed <= 0) return 'Amount must be a positive number';
-    if (parsed < MIN_TIP_STX) return `Minimum tip is ${MIN_TIP_STX} STX`;
-    if (parsed > MAX_TIP_STX) return `Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`;
-    return '';
-}
 
 /**
  * RecentTips -- displays a live feed of on-chain tip events with search,
