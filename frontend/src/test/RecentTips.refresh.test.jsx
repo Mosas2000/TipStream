@@ -70,6 +70,7 @@ describe('RecentTips refresh behavior', () => {
 
         expect(clearTipCache).toHaveBeenCalledTimes(1);
         expect(refreshEvents).toHaveBeenCalledTimes(1);
+        expect(clearTipCache.mock.invocationCallOrder[0]).toBeLessThan(refreshEvents.mock.invocationCallOrder[0]);
     });
 
     it('clears the tip cache when user clicks Retry in error state', () => {
@@ -88,5 +89,6 @@ describe('RecentTips refresh behavior', () => {
 
         expect(clearTipCache).toHaveBeenCalledTimes(1);
         expect(refreshEvents).toHaveBeenCalledTimes(1);
+        expect(clearTipCache.mock.invocationCallOrder[0]).toBeLessThan(refreshEvents.mock.invocationCallOrder[0]);
     });
 });
