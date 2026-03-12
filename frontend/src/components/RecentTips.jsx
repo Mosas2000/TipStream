@@ -379,7 +379,7 @@ export default function RecentTips({ addToast }) {
                                 aria-describedby={tipBackError ? 'tipback-amount-error' : undefined}
                                 placeholder="Amount (STX)" step="0.001" min="0.001" />
                             {tipBackError && (
-                                <p id="tipback-amount-error" className="text-xs text-red-500 mt-1">{tipBackError}</p>
+                                <p id="tipback-amount-error" data-testid="tipback-amount-error" className="text-xs text-red-500 mt-1">{tipBackError}</p>
                             )}
                             </div>
                             <div>
