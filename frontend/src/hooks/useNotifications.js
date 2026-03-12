@@ -1,49 +1,42 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
-import { parseTipEvent } from '../lib/parseTipEvent';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTipContext } from '../context/TipContext';
 
 const STORAGE_KEY = 'tipstream_last_seen_tip_ts';
-const POLL_INTERVAL = 30000;
 
+/**
+ * useNotifications -- derives incoming-tip notifications from the shared
+ * event cache in TipContext instead of polling the Stacks API independently.
+ *
+ * @param {string|null} userAddress - The current user's STX address.
+ */
 export function useNotifications(userAddress) {
-    const [notifications, setNotifications] = useState([]);
+    const { events, eventsLoading } = useTipContext();
     const [unreadCount, setUnreadCount] = useState(0);
-    const [loading, setLoading] = useState(false);
     const lastSeenRef = useRef(
         parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
     );
 
-    const fetchNotifications = useCallback(async () => {
-        if (!userAddress) return;
-        try {
-            setLoading(true);
-            const res = await fetch(
-                `${STACKS_API_BASE}/extended/v1/contract/${CONTRACT_ADDRESS}.${CONTRACT_NAME}/events?limit=50&offset=0`
-            );
-            if (!res.ok) return;
-            const data = await res.json();
+    /** Derive received tips from the shared event cache. */
+    const notifications = useMemo(() => {
+        if (!userAddress) return [];
+        return events
+            .filter(t => t.event === 'tip-sent' && t.recipient === userAddress)
+            .map((t, idx) => ({
+                ...t,
+                // Preserve the timestamp enrichment from contractEvents; use a
+                // synthetic fallback so ordering remains stable when block_time
+                // is unavailable.
+                timestamp: t.timestamp || Date.now() / 1000 - idx,
+            }));
+    }, [events, userAddress]);
 
-            const receivedTips = data.results
-                .filter(e => e.contract_log?.value?.repr)
-                .map((e, idx) => ({
-                    ...parseTipEvent(e.contract_log.value.repr),
-                    timestamp: e.block_time || Date.now() / 1000 - idx,
-                    txId: e.tx_id,
-                }))
-                .filter(t => t && t.event === 'tip-sent' && t.recipient === userAddress);
-
-            setNotifications(receivedTips);
-
-            const unread = receivedTips.filter(
-                t => t.timestamp > lastSeenRef.current
-            ).length;
-            setUnreadCount(unread);
-        } catch (err) {
-            console.error('Failed to fetch notifications:', err.message || err);
-        } finally {
-            setLoading(false);
-        }
-    }, [userAddress]);
+    // Recompute unread count whenever notifications change.
+    useEffect(() => {
+        const unread = notifications.filter(
+            t => t.timestamp > lastSeenRef.current
+        ).length;
+        setUnreadCount(unread);
+    }, [notifications]);
 
     const markAllRead = useCallback(() => {
         const now = Math.floor(Date.now() / 1000);
@@ -52,11 +45,5 @@ export function useNotifications(userAddress) {
         setUnreadCount(0);
     }, []);
 
-    useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, POLL_INTERVAL);
-        return () => clearInterval(interval);
-    }, [fetchNotifications]);
-
-    return { notifications, unreadCount, loading, markAllRead, refetch: fetchNotifications };
+    return { notifications, unreadCount, loading: eventsLoading, markAllRead, refetch: () => {} };
 }
