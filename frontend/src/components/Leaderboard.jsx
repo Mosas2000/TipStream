@@ -34,12 +34,15 @@ export default function Leaderboard() {
     const [loadingMore, setLoadingMore] = useState(false);
 
     // Derive tip-sent events and leaderboard stats from the shared cache.
+    /** Tip-sent events with valid sender, recipient, and non-zero amount. */
     const tipEvents = useMemo(
         () => events.filter(t => t.event === 'tip-sent' && t.sender && t.recipient && t.amount !== '0'),
         [events],
     );
+    /** Per-address aggregation of sent/received totals and counts. */
     const leaders = useMemo(() => buildLeaderboardStats(tipEvents), [tipEvents]);
 
+    /** Request additional event pages from the shared cache. */
     const handleLoadMore = async () => {
         setLoadingMore(true);
         try { await contextLoadMore(); } finally { setLoadingMore(false); }
