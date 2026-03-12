@@ -7,6 +7,7 @@ import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditio
 import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
+import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackValidation';
 import { useTipContext } from '../context/TipContext';
 import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
@@ -14,6 +15,13 @@ import CopyButton from './ui/copy-button';
 const PAGE_SIZE = 10;
 const API_LIMIT = 50;
 
+/**
+ * RecentTips -- displays a live feed of on-chain tip events with search,
+ * filtering, pagination, and a tip-back modal for reciprocating tips.
+ *
+ * @param {Object}   props
+ * @param {Function} props.addToast - Callback to display a toast notification.
+ */
 export default function RecentTips({ addToast }) {
     const { refreshCounter } = useTipContext();
     const [tips, setTips] = useState([]);
@@ -24,6 +32,7 @@ export default function RecentTips({ addToast }) {
     const [tipBackTarget, setTipBackTarget] = useState(null);
     const [tipBackAmount, setTipBackAmount] = useState('0.5');
     const [tipBackMessage, setTipBackMessage] = useState('');
+    const [tipBackError, setTipBackError] = useState('');
     const [sending, setSending] = useState(false);
     const [lastRefresh, setLastRefresh] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -121,8 +130,29 @@ export default function RecentTips({ addToast }) {
     useEffect(() => { fetchRecentTips(); }, [fetchRecentTips, refreshCounter]);
     useEffect(() => { const i = setInterval(fetchRecentTips, 60000); return () => clearInterval(i); }, [fetchRecentTips]);
 
+    /** Handle changes to the tip-back amount input with real-time validation. */
+    const handleTipBackAmountChange = (value) => {
+        setTipBackAmount(value);
+        setTipBackError(validateTipBackAmount(value));
+    };
+
+    /**
+     * Handle the tip-back submission. Validates the amount, constructs the
+     * contract call arguments and post-conditions, then opens the wallet prompt.
+     *
+     * @param {Object} tip - The tip event to reciprocate.
+     */
     const handleTipBack = async (tip) => {
         if (!userSession.isUserSignedIn()) return;
+
+        // Validate the amount before opening the wallet prompt (Issue #233).
+        const error = validateTipBackAmount(tipBackAmount);
+        if (error) {
+            setTipBackError(error);
+            addToast?.(error, 'warning');
+            return;
+        }
+
         const microSTX = toMicroSTX(tipBackAmount);
         const senderAddress = getSenderAddress();
         setSending(true);
@@ -277,7 +307,7 @@ export default function RecentTips({ addToast }) {
                                         <span className="inline-block h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                                     ) : null}
                                     {userSession.isUserSignedIn() && (
-                                        <button onClick={() => setTipBackTarget(tip)}
+                                        <button onClick={() => { setTipBackError(''); setTipBackAmount('0.5'); setTipBackMessage(''); setTipBackTarget(tip); }}
                                             className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-lg transition-all sm:opacity-0 sm:group-hover:opacity-100">
                                             Tip Back
                                         </button>
@@ -312,22 +342,38 @@ export default function RecentTips({ addToast }) {
 
             {/* Tip-back modal */}
             {tipBackTarget && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                    role="dialog" aria-modal="true" aria-labelledby="tipback-modal-title"
+                    data-testid="tipback-modal">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
+                        <h3 id="tipback-modal-title" className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Send a tip to the original sender of tip #{tipBackTarget.tipId}</p>
                         <div className="space-y-3 mb-4">
-                            <input type="number" value={tipBackAmount} onChange={(e) => setTipBackAmount(e.target.value)}
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                            <div>
+                                <label htmlFor="tipback-amount" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount (STX)</label>
+                                <input id="tipback-amount" type="number" value={tipBackAmount} onChange={(e) => handleTipBackAmountChange(e.target.value)}
+                                data-testid="tipback-amount-input"
+                                className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none ${tipBackError ? 'border-red-400 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
+                                aria-invalid={!!tipBackError}
+                                aria-describedby={tipBackError ? 'tipback-amount-error' : undefined}
                                 placeholder="Amount (STX)" step="0.001" min="0.001" />
-                            <input type="text" value={tipBackMessage} onChange={(e) => setTipBackMessage(e.target.value)}
+                            {tipBackError && (
+                                <p id="tipback-amount-error" data-testid="tipback-amount-error" className="text-xs text-red-500 mt-1">{tipBackError}</p>
+                            )}
+                            </div>
+                            <div>
+                                <label htmlFor="tipback-message" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Message (optional)</label>
+                                <input id="tipback-message" type="text" value={tipBackMessage} onChange={(e) => setTipBackMessage(e.target.value)}
                                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                                 placeholder="Message (optional)" maxLength={280} />
+                            </div>
                         </div>
                         <div className="flex gap-3">
                             <button onClick={() => setTipBackTarget(null)}
+                                data-testid="tipback-cancel-btn"
                                 className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                            <button onClick={() => handleTipBack(tipBackTarget)} disabled={sending}
+                            <button onClick={() => handleTipBack(tipBackTarget)} disabled={sending || !!tipBackError}
+                                data-testid="tipback-send-btn"
                                 className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                                 {sending ? 'Sending...' : 'Send'}
                             </button>
