@@ -125,5 +125,38 @@ describe('TxStatus', () => {
 
             expect(screen.getByText('Confirmed on-chain')).toBeInTheDocument();
         });
+
+        it('invokes onFailed when the transaction aborts', async () => {
+            const onFailed = vi.fn();
+            mockFetchWith({ tx_status: 'abort_by_response' });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} onFailed={onFailed} />);
+            });
+
+            expect(onFailed).toHaveBeenCalledTimes(1);
+            expect(onFailed).toHaveBeenCalledWith('abort_by_response');
+        });
+
+        it('shows Transaction failed after abort', async () => {
+            mockFetchWith({ tx_status: 'abort_by_response' });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            expect(screen.getByText('Transaction failed')).toBeInTheDocument();
+        });
+
+        it('handles abort_by_post_condition as a failure', async () => {
+            const onFailed = vi.fn();
+            mockFetchWith({ tx_status: 'abort_by_post_condition' });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} onFailed={onFailed} />);
+            });
+
+            expect(onFailed).toHaveBeenCalledWith('abort_by_post_condition');
+        });
     });
 });
