@@ -6,6 +6,25 @@ const POLL_INTERVAL = 8000;
 const MAX_POLLS = 60;
 const EXPLORER_BASE_URL = 'https://explorer.hiro.so/txid';
 
+/** Visual configuration for each transaction status. */
+const STATUS_CONFIG = {
+  pending: {
+    label: 'Pending confirmation...',
+    color: 'bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200',
+    dot: 'bg-yellow-400 animate-pulse',
+  },
+  confirmed: {
+    label: 'Confirmed on-chain',
+    color: 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
+    dot: 'bg-green-500',
+  },
+  failed: {
+    label: 'Transaction failed',
+    color: 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
+    dot: 'bg-red-500',
+  },
+};
+
 /**
  * TxStatus -- polls the Stacks API for a transaction's on-chain status and
  * renders a visual indicator (pending / confirmed / failed) along with an
@@ -65,25 +84,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
     checkStatus();
   }, [checkStatus]);
 
-  const statusConfig = {
-    pending: {
-      label: 'Pending confirmation...',
-      color: 'bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200',
-      dot: 'bg-yellow-400 animate-pulse',
-    },
-    confirmed: {
-      label: 'Confirmed on-chain',
-      color: 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
-      dot: 'bg-green-500',
-    },
-    failed: {
-      label: 'Transaction failed',
-      color: 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
-      dot: 'bg-red-500',
-    },
-  };
-
-  const config = statusConfig[status];
+  const config = STATUS_CONFIG[status];
   const explorerUrl = `${EXPLORER_BASE_URL}/${txId}?chain=mainnet`;
 
   return (
