@@ -139,7 +139,7 @@ export default function RecentTips({ addToast }) {
     };
 
     const filteredTips = useMemo(() => {
-        let result = [...tips];
+        let result = [...enrichedTips];
         if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
             result = result.filter(t => [t.sender, t.recipient, t.message || ''].some(s => s.toLowerCase().includes(q)));
@@ -150,7 +150,7 @@ export default function RecentTips({ addToast }) {
         else if (sortBy === 'amount-high') result.sort((a, b) => parseInt(b.amount) - parseInt(a.amount));
         else if (sortBy === 'amount-low') result.sort((a, b) => parseInt(a.amount) - parseInt(b.amount));
         return result;
-    }, [tips, searchQuery, minAmount, maxAmount, sortBy]);
+    }, [enrichedTips, searchQuery, minAmount, maxAmount, sortBy]);
 
     const paginatedTips = useMemo(() => filteredTips.slice(offset, offset + PAGE_SIZE), [filteredTips, offset]);
     const totalPages = Math.max(1, Math.ceil(filteredTips.length / PAGE_SIZE));
