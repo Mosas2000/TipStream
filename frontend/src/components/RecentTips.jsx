@@ -360,7 +360,7 @@ export default function RecentTips({ addToast }) {
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                     role="dialog" aria-modal="true" aria-labelledby="tipback-modal-title">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
+                        <h3 id="tipback-modal-title" className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Send a tip to the original sender of tip #{tipBackTarget.tipId}</p>
                         <div className="space-y-3 mb-4">
                             <div>
