@@ -46,6 +46,10 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
     }, []);
 
     const networkLabel = NETWORK_NAME.charAt(0).toUpperCase() + NETWORK_NAME.slice(1);
+
+    // When the OfflineBanner is visible it occupies layout space above the
+    // header.  Shift the header down by the banner's height so the two sticky
+    // elements do not overlap.  When online, the header sits flush at the top.
     const stickyTop = isOnline ? 'top-0' : BANNER_HEIGHT_CLASS;
 
     return (
