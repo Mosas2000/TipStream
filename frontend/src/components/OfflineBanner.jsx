@@ -2,6 +2,14 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { WifiOff } from 'lucide-react';
 
 /**
+ * Approximate height of the offline banner in Tailwind spacing units.
+ * Used by sibling components to adjust their own offsets when the banner
+ * is visible. The value corresponds to py-2 (0.5rem * 2) + line-height
+ * which gives roughly 2rem / 32px.
+ */
+export const BANNER_HEIGHT_CLASS = 'top-8';
+
+/**
  * OfflineBanner -- renders a notification bar when the user loses connectivity.
  *
  * The component participates in normal document flow so that sibling elements
