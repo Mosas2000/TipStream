@@ -159,6 +159,15 @@ export default function RecentTips({ addToast }) {
 
     const handleTipBack = async (tip) => {
         if (!userSession.isUserSignedIn()) return;
+
+        // Validate the amount before opening the wallet prompt (Issue #233).
+        const error = validateTipBackAmount(tipBackAmount);
+        if (error) {
+            setTipBackError(error);
+            addToast?.(error, 'warning');
+            return;
+        }
+
         const microSTX = toMicroSTX(tipBackAmount);
         const senderAddress = getSenderAddress();
         setSending(true);
