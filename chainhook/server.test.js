@@ -51,3 +51,67 @@ describe("parseBody", () => {
     assert.strictEqual(result.data, padding);
   });
 });
+
+describe("extractEvents", () => {
+  it("returns an empty array for an empty payload", () => {
+    assert.deepStrictEqual(extractEvents({}), []);
+  });
+
+  it("extracts SmartContractEvent entries from a chainhook payload", () => {
+    const payload = {
+      apply: [
+        {
+          block_identifier: { index: 100 },
+          timestamp: 1700000000,
+          transactions: [
+            {
+              transaction_identifier: { hash: "0xabc123" },
+              metadata: {
+                receipt: {
+                  events: [
+                    {
+                      type: "SmartContractEvent",
+                      data: {
+                        contract_identifier: "SP123.tipstream",
+                        value: { event: "tip-sent", sender: "SP1" },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const events = extractEvents(payload);
+    assert.strictEqual(events.length, 1);
+    assert.strictEqual(events[0].txId, "0xabc123");
+    assert.strictEqual(events[0].blockHeight, 100);
+    assert.strictEqual(events[0].contract, "SP123.tipstream");
+  });
+
+  it("skips events without a value field", () => {
+    const payload = {
+      apply: [
+        {
+          block_identifier: { index: 50 },
+          timestamp: 1700000000,
+          transactions: [
+            {
+              transaction_identifier: { hash: "0xdef" },
+              metadata: {
+                receipt: {
+                  events: [
+                    { type: "SmartContractEvent", data: {} },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    assert.deepStrictEqual(extractEvents(payload), []);
+  });
+});
