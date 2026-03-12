@@ -362,7 +362,7 @@ export default function RecentTips({ addToast }) {
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Send a tip to the original sender of tip #{tipBackTarget.tipId}</p>
                         <div className="space-y-3 mb-4">
-                            <input type="number" value={tipBackAmount} onChange={(e) => setTipBackAmount(e.target.value)}
+                            <input type="number" value={tipBackAmount} onChange={(e) => handleTipBackAmountChange(e.target.value)}
                                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                                 placeholder="Amount (STX)" step="0.001" min="0.001" />
                             <input type="text" value={tipBackMessage} onChange={(e) => setTipBackMessage(e.target.value)}
