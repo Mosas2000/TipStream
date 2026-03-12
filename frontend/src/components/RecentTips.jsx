@@ -151,6 +151,12 @@ export default function RecentTips({ addToast }) {
         return '';
     };
 
+    /** Handle changes to the tip-back amount input with real-time validation. */
+    const handleTipBackAmountChange = (value) => {
+        setTipBackAmount(value);
+        setTipBackError(validateTipBackAmount(value));
+    };
+
     const handleTipBack = async (tip) => {
         if (!userSession.isUserSignedIn()) return;
         const microSTX = toMicroSTX(tipBackAmount);
