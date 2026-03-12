@@ -8,6 +8,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Four components (`Leaderboard`, `RecentTips`, `TipHistory`,
+  `useNotifications`) each polled the same Stacks API contract-events
+  endpoint on independent intervals, generating up to 15+ requests per
+  minute and risking Hiro API rate limits.  All consumers now read from
+  a single shared event cache managed by `TipContext` (Issue #234).
+- `Leaderboard` no longer runs up to 10 sequential API pages on every
+  60-second tick.  The initial page load still auto-paginates up to 10
+  pages; subsequent refreshes use the shared 30-second cache cycle.
+- `RecentTips` and `TipHistory` message enrichment (the secondary
+  `fetchTipMessages` phase) now uses a cancellation guard to avoid
+  stale updates when the component unmounts or the tip list changes
+  before the fetch completes.
+
+### Added (Issue #234)
+
+- `frontend/src/lib/contractEvents.js`: Centralised Stacks API fetching
+  layer with `fetchAllContractEvents`, `parseRawEvents`, `buildEventsUrl`,
+  and constants `PAGE_LIMIT`, `MAX_INITIAL_PAGES`, `POLL_INTERVAL_MS`.
+- Shared event cache in `TipContext`: `events`, `eventsLoading`,
+  `eventsError`, `eventsMeta`, `lastEventRefresh`, `refreshEvents`,
+  and `loadMoreEvents` exposed to all consumers via `useTipContext()`.
+- Stale-response guard in `refreshEvents` using a monotonic `fetchIdRef`
+  counter to discard responses from superseded requests.
+- `frontend/src/test/contractEvents.test.js`: 17 unit tests for
+  `parseRawEvents` and `fetchAllContractEvents`.
+- `frontend/src/test/TipContext.shared-cache.test.jsx`: 8 integration
+  tests for the provider's event cache lifecycle.
+
+### Fixed
+
 - Tip-back modal in `RecentTips` accepted zero, negative, and non-numeric
   amounts before opening the wallet prompt. Client-side validation now
   blocks invalid submissions with real-time feedback (Issue #233).
