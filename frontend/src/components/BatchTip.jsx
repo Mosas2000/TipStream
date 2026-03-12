@@ -13,6 +13,7 @@ import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
 import { formatBalance } from '../lib/balance-utils';
+import { analytics } from '../lib/analytics';
 import { useBalance } from '../hooks/useBalance';
 import { useTipContext } from '../context/TipContext';
 import { Users, Plus, Trash2, Send, Loader2, AlertTriangle } from 'lucide-react';
@@ -149,11 +150,14 @@ export default function BatchTip({ addToast }) {
 
     const handleConfirmAndSend = () => {
         if (!validate()) return;
+        analytics.trackBatchTipStarted();
         setShowConfirm(true);
     };
 
     const handleSendBatch = async () => {
         setShowConfirm(false);
+        analytics.trackBatchTipSubmitted();
+        analytics.trackBatchSize(recipients.length);
 
         setSending(true);
         try {
@@ -183,6 +187,7 @@ export default function BatchTip({ addToast }) {
                 postConditionMode: PostConditionMode.Deny,
                 onFinish: (data) => {
                     setSending(false);
+                    analytics.trackBatchTipConfirmed();
                     setRecipients([emptyRecipient()]);
                     setErrors({});
                     notifyTipSent();
@@ -193,11 +198,13 @@ export default function BatchTip({ addToast }) {
                 },
                 onCancel: () => {
                     setSending(false);
+                    analytics.trackBatchTipCancelled();
                     addToast?.('Batch tip cancelled', 'info');
                 },
             });
         } catch (err) {
             console.error('Batch tip failed:', err.message || err);
+            analytics.trackBatchTipFailed();
             addToast?.('Failed to send batch tips. Please try again.', 'error');
             setSending(false);
         }

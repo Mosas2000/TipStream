@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `loadMetrics()` now deep-copies all nested object fields (`pageViews`,
+  `batchSizes`, `tabNavigations`, `routeRedirects`, `errors`) from
+  `DEFAULT_METRICS` instead of shallow-spreading them. The previous
+  implementation shared mutable references, so incrementing any map-based
+  metric permanently mutated the defaults and caused stale data to leak
+  across `analytics.reset()` boundaries (Issue #228).
+- `analytics.trackBatchTipStarted()` and `analytics.trackBatchTipSubmitted()`
+  were called by the test suite but did not exist, producing `TypeError`.
+  Both methods (and their counters) are now implemented (Issue #228).
+
+### Added
+
+- `batchTipsStarted`, `batchTipsSubmitted`, `batchTipsConfirmed`,
+  `batchTipsFailed`, and `batchTipsCancelled` counters in analytics
+  `DEFAULT_METRICS` for full batch-tip funnel tracking.
+- `trackBatchTipStarted()`, `trackBatchTipSubmitted()`,
+  `trackBatchTipConfirmed()`, `trackBatchTipFailed()`, and
+  `trackBatchTipCancelled()` methods on the analytics object, each
+  documented with JSDoc.
+- `trackBatchSize(size)` method to record batch-tip recipient counts
+  as a frequency map.
+- `getSummary()` now includes `batchTipsStarted`, `batchTipsSubmitted`,
+  `batchTipsConfirmed`, `batchTipsFailed`, `batchTipsCancelled`,
+  `batchCompletionRate`, `batchDropOffRate`, `averageBatchSize`, and
+  `sortedBatchSizes` computed analytics.
+- `BatchTip` component wired to call all five batch-tracking methods
+  and `trackBatchSize` at the appropriate funnel stages (start, submit,
+  confirm, cancel, fail).
+- 9 new analytics tests covering batch confirmed/failed/cancelled events,
+  batch funnel lifecycle, batch size frequency map, average batch size,
+  sorted batch sizes, and extended zero-rate and reset assertions.
+
+### Fixed (prior)
+
 - `useBalance` no longer wraps the API response in `BigInt()`. The balance is
   stored as the raw API string (micro-STX) and converted at point of use via
   the new `balance-utils` helpers, eliminating the `BigInt` / `Number` type
