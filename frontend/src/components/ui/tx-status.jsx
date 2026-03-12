@@ -4,6 +4,7 @@ import { STACKS_API_BASE } from '../../config/contracts';
 const API_BASE = STACKS_API_BASE;
 const POLL_INTERVAL = 8000;
 const MAX_POLLS = 60;
+const EXPLORER_BASE_URL = 'https://explorer.hiro.so/txid';
 
 /**
  * TxStatus -- polls the Stacks API for a transaction's on-chain status and
@@ -83,7 +84,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   };
 
   const config = statusConfig[status];
-  const explorerUrl = `https://explorer.hiro.so/txid/${txId}?chain=mainnet`;
+  const explorerUrl = `${EXPLORER_BASE_URL}/${txId}?chain=mainnet`;
 
   return (
     <div className={`mt-4 p-4 rounded-xl border ${config.color}`}>
