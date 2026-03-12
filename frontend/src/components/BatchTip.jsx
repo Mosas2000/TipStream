@@ -197,6 +197,7 @@ export default function BatchTip({ addToast }) {
                 },
                 onCancel: () => {
                     setSending(false);
+                    analytics.trackBatchTipCancelled();
                     addToast?.('Batch tip cancelled', 'info');
                 },
             });
