@@ -115,6 +115,8 @@ describe('Analytics', () => {
         const summary = analytics.getSummary();
         expect(summary.tipCompletionRate).toBe('0.0');
         expect(summary.tipDropOffRate).toBe('0.0');
+        expect(summary.batchCompletionRate).toBe('0.0');
+        expect(summary.batchDropOffRate).toBe('0.0');
     });
 
     it('records firstSeen timestamp', () => {
