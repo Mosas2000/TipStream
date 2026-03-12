@@ -161,12 +161,17 @@ describe('Analytics', () => {
         analytics.trackTipStarted();
         analytics.trackTipStarted();
         analytics.trackTipConfirmed();
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipConfirmed();
         const before = analytics.getSummary();
         expect(before.tipsStarted).toBeGreaterThanOrEqual(2);
         expect(before.tipsConfirmed).toBeGreaterThanOrEqual(1);
+        expect(before.batchTipsStarted).toBeGreaterThanOrEqual(1);
         analytics.reset();
         const after = analytics.getSummary();
         expect(after.tipsStarted).toBe(0);
         expect(after.tipsConfirmed).toBe(0);
+        expect(after.batchTipsStarted).toBe(0);
+        expect(after.batchTipsConfirmed).toBe(0);
     });
 });
