@@ -9,6 +9,22 @@ import { formatAddress } from '../lib/utils';
 import { getMainnetAddress } from '../utils/stacks';
 import { Sun, Moon } from 'lucide-react';
 
+/**
+ * Site header with wallet controls, theme toggle, and notification bell.
+ *
+ * The header uses sticky positioning and adjusts its top offset based on
+ * the browser's connectivity state so that it does not overlap the
+ * OfflineBanner when the user loses network connectivity.
+ *
+ * @param {Object} props
+ * @param {Object|null} props.userData - Authenticated user session data.
+ * @param {Function} props.onAuth - Callback for connect/disconnect action.
+ * @param {boolean} props.authLoading - Whether authentication is in progress.
+ * @param {Array} props.notifications - List of notification objects.
+ * @param {number} props.unreadCount - Number of unread notifications.
+ * @param {Function} props.onMarkNotificationsRead - Callback to mark all read.
+ * @param {boolean} props.notificationsLoading - Whether notifications are loading.
+ */
 export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading }) {
     const { theme, toggleTheme } = useTheme();
     const isOnline = useOnlineStatus();
