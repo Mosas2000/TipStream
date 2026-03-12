@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { WifiOff } from 'lucide-react';
 
