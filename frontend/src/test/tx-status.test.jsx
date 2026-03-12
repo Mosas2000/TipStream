@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, act } from '@testing-library/react';
 import TxStatus from '../components/ui/tx-status';
+import { POLL_INTERVAL, MAX_POLLS } from '../components/ui/tx-status';
 
 // ---------------------------------------------------------------------------
 // Mock fetch so we never hit a real network during tests.
@@ -180,7 +181,7 @@ describe('TxStatus', () => {
             const callsBefore = global.fetch.mock.calls.length;
 
             await act(async () => {
-                vi.advanceTimersByTime(8000);
+                vi.advanceTimersByTime(POLL_INTERVAL);
             });
 
             expect(global.fetch.mock.calls.length).toBeGreaterThan(callsBefore);
@@ -241,7 +242,7 @@ describe('TxStatus', () => {
             // Now simulate a success poll
             mockFetchWith({ tx_status: 'success', tx_id: MOCK_TX_ID });
             await act(async () => {
-                vi.advanceTimersByTime(8000);
+                vi.advanceTimersByTime(POLL_INTERVAL);
             });
 
             // The latest callback (B) should be called, not A.
@@ -266,12 +267,12 @@ describe('TxStatus', () => {
 
             // Advance through one poll cycle (network error silently caught).
             await act(async () => {
-                vi.advanceTimersByTime(8000);
+                vi.advanceTimersByTime(POLL_INTERVAL);
             });
 
             // Advance through another cycle (recovery).
             await act(async () => {
-                vi.advanceTimersByTime(8000);
+                vi.advanceTimersByTime(POLL_INTERVAL);
             });
 
             // Should still be pending -- not crashed.
@@ -289,7 +290,7 @@ describe('TxStatus', () => {
             });
 
             await act(async () => {
-                vi.advanceTimersByTime(8000);
+                vi.advanceTimersByTime(POLL_INTERVAL);
             });
 
             expect(screen.getByText('Pending confirmation...')).toBeInTheDocument();
