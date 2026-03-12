@@ -18,8 +18,15 @@ export const BANNER_HEIGHT_CLASS = 'top-8';
  */
 export default function OfflineBanner() {
     const isOnline = useOnlineStatus();
+    const [dismissed, setDismissed] = useState(false);
 
-    if (isOnline) return null;
+    // Reset dismissed state when connectivity returns so the banner
+    // reappears on the next offline transition.
+    if (isOnline && dismissed) {
+        setDismissed(false);
+    }
+
+    if (isOnline || dismissed) return null;
 
     return (
         <div
