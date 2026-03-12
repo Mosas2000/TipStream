@@ -22,6 +22,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const [pollCount, setPollCount] = useState(0);
 
   const onConfirmedRef = useRef(onConfirmed);
+  const onFailedRef = useRef(onFailed);
 
   const checkStatus = useCallback(async () => {
     try {
