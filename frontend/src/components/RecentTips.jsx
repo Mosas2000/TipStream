@@ -373,6 +373,7 @@ export default function RecentTips({ addToast }) {
                             <div>
                                 <label htmlFor="tipback-amount" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount (STX)</label>
                                 <input id="tipback-amount" type="number" value={tipBackAmount} onChange={(e) => handleTipBackAmountChange(e.target.value)}
+                                data-testid="tipback-amount-input"
                                 className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none ${tipBackError ? 'border-red-400 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                                 aria-invalid={!!tipBackError}
                                 aria-describedby={tipBackError ? 'tipback-amount-error' : undefined}
