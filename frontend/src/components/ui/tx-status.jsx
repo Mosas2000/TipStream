@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { STACKS_API_BASE } from '../../config/contracts';
 
 const API_BASE = STACKS_API_BASE;
