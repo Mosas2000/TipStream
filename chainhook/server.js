@@ -175,6 +175,9 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && path.startsWith("/api/tips/user/")) {
     const address = path.split("/api/tips/user/")[1];
+    if (!isValidStacksAddress(address)) {
+      return sendJson(res, 400, { error: "invalid address format" });
+    }
     const allEvents = loadEvents();
     const tips = allEvents
       .map(parseTipEvent)
