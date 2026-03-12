@@ -10,6 +10,7 @@ import { Sun, Moon } from 'lucide-react';
 
 export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading }) {
     const { theme, toggleTheme } = useTheme();
+    const isOnline = useOnlineStatus();
     const [apiReachable, setApiReachable] = useState(null);
 
     useEffect(() => {
