@@ -25,6 +25,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const onFailedRef = useRef(onFailed);
 
   useEffect(() => { onConfirmedRef.current = onConfirmed; }, [onConfirmed]);
+  useEffect(() => { onFailedRef.current = onFailed; }, [onFailed]);
 
   const checkStatus = useCallback(async () => {
     try {
