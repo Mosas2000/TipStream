@@ -21,6 +21,8 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const [status, setStatus] = useState('pending');
   const [pollCount, setPollCount] = useState(0);
 
+  const onConfirmedRef = useRef(onConfirmed);
+
   const checkStatus = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/extended/v1/tx/${txId}`);
