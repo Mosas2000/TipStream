@@ -13,6 +13,7 @@ import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
 import { formatBalance } from '../lib/balance-utils';
+import { analytics } from '../lib/analytics';
 import { useBalance } from '../hooks/useBalance';
 import { useTipContext } from '../context/TipContext';
 import { Users, Plus, Trash2, Send, Loader2, AlertTriangle } from 'lucide-react';
