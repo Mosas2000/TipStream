@@ -354,4 +354,24 @@ describe('fetchTipMessages', () => {
         await fetchTipMessages([5]);
         expect(fetchCallReadOnlyFunction).toHaveBeenCalledTimes(1);
     });
+
+    it('deduplicates repeated tip IDs within a single batch', async () => {
+        mockTipResult('deduped');
+
+        const result = await fetchTipMessages([7, '7', 7]);
+
+        expect(fetchCallReadOnlyFunction).toHaveBeenCalledTimes(1);
+        expect(result.size).toBe(1);
+        expect(result.get('7')).toBe('deduped');
+    });
+
+    it('ignores invalid tip IDs in a batch', async () => {
+        mockTipResult('valid only');
+
+        const result = await fetchTipMessages([0, '0', null, undefined, 'abc', 9]);
+
+        expect(fetchCallReadOnlyFunction).toHaveBeenCalledTimes(1);
+        expect(result.size).toBe(1);
+        expect(result.get('9')).toBe('valid only');
+    });
 });
