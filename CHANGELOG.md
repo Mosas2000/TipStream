@@ -8,6 +8,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `clearTipCache()` was executed inside automatic message-enrichment
+  effects in both `RecentTips` and `TipHistory`, causing each refresh
+  cycle to wipe shared tip-detail cache data for all mounted consumers.
+  Automatic enrichment now preserves cache state, and hard cache clears
+  are restricted to user-initiated `Refresh`/`Retry` actions only
+  (Issue #235).
+- Tip-detail cache entries in `fetchTipDetails` now use TTL-based
+  expiration (`CACHE_TTL_MS = 5 minutes`) so stale entries are
+  transparently refreshed on demand without global cache resets.
+
+- `fetchTipDetails` now exports `getCacheSize()` and `getCachedEntry()`
+  as test/debug helpers to verify cache entry lifecycle and expiration.
+
+### Added (Issue #235)
+
+- `frontend/src/test/fetchTipDetails.test.js` with 29 tests covering
+  cold/warm cache paths, TTL expiry, null/error handling, cache clear
+  semantics, helper exports, and batch message fetch behavior.
+- `frontend/src/test/RecentTips.refresh.test.jsx` with 3 tests proving
+  `clearTipCache()` is not called by automatic enrichment and is only
+  triggered by user `Refresh`/`Retry` actions.
+- `frontend/src/test/TipHistory.refresh.test.jsx` with 3 tests proving
+  `clearTipCache()` is not called by automatic enrichment and is only
+  triggered by user `Refresh`/`Retry` actions.
+
 - Four components (`Leaderboard`, `RecentTips`, `TipHistory`,
   `useNotifications`) each polled the same Stacks API contract-events
   endpoint on independent intervals, generating up to 15+ requests per
