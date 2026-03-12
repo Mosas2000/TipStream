@@ -16,3 +16,17 @@ export const STACKS_ADDRESS_RE = /^(SP|SM|ST)[0-9A-Z]{33,41}$/i;
 export function isValidStacksAddress(address) {
   return typeof address === "string" && STACKS_ADDRESS_RE.test(address);
 }
+
+/**
+ * Parse a query parameter string as an integer within bounds.
+ * Returns the parsed integer, or NaN if the value is invalid or out of range.
+ * @param {string} value - Raw query parameter value.
+ * @param {number} min - Minimum allowed value (inclusive).
+ * @param {number} max - Maximum allowed value (inclusive).
+ * @returns {number}
+ */
+export function sanitizeQueryInt(value, min, max) {
+  const num = parseInt(value, 10);
+  if (isNaN(num) || num < min || num > max) return NaN;
+  return num;
+}
