@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import CopyButton from './ui/copy-button';
 import NotificationBell from './NotificationBell';
+import { BANNER_HEIGHT_CLASS } from './OfflineBanner';
 import { useTheme } from '../context/ThemeContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { NETWORK_NAME, STACKS_API_BASE } from '../config/contracts';
