@@ -62,7 +62,6 @@ export default function RecentTips({ addToast }) {
         if (tipIds.length === 0) return;
         let cancelled = false;
         setMessagesLoading(true);
-        clearTipCache();
         fetchTipMessages(tipIds)
             .then(messageMap => {
                 if (cancelled) return;
