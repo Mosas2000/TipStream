@@ -49,90 +49,45 @@ export default function RecentTips({ addToast }) {
     const [offset, setOffset] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
 
-    const fetchRecentTips = useCallback(async () => {
-        try {
-            setError(null);
-            clearTipCache();
-            const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=0`);
-            if (!response.ok) throw new Error(`API returned ${response.status}`);
+    // Derive tip-sent events from the shared cache.
+    const tips = useMemo(
+        () => events.filter(t => t.event === 'tip-sent' && t.sender && t.recipient),
+        [events],
+    );
 
-            const data = await response.json();
-            const tipEvents = data.results
-                .filter(e => e.contract_log?.value?.repr)
-                .map(e => parseTipEvent(e.contract_log.value.repr))
-                .filter(t => t !== null && t.event === 'tip-sent');
+    // Enrich tips with on-chain messages whenever the tip list changes.
+    const [tipMessages, setTipMessages] = useState({});
+    useEffect(() => {
+        const tipIds = tips.map(t => t.tipId).filter(id => id && id !== '0');
+        if (tipIds.length === 0) return;
+        let cancelled = false;
+        setMessagesLoading(true);
+        clearTipCache();
+        fetchTipMessages(tipIds)
+            .then(messageMap => {
+                if (cancelled) return;
+                const obj = {};
+                messageMap.forEach((v, k) => { obj[k] = v; });
+                setTipMessages(obj);
+            })
+            .catch(err => { if (!cancelled) console.warn('Failed to fetch tip messages:', err.message || err); })
+            .finally(() => { if (!cancelled) setMessagesLoading(false); });
+        return () => { cancelled = true; };
+    }, [tips]);
 
-            setTips(tipEvents);
-            setApiOffset(data.results.length);
-            setHasMore(data.offset + data.results.length < data.total);
-            setTotalApiEvents(data.total);
-            setLoading(false);
-            setLastRefresh(new Date());
+    // Merge messages into the tip objects for display.
+    const enrichedTips = useMemo(
+        () => tips.map(t => {
+            const msg = tipMessages[String(t.tipId)];
+            return msg ? { ...t, message: msg } : t;
+        }),
+        [tips, tipMessages],
+    );
 
-            // Second phase: fetch on-chain messages for each tip
-            const tipIds = tipEvents.map(t => t.tipId).filter(id => id && id !== '0');
-            if (tipIds.length > 0) {
-                setMessagesLoading(true);
-                try {
-                    const messageMap = await fetchTipMessages(tipIds);
-                    setTips(prev => prev.map(t => {
-                        const msg = messageMap.get(String(t.tipId));
-                        return msg ? { ...t, message: msg } : t;
-                    }));
-                } catch (msgErr) {
-                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
-                } finally {
-                    setMessagesLoading(false);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to fetch recent tips:', err.message || err);
-            const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
-            setError(isNet ? 'Unable to reach the Stacks API. Check your connection.' : `Failed to load tips: ${err.message}`);
-            setLoading(false);
-        }
-    }, []);
-
-    const loadMoreTips = useCallback(async () => {
-        try {
-            setLoadingMore(true);
-            const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=${apiOffset}`);
-            if (!response.ok) throw new Error(`API returned ${response.status}`);
-
-            const data = await response.json();
-            const newTipEvents = data.results
-                .filter(e => e.contract_log?.value?.repr)
-                .map(e => parseTipEvent(e.contract_log.value.repr))
-                .filter(t => t !== null && t.event === 'tip-sent');
-
-            setTips(prev => [...prev, ...newTipEvents]);
-            setApiOffset(prev => prev + data.results.length);
-            setHasMore(data.offset + data.results.length < data.total);
-
-            // Fetch messages for new tips
-            const tipIds = newTipEvents.map(t => t.tipId).filter(id => id && id !== '0');
-            if (tipIds.length > 0) {
-                try {
-                    const messageMap = await fetchTipMessages(tipIds);
-                    setTips(prev => prev.map(t => {
-                        const msg = messageMap.get(String(t.tipId));
-                        return msg ? { ...t, message: msg } : t;
-                    }));
-                } catch (msgErr) {
-                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to load more tips:', err.message || err);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [apiOffset]);
-
-    useEffect(() => { fetchRecentTips(); }, [fetchRecentTips, refreshCounter]);
-    useEffect(() => { const i = setInterval(fetchRecentTips, 60000); return () => clearInterval(i); }, [fetchRecentTips]);
+    const handleLoadMore = async () => {
+        setLoadingMore(true);
+        try { await contextLoadMore(); } finally { setLoadingMore(false); }
+    };
 
     /** Handle changes to the tip-back amount input with real-time validation. */
     const handleTipBackAmountChange = (value) => {
