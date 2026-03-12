@@ -135,4 +135,22 @@ describe('OfflineBanner', () => {
 
         expect(container.firstChild).toBeNull();
     });
+
+    it('reappears after dismiss once connectivity cycles off again', () => {
+        // Start offline, dismiss, go online, go offline again.
+        setOnline(false);
+        const { container, rerender } = render(<OfflineBanner />);
+        fireEvent.click(screen.getByLabelText('Dismiss offline notification'));
+        expect(container.firstChild).toBeNull();
+
+        // Connectivity returns -- dismissed flag should reset.
+        setOnline(true);
+        rerender(<OfflineBanner />);
+        expect(container.firstChild).toBeNull(); // still nothing (online)
+
+        // Drop offline again -- banner should reappear.
+        setOnline(false);
+        rerender(<OfflineBanner />);
+        expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+    });
 });
