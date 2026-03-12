@@ -74,6 +74,9 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
     }
   }, [txId]);
 
+  // Schedule the next poll using setTimeout (not setInterval) so the
+  // effect correctly cleans up when the component unmounts or when a
+  // terminal state is reached.
   useEffect(() => {
     if (status !== 'pending' || pollCount >= MAX_POLLS) return;
 
