@@ -87,7 +87,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const explorerUrl = `${EXPLORER_BASE_URL}/${txId}?chain=mainnet`;
 
   return (
-    <div className={`mt-4 p-4 rounded-xl border ${config.color}`}>
+    <div data-testid="tx-status" className={`mt-4 p-4 rounded-xl border ${config.color}`}>
       <div className="flex items-center gap-3">
         <span className={`h-2.5 w-2.5 rounded-full ${config.dot}`} />
         <span className="text-sm font-medium">{config.label}</span>
