@@ -60,7 +60,7 @@ export default function Leaderboard() {
     if (error) return (
         <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 text-center">
             <p className="text-red-500 text-sm mb-4">{error}</p>
-            <button onClick={fetchLeaderboard} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
+            <button onClick={refreshEvents} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
         </div>
     );
 
@@ -79,7 +79,7 @@ export default function Leaderboard() {
                 </div>
                 <div className="flex items-center gap-3">
                     {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={fetchLeaderboard} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    <button onClick={refreshEvents} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
@@ -115,17 +115,17 @@ export default function Leaderboard() {
                 )}
                 {sorted.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center px-3">
-                        <span className="text-xs text-gray-400">Showing top {sorted.length} users{totalApiEvents !== null ? ` (from ${allTipEvents.length} events of ${totalApiEvents} total)` : ''}</span>
+                        <span className="text-xs text-gray-400">Showing top {sorted.length} users{eventsMeta.total ? ` (from ${tipEvents.length} events of ${eventsMeta.total} total)` : ''}</span>
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                             Total: {formatSTX(sorted.reduce((sum, u) => sum + (tab === 'sent' ? u.totalSent : u.totalReceived), 0), 2)} STX
                         </span>
                     </div>
                 )}
 
-                {hasMore && (
+                {eventsMeta.hasMore && (
                     <div className="mt-3 text-center">
                         <button 
-                            onClick={loadMoreEvents} 
+                            onClick={handleLoadMore} 
                             disabled={loadingMore}
                             className="px-4 py-2 text-xs font-semibold bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors"
                         >
