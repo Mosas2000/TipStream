@@ -26,7 +26,11 @@ export default function OfflineBanner() {
         setDismissed(false);
     }
 
-    if (isOnline || dismissed) return null;
+    // Determine whether the banner should be visible. Export-friendly
+    // for consumers that need to know if the banner occupies layout space.
+    const visible = !isOnline && !dismissed;
+
+    if (!visible) return null;
 
     return (
         <div
