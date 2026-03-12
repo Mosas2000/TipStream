@@ -20,5 +20,21 @@ describe('validateTipBackAmount', () => {
         it('exports MAX_TIP_STX as 10000', () => {
             expect(MAX_TIP_STX).toBe(10000);
         });
+    describe('empty and missing values', () => {
+        it('rejects an empty string', () => {
+            expect(validateTipBackAmount('')).toBe('Amount is required');
+        });
+
+        it('rejects a whitespace-only string', () => {
+            expect(validateTipBackAmount('   ')).toBe('Amount is required');
+        });
+
+        it('rejects undefined', () => {
+            expect(validateTipBackAmount(undefined)).toBe('Amount is required');
+        });
+
+        it('rejects null', () => {
+            expect(validateTipBackAmount(null)).toBe('Amount is required');
+        });
     });
 });
