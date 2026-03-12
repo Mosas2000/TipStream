@@ -150,6 +150,7 @@ export default function BatchTip({ addToast }) {
 
     const handleConfirmAndSend = () => {
         if (!validate()) return;
+        analytics.trackBatchTipStarted();
         setShowConfirm(true);
     };
 
