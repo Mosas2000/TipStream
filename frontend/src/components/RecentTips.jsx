@@ -375,7 +375,7 @@ export default function RecentTips({ addToast }) {
                         <div className="flex gap-3">
                             <button onClick={() => setTipBackTarget(null)}
                                 className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                            <button onClick={() => handleTipBack(tipBackTarget)} disabled={sending}
+                            <button onClick={() => handleTipBack(tipBackTarget)} disabled={sending || !!tipBackError}
                                 className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                                 {sending ? 'Sending...' : 'Send'}
                             </button>
