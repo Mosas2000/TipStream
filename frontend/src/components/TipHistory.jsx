@@ -13,8 +13,6 @@ const CATEGORY_LABELS = {
     3: 'Community Help', 4: 'Appreciation', 5: 'Education', 6: 'Bug Bounty',
 };
 
-const API_LIMIT = 50;
-
 /**
  * TipHistory -- displays a user's personal tip activity with stats,
  * direction/category filtering, and on-chain message enrichment.
