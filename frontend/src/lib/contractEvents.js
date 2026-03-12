@@ -45,3 +45,28 @@ async function fetchEventsPage(offset) {
     if (!res.ok) throw new Error(`Stacks API returned ${res.status}`);
     return res.json();
 }
+
+/**
+ * Parse raw API results into typed tip event objects.
+ *
+ * Filters for entries that have a contract_log value, runs them through
+ * parseTipEvent, and enriches each with the block timestamp and txId
+ * from the original API entry.
+ *
+ * @param {Array} results - Raw results array from the Stacks API.
+ * @returns {Array} Parsed tip event objects.
+ */
+export function parseRawEvents(results) {
+    return results
+        .filter(e => e.contract_log?.value?.repr)
+        .map(e => {
+            const parsed = parseTipEvent(e.contract_log.value.repr);
+            if (!parsed) return null;
+            return {
+                ...parsed,
+                timestamp: e.block_time || null,
+                txId: e.tx_id || null,
+            };
+        })
+        .filter(Boolean);
+}
