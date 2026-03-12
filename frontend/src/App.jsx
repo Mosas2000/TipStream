@@ -128,6 +128,8 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 transition-colors">
       <SkipNav />
+      {/* OfflineBanner must render before Header in the DOM so it pushes
+          the sticky Header down when visible, preventing overlap. */}
       <OfflineBanner />
       <Header
         userData={userData}
