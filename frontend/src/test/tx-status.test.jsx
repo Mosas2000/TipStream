@@ -62,4 +62,40 @@ describe('TxStatus', () => {
             expect(link.href).toContain(MOCK_TX_ID);
         });
     });
+
+    // -- Accessibility ----------------------------------------------------
+
+    describe('accessibility', () => {
+        it('has role=status for assistive technology', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+            expect(screen.getByRole('status')).toBeInTheDocument();
+        });
+
+        it('has aria-live=polite', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+            const el = screen.getByTestId('tx-status');
+            expect(el).toHaveAttribute('aria-live', 'polite');
+        });
+
+        it('hides the status dot from the accessibility tree', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+            const dot = screen.getByTestId('tx-status').querySelector('span[aria-hidden]');
+            expect(dot).toHaveAttribute('aria-hidden', 'true');
+        });
+
+        it('opens the explorer link in a new tab securely', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+            const link = screen.getByRole('link');
+            expect(link).toHaveAttribute('target', '_blank');
+            expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+        });
+    });
 });
