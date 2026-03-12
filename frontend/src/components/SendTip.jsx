@@ -334,8 +334,8 @@ export default function SendTip({ addToast }) {
                             Sent {pendingTx.amount} STX to <span className="font-mono text-xs">{pendingTx.recipient.slice(0, 8)}...{pendingTx.recipient.slice(-4)}</span>
                         </p>
                         <TxStatus txId={pendingTx.txId}
-                            onConfirmed={() => addToast('Tip confirmed on-chain!', 'success')}
-                            onFailed={(reason) => addToast(`Transaction failed: ${reason}`, 'error')} />
+                            onConfirmed={handleTxConfirmed}
+                            onFailed={handleTxFailed} />
                         <button onClick={() => setPendingTx(null)} className="mt-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Dismiss</button>
                     </div>
                 )}
