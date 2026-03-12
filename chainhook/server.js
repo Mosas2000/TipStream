@@ -3,12 +3,11 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
+import { MAX_BODY_SIZE, isValidStacksAddress } from "./validation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
-const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 MB
-const STACKS_ADDRESS_RE = /^(SP|SM|ST)[0-9A-Z]{33,39}$/i;
 const DATA_DIR = join(__dirname, "data");
 const DB_FILE = join(DATA_DIR, "events.json");
 
@@ -85,10 +84,6 @@ function extractEvents(payload) {
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
-}
-
-function isValidStacksAddress(address) {
-  return typeof address === "string" && STACKS_ADDRESS_RE.test(address);
 }
 
 function parseTipEvent(event) {
