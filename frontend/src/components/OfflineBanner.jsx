@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { WifiOff } from 'lucide-react';
+import { WifiOff, X } from 'lucide-react';
 
 /**
  * Approximate height of the offline banner in Tailwind spacing units.
