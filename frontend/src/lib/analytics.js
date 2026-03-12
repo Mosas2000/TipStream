@@ -23,13 +23,27 @@ const DEFAULT_METRICS = {
   lastSeen: null,
 };
 
+function freshDefaults() {
+  return {
+    ...DEFAULT_METRICS,
+    pageViews: {},
+    tabNavigations: {},
+    routeRedirects: {},
+    errors: {},
+    batchSizes: {},
+    firstSeen: Date.now(),
+    lastSeen: Date.now(),
+    sessions: 1,
+  };
+}
+
 function loadMetrics() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_METRICS, firstSeen: Date.now(), lastSeen: Date.now(), sessions: 1 };
+    if (!raw) return freshDefaults();
     return JSON.parse(raw);
   } catch {
-    return { ...DEFAULT_METRICS, firstSeen: Date.now(), lastSeen: Date.now(), sessions: 1 };
+    return freshDefaults();
   }
 }
 
