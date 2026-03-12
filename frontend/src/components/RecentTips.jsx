@@ -15,10 +15,10 @@ const PAGE_SIZE = 10;
 const API_LIMIT = 50;
 
 /** Minimum acceptable tip-back amount in STX. Matches SendTip constraint. */
-const MIN_TIP_STX = 0.001;
+export const MIN_TIP_STX = 0.001;
 
 /** Maximum acceptable tip-back amount in STX. Matches SendTip constraint. */
-const MAX_TIP_STX = 10000;
+export const MAX_TIP_STX = 10000;
 
 /**
  * RecentTips -- displays a live feed of on-chain tip events with search,
