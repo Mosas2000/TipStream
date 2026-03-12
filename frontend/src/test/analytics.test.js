@@ -90,6 +90,13 @@ describe('Analytics', () => {
         expect(summary.batchTipsSubmitted).toBe(1);
     });
 
+    it('tracks batch tip confirmed events', () => {
+        analytics.trackBatchTipConfirmed();
+        analytics.trackBatchTipConfirmed();
+        const summary = analytics.getSummary();
+        expect(summary.batchTipsConfirmed).toBe(2);
+    });
+
     it('computes zero rates when no tips started', () => {
         const summary = analytics.getSummary();
         expect(summary.tipCompletionRate).toBe('0.0');
