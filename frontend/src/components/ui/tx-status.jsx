@@ -2,8 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { STACKS_API_BASE } from '../../config/contracts';
 
 const API_BASE = STACKS_API_BASE;
-const POLL_INTERVAL = 8000;
-const MAX_POLLS = 60;
+
+/** How often (ms) to poll for an updated transaction status. */
+export const POLL_INTERVAL = 8000;
+
+/** Maximum number of poll attempts before giving up. */
+export const MAX_POLLS = 60;
+
 const EXPLORER_BASE_URL = 'https://explorer.hiro.so/txid';
 
 /** Visual configuration for each transaction status. */
