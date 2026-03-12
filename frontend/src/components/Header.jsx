@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import CopyButton from './ui/copy-button';
 import NotificationBell from './NotificationBell';
 import { useTheme } from '../context/ThemeContext';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { NETWORK_NAME, STACKS_API_BASE } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { getMainnetAddress } from '../utils/stacks';
