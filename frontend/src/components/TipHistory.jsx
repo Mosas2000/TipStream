@@ -71,7 +71,6 @@ export default function TipHistory({ userAddress }) {
         if (tipIds.length === 0) return;
         let cancelled = false;
         setMessagesLoading(true);
-        clearTipCache();
         fetchTipMessages(tipIds)
             .then(messageMap => {
                 if (cancelled) return;
