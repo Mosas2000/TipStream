@@ -1,5 +1,9 @@
 /**
  * Input validation helpers for the chainhook server.
+ *
+ * These guards address two security gaps identified in Issue #229:
+ * 1. Unbounded request body parsing (DoS via memory exhaustion)
+ * 2. Missing address format validation on user-facing endpoints
  */
 
 /** Maximum allowed request body size in bytes (10 MB). */
