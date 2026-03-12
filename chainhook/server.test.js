@@ -115,3 +115,49 @@ describe("extractEvents", () => {
     assert.deepStrictEqual(extractEvents(payload), []);
   });
 });
+
+describe("parseTipEvent", () => {
+  it("parses a valid tip-sent event", () => {
+    const event = {
+      txId: "0xabc",
+      blockHeight: 200,
+      timestamp: 1700000000,
+      event: {
+        event: "tip-sent",
+        "tip-id": 42,
+        sender: "SP1SENDER",
+        recipient: "SP2RECIPIENT",
+        amount: 100000,
+        fee: 5000,
+        "net-amount": 95000,
+      },
+    };
+    const tip = parseTipEvent(event);
+    assert.strictEqual(tip.tipId, 42);
+    assert.strictEqual(tip.sender, "SP1SENDER");
+    assert.strictEqual(tip.recipient, "SP2RECIPIENT");
+    assert.strictEqual(tip.amount, 100000);
+    assert.strictEqual(tip.fee, 5000);
+    assert.strictEqual(tip.netAmount, 95000);
+    assert.strictEqual(tip.txId, "0xabc");
+    assert.strictEqual(tip.blockHeight, 200);
+  });
+
+  it("returns null for a non-tip event", () => {
+    const event = {
+      txId: "0xdef",
+      blockHeight: 201,
+      timestamp: 1700000001,
+      event: { event: "badge-minted" },
+    };
+    assert.strictEqual(parseTipEvent(event), null);
+  });
+
+  it("returns null when event field is missing", () => {
+    assert.strictEqual(parseTipEvent({ txId: "0x1" }), null);
+  });
+
+  it("returns null when event field is a string", () => {
+    assert.strictEqual(parseTipEvent({ event: "some-string" }), null);
+  });
+});
