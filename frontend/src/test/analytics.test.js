@@ -131,6 +131,25 @@ describe('Analytics', () => {
         expect(summary.batchDropOffRate).toBe('50.0');
     });
 
+    it('tracks a complete batch tip funnel lifecycle', () => {
+        // 3 started, 2 submitted, 1 confirmed, 1 failed, 1 cancelled
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipStarted();
+        analytics.trackBatchTipSubmitted();
+        analytics.trackBatchTipSubmitted();
+        analytics.trackBatchTipConfirmed();
+        analytics.trackBatchTipFailed();
+        analytics.trackBatchTipCancelled();
+        const summary = analytics.getSummary();
+        expect(summary.batchTipsStarted).toBe(3);
+        expect(summary.batchTipsSubmitted).toBe(2);
+        expect(summary.batchTipsConfirmed).toBe(1);
+        expect(summary.batchTipsFailed).toBe(1);
+        expect(summary.batchTipsCancelled).toBe(1);
+        expect(summary.batchCompletionRate).toBe('33.3');
+    });
+
     it('records firstSeen timestamp', () => {
         analytics.trackSession();
         const summary = analytics.getSummary();
