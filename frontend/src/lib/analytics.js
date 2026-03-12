@@ -102,6 +102,14 @@ export const analytics = {
     increment('batchTipsSubmitted');
   },
 
+  /**
+   * Record the number of recipients in a batch tip.
+   * @param {number} size - Number of recipients in the batch.
+   */
+  trackBatchSize(size) {
+    incrementMap('batchSizes', String(size));
+  },
+
   /** Record that a batch tip transaction was confirmed on-chain. */
   trackBatchTipConfirmed() {
     increment('batchTipsConfirmed');
