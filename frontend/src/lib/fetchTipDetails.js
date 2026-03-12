@@ -9,9 +9,16 @@
  * retrieve the full record and expose a caching layer so repeated renders
  * do not trigger duplicate API requests.
  *
+ * Cache entries expire after CACHE_TTL_MS milliseconds (default 5 minutes).
+ * Use clearTipCache() only for user-initiated hard refreshes, not in
+ * automated polling loops.
+ *
  * Exports:
  *   fetchTipDetail(tipId)     - Fetch a single tip record (cached).
  *   fetchTipMessages(tipIds)  - Batch-fetch messages for many tips at once.
+ *   clearTipCache()           - Evict all cache entries (manual refresh only).
+ *   getCacheSize()            - Return the number of cached entries.
+ *   CACHE_TTL_MS              - TTL for cached tip records in milliseconds.
  */
 
 import { fetchCallReadOnlyFunction, cvToJSON, uintCV } from '@stacks/transactions';
@@ -19,8 +26,16 @@ import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 
 /**
+ * Time-to-live for cached tip records, in milliseconds.
+ * Entries older than this threshold are treated as stale and re-fetched
+ * on the next access.  Five minutes balances freshness with API call volume.
+ */
+export const CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
  * In-memory cache for tip details to avoid redundant API calls.
- * Keys are tip IDs (as strings), values are the parsed tip objects.
+ * Keys are tip IDs (as strings).
+ * Values are { value: <tip detail object>, expiresAt: <unix ms timestamp> }.
  */
 const tipCache = new Map();
 
