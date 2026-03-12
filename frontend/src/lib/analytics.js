@@ -91,22 +91,27 @@ export const analytics = {
     increment('tipsFailed');
   },
 
+  /** Record that a user opened the batch tip form. */
   trackBatchTipStarted() {
     increment('batchTipsStarted');
   },
 
+  /** Record that a batch tip transaction was submitted to the wallet. */
   trackBatchTipSubmitted() {
     increment('batchTipsSubmitted');
   },
 
+  /** Record that a batch tip transaction was confirmed on-chain. */
   trackBatchTipConfirmed() {
     increment('batchTipsConfirmed');
   },
 
+  /** Record that a batch tip transaction failed or was rejected. */
   trackBatchTipFailed() {
     increment('batchTipsFailed');
   },
 
+  /** Record that a user cancelled the batch tip confirmation dialog. */
   trackBatchTipCancelled() {
     increment('batchTipsCancelled');
   },
