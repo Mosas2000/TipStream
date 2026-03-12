@@ -205,6 +205,23 @@ describe('fetchTipDetail -- TTL expiry', () => {
         expect(entry.expiresAt).toBeGreaterThan(before);
         expect(entry.expiresAt).toBeLessThanOrEqual(before + CACHE_TTL_MS + 50);
     });
+    
+    it('falls back to stale cached value when refresh fails after expiry', async () => {
+        const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+        mockTipResult('stale fallback');
+        await fetchTipDetail(32);
+
+        nowSpy.mockReturnValue(1_000_000 + CACHE_TTL_MS + 1);
+        fetchCallReadOnlyFunction.mockRejectedValueOnce(new Error('temporary outage'));
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await fetchTipDetail(32);
+
+        expect(result).toEqual({ message: { value: 'stale fallback' } });
+        expect(fetchCallReadOnlyFunction).toHaveBeenCalledTimes(2);
+        consoleSpy.mockRestore();
+        nowSpy.mockRestore();
+    });
 });
 
 // ---------------------------------------------------------------------------
