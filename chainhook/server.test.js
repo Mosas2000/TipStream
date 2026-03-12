@@ -28,4 +28,17 @@ describe("parseBody", () => {
       name: "SyntaxError",
     });
   });
+
+  it("rejects a body that exceeds MAX_BODY_SIZE", async () => {
+    const oversized = Buffer.alloc(MAX_BODY_SIZE + 1, "x");
+    const stream = new Readable({ read() {} });
+    // Push in two chunks to exercise the size accumulation
+    const half = Math.ceil(oversized.length / 2);
+    stream.push(oversized.subarray(0, half));
+    stream.push(oversized.subarray(half));
+    stream.push(null);
+    await assert.rejects(() => parseBody(stream), {
+      message: "Request body too large",
+    });
+  });
 });
