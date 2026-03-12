@@ -329,7 +329,7 @@ export default function SendTip({ addToast }) {
 
                 {/* Pending TX */}
                 {pendingTx && (
-                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                    <div data-testid="pending-tx" className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                             Sent {pendingTx.amount} STX to <span className="font-mono text-xs">{pendingTx.recipient.slice(0, 8)}...{pendingTx.recipient.slice(-4)}</span>
                         </p>
