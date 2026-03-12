@@ -190,6 +190,12 @@ export const analytics = {
     const totalPageViews = Object.values(m.pageViews || {}).reduce((a, b) => a + b, 0);
     const totalErrors = Object.values(m.errors || {}).reduce((a, b) => a + b, 0);
 
+    const batchSizeEntries = Object.entries(m.batchSizes || {});
+    const totalBatches = batchSizeEntries.reduce((sum, [, count]) => sum + count, 0);
+    const weightedSum = batchSizeEntries.reduce((sum, [size, count]) => sum + Number(size) * count, 0);
+    const averageBatchSize = totalBatches > 0 ? (weightedSum / totalBatches).toFixed(1) : '0.0';
+    const sortedBatchSizes = batchSizeEntries.sort((a, b) => b[1] - a[1]);
+
     return {
       totalPageViews,
       walletConnections: m.walletConnections,
@@ -205,6 +211,8 @@ export const analytics = {
       batchTipsCancelled: m.batchTipsCancelled || 0,
       batchCompletionRate,
       batchDropOffRate,
+      averageBatchSize,
+      sortedBatchSizes,
       tipCompletionRate,
       tipDropOffRate,
       sortedTabs,
