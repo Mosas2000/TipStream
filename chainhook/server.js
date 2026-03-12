@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
-import { MAX_BODY_SIZE, isValidStacksAddress } from "./validation.js";
+import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3100;
@@ -165,15 +165,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && path === "/api/tips") {
-    const rawLimit = url.searchParams.get("limit") || "20";
-    const rawOffset = url.searchParams.get("offset") || "0";
-    const limit = parseInt(rawLimit, 10);
-    const offset = parseInt(rawOffset, 10);
+    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "20", 1, 100);
+    const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
 
-    if (isNaN(limit) || limit < 1 || limit > 100) {
+    if (isNaN(limit)) {
       return sendJson(res, 400, { error: "limit must be between 1 and 100" });
     }
-    if (isNaN(offset) || offset < 0) {
+    if (isNaN(offset)) {
       return sendJson(res, 400, { error: "offset must be a non-negative integer" });
     }
 
