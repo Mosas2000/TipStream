@@ -61,11 +61,14 @@ export default function RecentTips({ addToast }) {
         () => events.filter(t => t.event === 'tip-sent' && t.sender && t.recipient),
         [events],
     );
+    const tipIds = useMemo(
+        () => [...new Set(tips.map(t => t.tipId).filter(id => id && id !== '0'))],
+        [tips],
+    );
 
     // Enrich tips with on-chain messages whenever the tip list changes.
     const [tipMessages, setTipMessages] = useState({});
     useEffect(() => {
-        const tipIds = tips.map(t => t.tipId).filter(id => id && id !== '0');
         if (tipIds.length === 0) return;
         let cancelled = false;
         setMessagesLoading(true);
@@ -79,7 +82,7 @@ export default function RecentTips({ addToast }) {
             .catch(err => { if (!cancelled) console.warn('Failed to fetch tip messages:', err.message || err); })
             .finally(() => { if (!cancelled) setMessagesLoading(false); });
         return () => { cancelled = true; };
-    }, [tips]);
+    }, [tipIds]);
 
     // Merge messages into the tip objects for display.
     const enrichedTips = useMemo(
