@@ -188,7 +188,7 @@ export default function RecentTips({ addToast }) {
                 </div>
                 <div className="flex items-center gap-3">
                     {lastEventRefresh && <span className="text-xs text-gray-400">{lastEventRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={refreshEvents} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    <button onClick={refreshEvents} aria-label="Refresh tip feed" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
@@ -293,6 +293,7 @@ export default function RecentTips({ addToast }) {
             {eventsMeta.hasMore && (
                 <div className="flex justify-center mt-4">
                     <button onClick={handleLoadMore} disabled={loadingMore}
+                        aria-label="Load more tips from the blockchain"
                         className="px-6 py-2.5 text-sm font-semibold bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                         {loadingMore ? 'Loading...' : 'Load More Tips'}
                     </button>

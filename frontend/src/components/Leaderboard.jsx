@@ -82,7 +82,7 @@ export default function Leaderboard() {
                 </div>
                 <div className="flex items-center gap-3">
                     {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={refreshEvents} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    <button onClick={refreshEvents} aria-label="Refresh leaderboard" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
@@ -130,6 +130,7 @@ export default function Leaderboard() {
                         <button 
                             onClick={handleLoadMore} 
                             disabled={loadingMore}
+                            aria-label="Load more events for accurate rankings"
                             className="px-4 py-2 text-xs font-semibold bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors"
                         >
                             {loadingMore ? 'Loading more events…' : 'Load More Events for Accurate Rankings'}
