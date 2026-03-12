@@ -154,6 +154,12 @@ export const analytics = {
       ? (((m.tipsStarted - m.tipsConfirmed) / m.tipsStarted) * 100).toFixed(1)
       : '0.0';
 
+    const batchStarted = m.batchTipsStarted || 0;
+    const batchConfirmed = m.batchTipsConfirmed || 0;
+    const batchCompletionRate = batchStarted > 0
+      ? ((batchConfirmed / batchStarted) * 100).toFixed(1)
+      : '0.0';
+
     const sortedTabs = Object.entries(m.tabNavigations || {})
       .sort((a, b) => b[1] - a[1]);
 
@@ -180,6 +186,7 @@ export const analytics = {
       batchTipsConfirmed: m.batchTipsConfirmed || 0,
       batchTipsFailed: m.batchTipsFailed || 0,
       batchTipsCancelled: m.batchTipsCancelled || 0,
+      batchCompletionRate,
       tipCompletionRate,
       tipDropOffRate,
       sortedTabs,
