@@ -114,6 +114,65 @@ describe("extractEvents", () => {
     };
     assert.deepStrictEqual(extractEvents(payload), []);
   });
+
+  it("extracts print_event entries alongside SmartContractEvent", () => {
+    const payload = {
+      apply: [
+        {
+          block_identifier: { index: 300 },
+          timestamp: 1700000000,
+          transactions: [
+            {
+              transaction_identifier: { hash: "0xprint1" },
+              metadata: {
+                receipt: {
+                  events: [
+                    {
+                      type: "print_event",
+                      data: {
+                        contract_identifier: "SP123.tipstream",
+                        value: { event: "tip-sent" },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const events = extractEvents(payload);
+    assert.strictEqual(events.length, 1);
+    assert.strictEqual(events[0].txId, "0xprint1");
+  });
+
+  it("skips events with unrecognised type", () => {
+    const payload = {
+      apply: [
+        {
+          block_identifier: { index: 400 },
+          timestamp: 1700000000,
+          transactions: [
+            {
+              transaction_identifier: { hash: "0xother" },
+              metadata: {
+                receipt: {
+                  events: [
+                    {
+                      type: "STXTransferEvent",
+                      data: { value: "some-value" },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    assert.deepStrictEqual(extractEvents(payload), []);
+  });
 });
 
 describe("parseTipEvent", () => {
