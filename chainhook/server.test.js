@@ -180,6 +180,67 @@ describe("extractEvents", () => {
     };
     assert.deepStrictEqual(extractEvents(payload), []);
   });
+
+  it("reads value from contract_event fallback when data is absent", () => {
+    const payload = {
+      apply: [
+        {
+          block_identifier: { index: 500 },
+          timestamp: 1700000000,
+          transactions: [
+            {
+              transaction_identifier: { hash: "0xfallback" },
+              metadata: {
+                receipt: {
+                  events: [
+                    {
+                      type: "SmartContractEvent",
+                      contract_event: {
+                        contract_identifier: "SP999.tipstream",
+                        raw_value: { event: "tip-sent" },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const events = extractEvents(payload);
+    assert.strictEqual(events.length, 1);
+    assert.strictEqual(events[0].contract, "SP999.tipstream");
+  });
+
+  it("handles multiple transactions in a single block", () => {
+    const payload = {
+      apply: [
+        {
+          block_identifier: { index: 600 },
+          timestamp: 1700000000,
+          transactions: [
+            {
+              transaction_identifier: { hash: "0xtx1" },
+              metadata: { receipt: { events: [
+                { type: "SmartContractEvent", data: { value: { a: 1 } } },
+              ] } },
+            },
+            {
+              transaction_identifier: { hash: "0xtx2" },
+              metadata: { receipt: { events: [
+                { type: "SmartContractEvent", data: { value: { b: 2 } } },
+              ] } },
+            },
+          ],
+        },
+      ],
+    };
+    const events = extractEvents(payload);
+    assert.strictEqual(events.length, 2);
+    assert.strictEqual(events[0].txId, "0xtx1");
+    assert.strictEqual(events[1].txId, "0xtx2");
+  });
 });
 
 describe("parseTipEvent", () => {
