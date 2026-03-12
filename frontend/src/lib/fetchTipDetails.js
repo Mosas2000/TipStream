@@ -86,6 +86,27 @@ export async function fetchTipDetail(tipId) {
 const CONCURRENCY_LIMIT = 5;
 
 /**
+ * Convert arbitrary tip ID input into a canonical positive-integer string.
+ * Returns null for empty, zero, negative, non-integer, or non-numeric values.
+ *
+ * @param {number|string} tipId
+ * @returns {string|null}
+ */
+function normalizeTipId(tipId) {
+    const raw = String(tipId ?? '').trim();
+    if (!raw || raw === '0') {
+        return null;
+    }
+
+    const numeric = Number(raw);
+    if (!Number.isInteger(numeric) || numeric <= 0) {
+        return null;
+    }
+
+    return String(numeric);
+}
+
+/**
  * Fetch messages for a batch of tip IDs.
  *
  * Calls fetchTipDetail for each tip ID with bounded concurrency so the
@@ -100,8 +121,8 @@ export async function fetchTipMessages(tipIds) {
     const queue = [
         ...new Set(
             tipIds
-                .map(id => String(id))
-                .filter(id => id && id !== '0' && Number.isFinite(Number(id)) && Number(id) > 0),
+                .map(normalizeTipId)
+                .filter(Boolean),
         ),
     ];
 
