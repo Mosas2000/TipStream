@@ -8,6 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 MB
+const STACKS_ADDRESS_RE = /^(SP|SM|ST)[0-9A-Z]{33,39}$/i;
 const DATA_DIR = join(__dirname, "data");
 const DB_FILE = join(DATA_DIR, "events.json");
 
