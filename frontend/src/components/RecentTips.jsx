@@ -14,6 +14,9 @@ import CopyButton from './ui/copy-button';
 const PAGE_SIZE = 10;
 const API_LIMIT = 50;
 
+/** Minimum acceptable tip-back amount in STX. Matches SendTip constraint. */
+const MIN_TIP_STX = 0.001;
+
 /**
  * RecentTips -- displays a live feed of on-chain tip events with search,
  * filtering, pagination, and a tip-back modal for reciprocating tips.
