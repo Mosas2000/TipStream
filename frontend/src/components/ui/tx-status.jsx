@@ -5,6 +5,18 @@ const API_BASE = STACKS_API_BASE;
 const POLL_INTERVAL = 8000;
 const MAX_POLLS = 60;
 
+/**
+ * TxStatus -- polls the Stacks API for a transaction's on-chain status and
+ * renders a visual indicator (pending / confirmed / failed) along with an
+ * explorer link.
+ *
+ * @param {Object}   props
+ * @param {string}   props.txId        - The transaction ID to monitor.
+ * @param {Function} [props.onConfirmed] - Called with the tx data object once
+ *                                          the transaction is confirmed.
+ * @param {Function} [props.onFailed]    - Called with the failure reason string
+ *                                          when the transaction fails.
+ */
 export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const [status, setStatus] = useState('pending');
   const [pollCount, setPollCount] = useState(0);
