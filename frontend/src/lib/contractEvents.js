@@ -20,3 +20,15 @@ export const MAX_INITIAL_PAGES = 10;
 
 /** Polling interval in milliseconds (30 seconds). */
 export const POLL_INTERVAL_MS = 30_000;
+
+/**
+ * Build the Stacks API URL for contract events.
+ *
+ * @param {number} limit  - Number of events per page.
+ * @param {number} offset - Offset into the full event list.
+ * @returns {string} Fully-qualified URL.
+ */
+function buildEventsUrl(limit, offset) {
+    const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+    return `${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${limit}&offset=${offset}`;
+}
