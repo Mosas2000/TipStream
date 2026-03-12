@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tip-detail cache entries in `fetchTipDetails` now use TTL-based
   expiration (`CACHE_TTL_MS = 5 minutes`) so stale entries are
   transparently refreshed on demand without global cache resets.
+- When a TTL-expired tip detail refresh fails, `fetchTipDetail` now
+  returns the last cached value as a resilience fallback instead of
+  dropping message data to `null` immediately.
 - `fetchTipMessages` now normalizes, validates (positive integer only),
   and deduplicates tip IDs per batch to avoid redundant read-only calls
   and silently skip invalid identifiers.
