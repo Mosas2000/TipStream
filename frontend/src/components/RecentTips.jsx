@@ -362,7 +362,9 @@ export default function RecentTips({ addToast }) {
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Send a tip to the original sender of tip #{tipBackTarget.tipId}</p>
                         <div className="space-y-3 mb-4">
-                            <input type="number" value={tipBackAmount} onChange={(e) => handleTipBackAmountChange(e.target.value)}
+                            <div>
+                                <label htmlFor="tipback-amount" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount (STX)</label>
+                                <input id="tipback-amount" type="number" value={tipBackAmount} onChange={(e) => handleTipBackAmountChange(e.target.value)}
                                 className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none ${tipBackError ? 'border-red-400 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                                 aria-invalid={!!tipBackError}
                                 aria-describedby={tipBackError ? 'tipback-amount-error' : undefined}
@@ -370,6 +372,7 @@ export default function RecentTips({ addToast }) {
                             {tipBackError && (
                                 <p id="tipback-amount-error" className="text-xs text-red-500 mt-1">{tipBackError}</p>
                             )}
+                            </div>
                             <input type="text" value={tipBackMessage} onChange={(e) => setTipBackMessage(e.target.value)}
                                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                                 placeholder="Message (optional)" maxLength={280} />
