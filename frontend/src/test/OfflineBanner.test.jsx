@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import OfflineBanner, { BANNER_HEIGHT_CLASS } from '../components/OfflineBanner';
 
 // ---------------------------------------------------------------------------
@@ -116,5 +116,23 @@ describe('OfflineBanner', () => {
 
     it('BANNER_HEIGHT_CLASS value starts with "top-"', () => {
         expect(BANNER_HEIGHT_CLASS).toMatch(/^top-/);
+    });
+
+    // -- Dismiss functionality --------------------------------------------
+
+    it('renders a dismiss button with accessible label', () => {
+        setOnline(false);
+        render(<OfflineBanner />);
+        expect(screen.getByLabelText('Dismiss offline notification')).toBeInTheDocument();
+    });
+
+    it('hides the banner when the dismiss button is clicked', () => {
+        setOnline(false);
+        const { container } = render(<OfflineBanner />);
+        expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByLabelText('Dismiss offline notification'));
+
+        expect(container.firstChild).toBeNull();
     });
 });
