@@ -49,6 +49,11 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   useEffect(() => { onConfirmedRef.current = onConfirmed; }, [onConfirmed]);
   useEffect(() => { onFailedRef.current = onFailed; }, [onFailed]);
 
+  /**
+   * Poll the Stacks API for the current transaction status.
+   * Invokes the appropriate callback ref when the transaction reaches a
+   * terminal state (success or abort).
+   */
   const checkStatus = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/extended/v1/tx/${txId}`);
