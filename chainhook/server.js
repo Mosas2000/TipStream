@@ -87,6 +87,10 @@ function sendJson(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
+function isValidStacksAddress(address) {
+  return typeof address === "string" && STACKS_ADDRESS_RE.test(address);
+}
+
 function parseTipEvent(event) {
   const val = event.event;
   if (!val || typeof val !== "object") return null;
