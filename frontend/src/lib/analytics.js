@@ -107,6 +107,10 @@ export const analytics = {
     increment('batchTipsFailed');
   },
 
+  trackBatchTipCancelled() {
+    increment('batchTipsCancelled');
+  },
+
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
