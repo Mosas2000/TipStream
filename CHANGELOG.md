@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security
 
+- Content-Security-Policy header added to `vercel.json` and `netlify.toml`
+  deployment configurations. Both files previously had X-Frame-Options,
+  X-Content-Type-Options, Referrer-Policy, and Permissions-Policy headers
+  but no CSP, leaving the browser without script/style/connect restrictions
+  on those deployment targets (Issue #230).
+- CSP directives enforce: `default-src 'self'`, `script-src 'self'`,
+  `style-src 'self' 'unsafe-inline'`, `img-src 'self' data: https:`,
+  `font-src 'self' data:`, `connect-src` with five whitelisted API origins,
+  `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`,
+  `object-src 'none'`, and `upgrade-insecure-requests`.
+- `object-src 'none'` and `upgrade-insecure-requests` directives added to
+  all three CSP sources (`_headers`, `vercel.json`, `netlify.toml`),
+  strengthening the existing static headers file as well.
+
+### Added
+
+- `scripts/validate-csp.cjs` consistency checker that extracts the CSP
+  value from all three deployment configs and verifies they are identical.
+  Provides directive-level diff output when a mismatch is detected.
+- `scripts/validate-csp.test.cjs` with 3 tests verifying the validation
+  script reports correct directive count and source list.
+- `validate:csp` npm script in root `package.json` for running the
+  consistency check.
+
+### Security (prior)
+
 - Chainhook `parseBody` now enforces a 10 MB request body size limit.
   Oversized payloads are rejected with HTTP 413, preventing memory
   exhaustion from multi-gigabyte POST requests (Issue #229).
