@@ -48,5 +48,31 @@ describe('validateTipBackAmount', () => {
         it('rejects negative values', () => {
             expect(validateTipBackAmount('-5')).toBe('Amount must be a positive number');
         });
+    describe('minimum amount boundary', () => {
+        it('rejects a value below MIN_TIP_STX', () => {
+            expect(validateTipBackAmount('0.0001')).toMatch(/minimum tip/i);
+        });
+
+        it('accepts the exact MIN_TIP_STX value', () => {
+            expect(validateTipBackAmount(String(MIN_TIP_STX))).toBe('');
+        });
+
+        it('accepts a value just above MIN_TIP_STX', () => {
+            expect(validateTipBackAmount('0.002')).toBe('');
+        });
+    });
+
+    describe('maximum amount boundary', () => {
+        it('rejects a value above MAX_TIP_STX', () => {
+            expect(validateTipBackAmount('10001')).toMatch(/maximum tip/i);
+        });
+
+        it('accepts the exact MAX_TIP_STX value', () => {
+            expect(validateTipBackAmount(String(MAX_TIP_STX))).toBe('');
+        });
+
+        it('accepts a value just below MAX_TIP_STX', () => {
+            expect(validateTipBackAmount('9999')).toBe('');
+        });
     });
 });
