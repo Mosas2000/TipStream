@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
+import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3100;
@@ -27,10 +28,25 @@ function saveEvents(events) {
   writeFileSync(DB_FILE, JSON.stringify(events, null, 2));
 }
 
+/**
+ * Read and parse a JSON request body from a readable stream.
+ * Rejects if the body exceeds MAX_BODY_SIZE or contains invalid JSON.
+ * @param {import('node:http').IncomingMessage} req
+ * @returns {Promise<object>}
+ */
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on("data", (chunk) => chunks.push(chunk));
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error("Request body too large"));
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on("end", () => {
       try {
         resolve(JSON.parse(Buffer.concat(chunks).toString()));
@@ -42,6 +58,12 @@ function parseBody(req) {
   });
 }
 
+/**
+ * Extract on-chain events from a Chainhook webhook payload.
+ * Filters for SmartContractEvent and print_event types only.
+ * @param {object} payload - The parsed Chainhook webhook body.
+ * @returns {Array<object>} Extracted event objects.
+ */
 function extractEvents(payload) {
   const events = [];
   const apply = payload.apply || [];
@@ -71,11 +93,23 @@ function extractEvents(payload) {
   return events;
 }
 
+/**
+ * Send a JSON response with the given status code.
+ * @param {import('node:http').ServerResponse} res
+ * @param {number} statusCode
+ * @param {object} data
+ */
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
 }
 
+/**
+ * Parse a raw on-chain event into a structured tip object.
+ * Returns null if the event is not a tip-sent event.
+ * @param {object} event - A raw event from extractEvents.
+ * @returns {object|null}
+ */
 function parseTipEvent(event) {
   const val = event.event;
   if (!val || typeof val !== "object") return null;
@@ -93,6 +127,8 @@ function parseTipEvent(event) {
   };
 }
 
+export { parseBody, extractEvents, parseTipEvent, sendJson };
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = url.pathname;
@@ -107,6 +143,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && path === "/api/chainhook/events") {
+    // Early rejection based on Content-Length header
+    const contentLength = parseInt(req.headers["content-length"], 10);
+    if (contentLength > MAX_BODY_SIZE) {
+      return sendJson(res, 413, { error: "payload too large" });
+    }
+
     if (AUTH_TOKEN) {
       const auth = req.headers.authorization || "";
       if (auth !== `Bearer ${AUTH_TOKEN}`) {
@@ -139,13 +181,24 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: true, indexed: newEvents.length });
     } catch (err) {
       console.error("Failed to process chainhook payload:", err.message);
+      if (err.message === "Request body too large") {
+        return sendJson(res, 413, { error: "payload too large" });
+      }
       return sendJson(res, 400, { error: "invalid payload" });
     }
   }
 
   if (req.method === "GET" && path === "/api/tips") {
-    const limit = parseInt(url.searchParams.get("limit") || "20", 10);
-    const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "20", 1, 100);
+    const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
+
+    if (isNaN(limit)) {
+      return sendJson(res, 400, { error: "limit must be between 1 and 100" });
+    }
+    if (isNaN(offset)) {
+      return sendJson(res, 400, { error: "offset must be a non-negative integer" });
+    }
+
     const allEvents = loadEvents();
     const tips = allEvents
       .map(parseTipEvent)
@@ -157,6 +210,9 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && path.startsWith("/api/tips/user/")) {
     const address = path.split("/api/tips/user/")[1];
+    if (!isValidStacksAddress(address)) {
+      return sendJson(res, 400, { error: "invalid address format" });
+    }
     const allEvents = loadEvents();
     const tips = allEvents
       .map(parseTipEvent)
@@ -167,6 +223,9 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && path.match(/^\/api\/tips\/\d+$/)) {
     const tipId = parseInt(path.split("/api/tips/")[1], 10);
+    if (isNaN(tipId) || tipId < 0) {
+      return sendJson(res, 400, { error: "invalid tip ID" });
+    }
     const allEvents = loadEvents();
     const tip = allEvents.map(parseTipEvent).find((t) => t && t.tipId === tipId);
     if (!tip) return sendJson(res, 404, { error: "tip not found" });
@@ -216,6 +275,15 @@ const server = http.createServer(async (req, res) => {
   sendJson(res, 404, { error: "not found" });
 });
 
-server.listen(PORT, () => {
-  console.log(`Chainhook callback server running on port ${PORT}`);
-});
+export { server };
+
+// Only start listening when executed directly (not imported by tests).
+const isMain =
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1]}`;
+
+if (isMain) {
+  server.listen(PORT, () => {
+    console.log(`Chainhook callback server running on port ${PORT}`);
+  });
+}

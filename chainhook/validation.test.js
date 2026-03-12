@@ -1,0 +1,116 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import {
+  MAX_BODY_SIZE,
+  STACKS_ADDRESS_RE,
+  isValidStacksAddress,
+  sanitizeQueryInt,
+} from "./validation.js";
+
+describe("MAX_BODY_SIZE", () => {
+  it("equals 10 MB in bytes", () => {
+    assert.strictEqual(MAX_BODY_SIZE, 10 * 1024 * 1024);
+  });
+});
+
+describe("STACKS_ADDRESS_RE", () => {
+  it("matches a valid SP mainnet address", () => {
+    assert.ok(STACKS_ADDRESS_RE.test("SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T"));
+  });
+
+  it("matches a valid ST testnet address", () => {
+    assert.ok(STACKS_ADDRESS_RE.test("ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"));
+  });
+
+  it("matches a valid SM address", () => {
+    assert.ok(STACKS_ADDRESS_RE.test("SM2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKQVX8X0G7"));
+  });
+
+  it("matches case-insensitively", () => {
+    assert.ok(STACKS_ADDRESS_RE.test("sp31pkqvqzvzck3fm3nh67cgd6g1fmr17vqvs2w5t"));
+  });
+
+  it("rejects an empty string", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test(""), false);
+  });
+
+  it("rejects a string with wrong prefix", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("BT1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"), false);
+  });
+
+  it("rejects a string that is too short", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("SP123"), false);
+  });
+
+  it("rejects a string that is too long", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("SP" + "A".repeat(50)), false);
+  });
+
+  it("rejects a string with special characters", () => {
+    assert.strictEqual(STACKS_ADDRESS_RE.test("SP31PKQVQZ!ZCK3FM3NH67"), false);
+  });
+});
+
+describe("isValidStacksAddress", () => {
+  it("returns true for a valid SP address", () => {
+    assert.strictEqual(isValidStacksAddress("SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T"), true);
+  });
+
+  it("returns true for a valid ST address", () => {
+    assert.strictEqual(isValidStacksAddress("ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"), true);
+  });
+
+  it("returns false for null", () => {
+    assert.strictEqual(isValidStacksAddress(null), false);
+  });
+
+  it("returns false for undefined", () => {
+    assert.strictEqual(isValidStacksAddress(undefined), false);
+  });
+
+  it("returns false for a number", () => {
+    assert.strictEqual(isValidStacksAddress(12345), false);
+  });
+
+  it("returns false for an empty string", () => {
+    assert.strictEqual(isValidStacksAddress(""), false);
+  });
+
+  it("returns false for a malformed address", () => {
+    assert.strictEqual(isValidStacksAddress("not-an-address"), false);
+  });
+});
+
+describe("sanitizeQueryInt", () => {
+  it("parses a valid integer within bounds", () => {
+    assert.strictEqual(sanitizeQueryInt("10", 1, 100), 10);
+  });
+
+  it("returns NaN for a value below the minimum", () => {
+    assert.ok(isNaN(sanitizeQueryInt("0", 1, 100)));
+  });
+
+  it("returns NaN for a value above the maximum", () => {
+    assert.ok(isNaN(sanitizeQueryInt("101", 1, 100)));
+  });
+
+  it("accepts a value exactly at the minimum", () => {
+    assert.strictEqual(sanitizeQueryInt("1", 1, 100), 1);
+  });
+
+  it("accepts a value exactly at the maximum", () => {
+    assert.strictEqual(sanitizeQueryInt("100", 1, 100), 100);
+  });
+
+  it("returns NaN for non-numeric input", () => {
+    assert.ok(isNaN(sanitizeQueryInt("abc", 0, 100)));
+  });
+
+  it("returns NaN for an empty string", () => {
+    assert.ok(isNaN(sanitizeQueryInt("", 0, 100)));
+  });
+
+  it("returns NaN for a negative value when min is zero", () => {
+    assert.ok(isNaN(sanitizeQueryInt("-1", 0, 100)));
+  });
+});
