@@ -103,6 +103,14 @@ describe('Analytics', () => {
         expect(summary.batchTipsFailed).toBe(1);
     });
 
+    it('tracks batch tip cancelled events', () => {
+        analytics.trackBatchTipCancelled();
+        analytics.trackBatchTipCancelled();
+        analytics.trackBatchTipCancelled();
+        const summary = analytics.getSummary();
+        expect(summary.batchTipsCancelled).toBe(3);
+    });
+
     it('computes zero rates when no tips started', () => {
         const summary = analytics.getSummary();
         expect(summary.tipCompletionRate).toBe('0.0');
