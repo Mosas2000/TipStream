@@ -71,6 +71,20 @@ export function TipProvider({ children }) {
     }
   }, []);
 
+  /**
+   * Load the next batch of events beyond the current apiOffset.
+   * Appends new events to the existing cache rather than replacing it.
+   */
+  const loadMoreEvents = useCallback(async () => {
+    try {
+      const result = await fetchAllContractEvents({ startOffset: eventsMeta.apiOffset });
+      setEvents(prev => [...prev, ...result.events]);
+      setEventsMeta({ apiOffset: result.apiOffset, total: result.total, hasMore: result.hasMore });
+    } catch (err) {
+      console.error('Failed to load more events:', err.message || err);
+    }
+  }, [eventsMeta.apiOffset]);
+
   const notifyTipSent = useCallback(() => {
     dispatch({ type: 'TIP_SENT' });
   }, []);
