@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `TxStatus` polling restarts on every parent render due to unstable
+  callback references. The `checkStatus` `useCallback` dependency array
+  included `onConfirmed` and `onFailed`, but `SendTip` passed inline arrow
+  functions that changed identity on each render, tearing down and
+  recreating the polling timer repeatedly (Issue #232).
+- Callbacks now stored in `useRef` containers that are synced via
+  lightweight effects, so the polling loop reads the latest callback
+  through the ref without depending on its identity. The `useCallback`
+  dependency array is reduced to `[txId]` only.
+- `SendTip` callbacks (`handleTxConfirmed`, `handleTxFailed`) memoized
+  with `useCallback` as an additional best-practice guard against
+  unnecessary child re-renders.
+
+### Added (Issue #232)
+
+- JSDoc documentation on `TxStatus` and `SendTip` components describing
+  their purpose, props, and callback contracts.
+- `EXPLORER_BASE_URL` and `STATUS_CONFIG` constants extracted to module
+  scope in `TxStatus` for testability and to avoid per-render allocation.
+- `data-testid="tx-status"` on the TxStatus container and
+  `data-testid="pending-tx"` on the SendTip pending transaction wrapper.
+- `role="status"` and `aria-live="polite"` on the TxStatus container for
+  screen-reader announcements of status changes.
+- `aria-hidden="true"` on the decorative status dot indicator.
+- `frontend/src/test/tx-status.test.jsx` with 19 tests covering rendering,
+  accessibility, callback invocation, polling behavior, ref stability,
+  and network error resilience.
+
 ### Security
 
 - Content-Security-Policy header added to `vercel.json` and `netlify.toml`
