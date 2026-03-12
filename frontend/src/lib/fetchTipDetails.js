@@ -121,9 +121,36 @@ export async function fetchTipMessages(tipIds) {
 /**
  * Clear the in-memory tip detail cache.
  *
- * Useful when the user manually refreshes or when new tips are submitted
- * and the UI should re-fetch updated records from the chain.
+ * This is a hard-reset intended for user-initiated refresh actions (e.g.
+ * clicking a "Refresh" button).  Do NOT call this in automated polling
+ * loops or useEffect dependencies -- doing so destroys shared cached data
+ * for other mounted components, causing redundant API calls (Issue #235).
  */
 export function clearTipCache() {
     tipCache.clear();
+}
+
+/**
+ * Return the number of currently cached tip detail entries.
+ * Includes both unexpired and stale entries not yet evicted.
+ *
+ * Intended for use in tests and debugging only.
+ *
+ * @returns {number}
+ */
+export function getCacheSize() {
+    return tipCache.size;
+}
+
+/**
+ * Return the raw cache entry for a tip ID, or undefined if not cached.
+ * The entry shape is { value, expiresAt }.
+ *
+ * Intended for use in tests and debugging only.
+ *
+ * @param {number|string} tipId
+ * @returns {{ value: Object, expiresAt: number } | undefined}
+ */
+export function getCachedEntry(tipId) {
+    return tipCache.get(String(tipId));
 }
