@@ -1,11 +1,10 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { openContractCall } from '@stacks/connect';
 import { uintCV, stringUtf8CV } from '@stacks/transactions';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_TIP_A_TIP } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_TIP_A_TIP } from '../config/contracts';
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
 import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
-import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackValidation';
 import { useTipContext } from '../context/TipContext';
