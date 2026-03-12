@@ -97,6 +97,12 @@ describe('Analytics', () => {
         expect(summary.batchTipsConfirmed).toBe(2);
     });
 
+    it('tracks batch tip failed events', () => {
+        analytics.trackBatchTipFailed();
+        const summary = analytics.getSummary();
+        expect(summary.batchTipsFailed).toBe(1);
+    });
+
     it('computes zero rates when no tips started', () => {
         const summary = analytics.getSummary();
         expect(summary.tipCompletionRate).toBe('0.0');
