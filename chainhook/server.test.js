@@ -29,6 +29,13 @@ describe("parseBody", () => {
     });
   });
 
+  it("rejects an empty body", async () => {
+    const stream = createStream(Buffer.alloc(0));
+    await assert.rejects(() => parseBody(stream), {
+      name: "SyntaxError",
+    });
+  });
+
   it("rejects a body that exceeds MAX_BODY_SIZE", async () => {
     const oversized = Buffer.alloc(MAX_BODY_SIZE + 1, "x");
     const stream = new Readable({ read() {} });
