@@ -40,7 +40,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
         onConfirmedRef.current?.(data);
       } else if (txStatus === 'abort_by_response' || txStatus === 'abort_by_post_condition') {
         setStatus('failed');
-        onFailed?.(txStatus);
+        onFailedRef.current?.(txStatus);
       }
     } catch {
       // Network error, keep polling
