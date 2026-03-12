@@ -149,6 +149,9 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: true, indexed: newEvents.length });
     } catch (err) {
       console.error("Failed to process chainhook payload:", err.message);
+      if (err.message === "Request body too large") {
+        return sendJson(res, 413, { error: "payload too large" });
+      }
       return sendJson(res, 400, { error: "invalid payload" });
     }
   }
