@@ -32,6 +32,17 @@ const TIP_CATEGORIES = [
     { id: 6, label: 'Bug Bounty' },
 ];
 
+/**
+ * SendTip -- form for sending an STX micro-tip to a Stacks address.
+ *
+ * Handles validation, fee preview, post-condition construction, and
+ * wallet interaction via @stacks/connect.  Once a transaction is
+ * broadcast the component renders a TxStatus poller to track the
+ * on-chain result.
+ *
+ * @param {Object}   props
+ * @param {Function} props.addToast - Callback to display a toast notification.
+ */
 export default function SendTip({ addToast }) {
     const { notifyTipSent } = useTipContext();
     const { toUsd } = useStxPrice();
