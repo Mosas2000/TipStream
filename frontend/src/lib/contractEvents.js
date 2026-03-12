@@ -32,3 +32,16 @@ function buildEventsUrl(limit, offset) {
     const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
     return `${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${limit}&offset=${offset}`;
 }
+
+/**
+ * Fetch a single page of raw contract events from the Stacks API.
+ *
+ * @param {number} offset - Offset into the event list.
+ * @returns {Promise<{results: Array, total: number, offset: number}>}
+ */
+async function fetchEventsPage(offset) {
+    const url = buildEventsUrl(PAGE_LIMIT, offset);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Stacks API returned ${res.status}`);
+    return res.json();
+}
