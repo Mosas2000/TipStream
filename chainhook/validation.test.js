@@ -4,6 +4,7 @@ import {
   MAX_BODY_SIZE,
   STACKS_ADDRESS_RE,
   isValidStacksAddress,
+  sanitizeQueryInt,
 } from "./validation.js";
 
 describe("MAX_BODY_SIZE", () => {
@@ -77,5 +78,39 @@ describe("isValidStacksAddress", () => {
 
   it("returns false for a malformed address", () => {
     assert.strictEqual(isValidStacksAddress("not-an-address"), false);
+  });
+});
+
+describe("sanitizeQueryInt", () => {
+  it("parses a valid integer within bounds", () => {
+    assert.strictEqual(sanitizeQueryInt("10", 1, 100), 10);
+  });
+
+  it("returns NaN for a value below the minimum", () => {
+    assert.ok(isNaN(sanitizeQueryInt("0", 1, 100)));
+  });
+
+  it("returns NaN for a value above the maximum", () => {
+    assert.ok(isNaN(sanitizeQueryInt("101", 1, 100)));
+  });
+
+  it("accepts a value exactly at the minimum", () => {
+    assert.strictEqual(sanitizeQueryInt("1", 1, 100), 1);
+  });
+
+  it("accepts a value exactly at the maximum", () => {
+    assert.strictEqual(sanitizeQueryInt("100", 1, 100), 100);
+  });
+
+  it("returns NaN for non-numeric input", () => {
+    assert.ok(isNaN(sanitizeQueryInt("abc", 0, 100)));
+  });
+
+  it("returns NaN for an empty string", () => {
+    assert.ok(isNaN(sanitizeQueryInt("", 0, 100)));
+  });
+
+  it("returns NaN for a negative value when min is zero", () => {
+    assert.ok(isNaN(sanitizeQueryInt("-1", 0, 100)));
   });
 });
