@@ -12,37 +12,42 @@ import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
 const PAGE_SIZE = 10;
-const API_LIMIT = 50;
 
 /**
  * RecentTips -- displays a live feed of on-chain tip events with search,
  * filtering, pagination, and a tip-back modal for reciprocating tips.
  *
+ * Reads parsed contract events from the shared TipContext event cache
+ * instead of polling the Stacks API independently.  Message enrichment
+ * (fetching on-chain tip messages) is still performed locally because
+ * it is specific to this component's display needs.
+ *
  * @param {Object}   props
  * @param {Function} props.addToast - Callback to display a toast notification.
  */
 export default function RecentTips({ addToast }) {
-    const { refreshCounter } = useTipContext();
-    const [tips, setTips] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
+    const {
+        events,
+        eventsLoading,
+        eventsError,
+        eventsMeta,
+        lastEventRefresh,
+        refreshEvents,
+        loadMoreEvents: contextLoadMore,
+    } = useTipContext();
     const [messagesLoading, setMessagesLoading] = useState(false);
-    const [error, setError] = useState(null);
     const [tipBackTarget, setTipBackTarget] = useState(null);
     const [tipBackAmount, setTipBackAmount] = useState('0.5');
     const [tipBackMessage, setTipBackMessage] = useState('');
     const [tipBackError, setTipBackError] = useState('');
     const [sending, setSending] = useState(false);
-    const [lastRefresh, setLastRefresh] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [minAmount, setMinAmount] = useState('');
     const [maxAmount, setMaxAmount] = useState('');
     const [sortBy, setSortBy] = useState('newest');
     const [showFilters, setShowFilters] = useState(false);
     const [offset, setOffset] = useState(0);
-    const [apiOffset, setApiOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(false);
-    const [totalApiEvents, setTotalApiEvents] = useState(null);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const fetchRecentTips = useCallback(async () => {
         try {
