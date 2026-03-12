@@ -36,5 +36,17 @@ describe('validateTipBackAmount', () => {
         it('rejects null', () => {
             expect(validateTipBackAmount(null)).toBe('Amount is required');
         });
+    describe('non-numeric and non-positive values', () => {
+        it('rejects non-numeric input', () => {
+            expect(validateTipBackAmount('abc')).toBe('Amount must be a positive number');
+        });
+
+        it('rejects zero', () => {
+            expect(validateTipBackAmount('0')).toBe('Amount must be a positive number');
+        });
+
+        it('rejects negative values', () => {
+            expect(validateTipBackAmount('-5')).toBe('Amount must be a positive number');
+        });
     });
 });
