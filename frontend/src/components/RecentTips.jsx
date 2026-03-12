@@ -157,6 +157,12 @@ export default function RecentTips({ addToast }) {
         setTipBackError(validateTipBackAmount(value));
     };
 
+    /**
+     * Handle the tip-back submission. Validates the amount, constructs the
+     * contract call arguments and post-conditions, then opens the wallet prompt.
+     *
+     * @param {Object} tip - The tip event to reciprocate.
+     */
     const handleTipBack = async (tip) => {
         if (!userSession.isUserSignedIn()) return;
 
