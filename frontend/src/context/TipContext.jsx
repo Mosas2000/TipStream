@@ -7,7 +7,8 @@
  *
  * @module context/TipContext
  */
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useCallback, useState, useEffect, useRef } from 'react';
+import { fetchAllContractEvents, POLL_INTERVAL_MS } from '../lib/contractEvents';
 
 const TipContext = createContext(null);
 
