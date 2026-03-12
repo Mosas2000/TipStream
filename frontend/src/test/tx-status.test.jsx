@@ -159,4 +159,45 @@ describe('TxStatus', () => {
             expect(onFailed).toHaveBeenCalledWith('abort_by_post_condition');
         });
     });
+
+    // -- Polling ----------------------------------------------------------
+
+    describe('polling', () => {
+        it('fires an immediate fetch on mount', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            expect(global.fetch).toHaveBeenCalled();
+            expect(global.fetch.mock.calls[0][0]).toContain(MOCK_TX_ID);
+        });
+
+        it('polls again after the interval elapses', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            const callsBefore = global.fetch.mock.calls.length;
+
+            await act(async () => {
+                vi.advanceTimersByTime(8000);
+            });
+
+            expect(global.fetch.mock.calls.length).toBeGreaterThan(callsBefore);
+        });
+
+        it('does not fire callbacks when status is still pending', async () => {
+            const onConfirmed = vi.fn();
+            const onFailed = vi.fn();
+
+            await act(async () => {
+                render(
+                    <TxStatus txId={MOCK_TX_ID} onConfirmed={onConfirmed} onFailed={onFailed} />,
+                );
+            });
+
+            expect(onConfirmed).not.toHaveBeenCalled();
+            expect(onFailed).not.toHaveBeenCalled();
+        });
+    });
 });
