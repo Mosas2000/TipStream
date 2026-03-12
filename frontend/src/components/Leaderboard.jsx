@@ -1,7 +1,5 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
+import { useMemo, useState } from 'react';
 import { formatSTX, formatAddress } from '../lib/utils';
-import { parseTipEvent } from '../lib/parseTipEvent';
 import { buildLeaderboardStats } from '../lib/buildLeaderboardStats';
 import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
@@ -14,114 +12,41 @@ const MEDALS = [
 ];
 const DEFAULT_MEDAL = 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
 
-const API_LIMIT = 50;
-const MAX_AUTO_PAGES = 10; // Auto-fetch up to 500 events on initial load
-
 /**
  * Leaderboard component that ranks users by total STX sent or received.
  *
- * Fetches contract events via the Stacks API, delegates parsing to the
- * shared `parseTipEvent` utility, and aggregates per-address stats using
- * `buildLeaderboardStats`.  Supports toggling between "Top Senders" and
- * "Top Receivers" tabs, auto-refreshes every 60 seconds, and reacts to
- * the global `refreshCounter` from TipContext.
+ * Reads parsed contract events from the shared TipContext event cache,
+ * aggregates per-address stats using `buildLeaderboardStats`, and renders
+ * a ranked list.  Supports toggling between "Top Senders" and "Top
+ * Receivers" tabs.  No longer polls the Stacks API independently.
  */
 export default function Leaderboard() {
-    const { refreshCounter } = useTipContext();
-    const [leaders, setLeaders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [error, setError] = useState(null);
+    const {
+        events,
+        eventsLoading: loading,
+        eventsError: error,
+        eventsMeta,
+        lastEventRefresh: lastRefresh,
+        refreshEvents,
+        loadMoreEvents: contextLoadMore,
+    } = useTipContext();
     const [tab, setTab] = useState('sent');
-    const [lastRefresh, setLastRefresh] = useState(null);
-    const [allTipEvents, setAllTipEvents] = useState([]);
-    const [apiOffset, setApiOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(false);
-    const [totalApiEvents, setTotalApiEvents] = useState(null);
+    const [loadingMore, setLoadingMore] = useState(false);
 
-    const fetchLeaderboard = useCallback(async () => {
-        if (loading && leaders.length > 0) return;
-        try {
-            setLoading(true);
-            setError(null);
-            const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+    // Derive tip-sent events and leaderboard stats from the shared cache.
+    /** Tip-sent events with valid sender, recipient, and non-zero amount. */
+    const tipEvents = useMemo(
+        () => events.filter(t => t.event === 'tip-sent' && t.sender && t.recipient && t.amount !== '0'),
+        [events],
+    );
+    /** Per-address aggregation of sent/received totals and counts. */
+    const leaders = useMemo(() => buildLeaderboardStats(tipEvents), [tipEvents]);
 
-            // Auto-paginate through multiple pages for accurate rankings
-            let accumulated = [];
-            let currentOffset = 0;
-            let totalEvents = null;
-
-            for (let page = 0; page < MAX_AUTO_PAGES; page++) {
-                const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=${currentOffset}`);
-                if (!response.ok) throw new Error(`API returned ${response.status}`);
-
-                const data = await response.json();
-                totalEvents = data.total;
-                accumulated = accumulated.concat(data.results);
-                currentOffset += data.results.length;
-
-                // Stop if we've fetched all events
-                if (currentOffset >= data.total || data.results.length < API_LIMIT) break;
-            }
-
-            const tipEvents = accumulated
-                .filter(e => e.contract_log?.value?.repr)
-                .map(e => parseTipEvent(e.contract_log.value.repr))
-                .filter(t => t !== null && t.event === 'tip-sent' && t.sender && t.recipient && t.amount !== '0');
-
-            setAllTipEvents(tipEvents);
-            setLeaders(buildLeaderboardStats(tipEvents));
-            setApiOffset(currentOffset);
-            setHasMore(currentOffset < totalEvents);
-            setTotalApiEvents(totalEvents);
-            setLoading(false);
-            setLastRefresh(new Date());
-        } catch (err) {
-            console.error('Failed to fetch leaderboard:', err.message || err);
-            const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
-            setError(isNet ? 'Unable to reach the Stacks API. Check your connection.' : `Failed to load leaderboard: ${err.message}`);
-            setLoading(false);
-        }
-    }, []);
-
-    const loadMoreEvents = useCallback(async () => {
-        try {
-            setLoadingMore(true);
-            const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-
-            let accumulated = [];
-            let currentOffset = apiOffset;
-
-            for (let page = 0; page < MAX_AUTO_PAGES; page++) {
-                const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=${currentOffset}`);
-                if (!response.ok) throw new Error(`API returned ${response.status}`);
-
-                const data = await response.json();
-                accumulated = accumulated.concat(data.results);
-                currentOffset += data.results.length;
-
-                if (currentOffset >= data.total || data.results.length < API_LIMIT) break;
-            }
-
-            const newTipEvents = accumulated
-                .filter(e => e.contract_log?.value?.repr)
-                .map(e => parseTipEvent(e.contract_log.value.repr))
-                .filter(t => t !== null && t.event === 'tip-sent' && t.sender && t.recipient && t.amount !== '0');
-
-            const combinedEvents = [...allTipEvents, ...newTipEvents];
-            setAllTipEvents(combinedEvents);
-            setLeaders(buildLeaderboardStats(combinedEvents));
-            setApiOffset(currentOffset);
-            setHasMore(currentOffset < (totalApiEvents || Infinity));
-        } catch (err) {
-            console.error('Failed to load more leaderboard data:', err.message || err);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [apiOffset, allTipEvents, totalApiEvents]);
-
-    useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard, refreshCounter]);
-    useEffect(() => { const i = setInterval(fetchLeaderboard, 60000); return () => clearInterval(i); }, [fetchLeaderboard]);
+    /** Request additional event pages from the shared cache. */
+    const handleLoadMore = async () => {
+        setLoadingMore(true);
+        try { await contextLoadMore(); } finally { setLoadingMore(false); }
+    };
 
     const sorted = useMemo(() => {
         return [...leaders]
@@ -138,7 +63,7 @@ export default function Leaderboard() {
     if (error) return (
         <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 text-center">
             <p className="text-red-500 text-sm mb-4">{error}</p>
-            <button onClick={fetchLeaderboard} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
+            <button onClick={refreshEvents} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
         </div>
     );
 
@@ -157,7 +82,7 @@ export default function Leaderboard() {
                 </div>
                 <div className="flex items-center gap-3">
                     {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={fetchLeaderboard} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    <button onClick={refreshEvents} aria-label="Refresh leaderboard" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
@@ -193,18 +118,19 @@ export default function Leaderboard() {
                 )}
                 {sorted.length > 0 && (
                     <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center px-3">
-                        <span className="text-xs text-gray-400">Showing top {sorted.length} users{totalApiEvents !== null ? ` (from ${allTipEvents.length} events of ${totalApiEvents} total)` : ''}</span>
+                        <span className="text-xs text-gray-400">Showing top {sorted.length} users{eventsMeta.total ? ` (from ${tipEvents.length} events of ${eventsMeta.total} total)` : ''}</span>
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                             Total: {formatSTX(sorted.reduce((sum, u) => sum + (tab === 'sent' ? u.totalSent : u.totalReceived), 0), 2)} STX
                         </span>
                     </div>
                 )}
 
-                {hasMore && (
+                {eventsMeta.hasMore && (
                     <div className="mt-3 text-center">
                         <button 
-                            onClick={loadMoreEvents} 
+                            onClick={handleLoadMore} 
                             disabled={loadingMore}
+                            aria-label="Load more events for accurate rankings"
                             className="px-4 py-2 text-xs font-semibold bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors"
                         >
                             {loadingMore ? 'Loading more events…' : 'Load More Events for Accurate Rankings'}

@@ -1,11 +1,10 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { openContractCall } from '@stacks/connect';
 import { uintCV, stringUtf8CV } from '@stacks/transactions';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_TIP_A_TIP } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_TIP_A_TIP } from '../config/contracts';
 import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
 import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
 import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
-import { parseTipEvent } from '../lib/parseTipEvent';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackValidation';
 import { useTipContext } from '../context/TipContext';
@@ -13,122 +12,82 @@ import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
 const PAGE_SIZE = 10;
-const API_LIMIT = 50;
 
 /**
  * RecentTips -- displays a live feed of on-chain tip events with search,
  * filtering, pagination, and a tip-back modal for reciprocating tips.
  *
+ * Reads parsed contract events from the shared TipContext event cache
+ * instead of polling the Stacks API independently.  Message enrichment
+ * (fetching on-chain tip messages) is still performed locally because
+ * it is specific to this component's display needs.
+ *
  * @param {Object}   props
  * @param {Function} props.addToast - Callback to display a toast notification.
  */
 export default function RecentTips({ addToast }) {
-    const { refreshCounter } = useTipContext();
-    const [tips, setTips] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
+    const {
+        events,
+        eventsLoading,
+        eventsError,
+        eventsMeta,
+        lastEventRefresh,
+        refreshEvents,
+        loadMoreEvents: contextLoadMore,
+    } = useTipContext();
     const [messagesLoading, setMessagesLoading] = useState(false);
-    const [error, setError] = useState(null);
     const [tipBackTarget, setTipBackTarget] = useState(null);
     const [tipBackAmount, setTipBackAmount] = useState('0.5');
     const [tipBackMessage, setTipBackMessage] = useState('');
     const [tipBackError, setTipBackError] = useState('');
     const [sending, setSending] = useState(false);
-    const [lastRefresh, setLastRefresh] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [minAmount, setMinAmount] = useState('');
     const [maxAmount, setMaxAmount] = useState('');
     const [sortBy, setSortBy] = useState('newest');
     const [showFilters, setShowFilters] = useState(false);
     const [offset, setOffset] = useState(0);
-    const [apiOffset, setApiOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(false);
-    const [totalApiEvents, setTotalApiEvents] = useState(null);
+    const [loadingMore, setLoadingMore] = useState(false);
 
-    const fetchRecentTips = useCallback(async () => {
-        try {
-            setError(null);
-            clearTipCache();
-            const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=0`);
-            if (!response.ok) throw new Error(`API returned ${response.status}`);
+    // Derive tip-sent events from the shared cache.
+    const tips = useMemo(
+        () => events.filter(t => t.event === 'tip-sent' && t.sender && t.recipient),
+        [events],
+    );
 
-            const data = await response.json();
-            const tipEvents = data.results
-                .filter(e => e.contract_log?.value?.repr)
-                .map(e => parseTipEvent(e.contract_log.value.repr))
-                .filter(t => t !== null && t.event === 'tip-sent');
+    // Enrich tips with on-chain messages whenever the tip list changes.
+    const [tipMessages, setTipMessages] = useState({});
+    useEffect(() => {
+        const tipIds = tips.map(t => t.tipId).filter(id => id && id !== '0');
+        if (tipIds.length === 0) return;
+        let cancelled = false;
+        setMessagesLoading(true);
+        clearTipCache();
+        fetchTipMessages(tipIds)
+            .then(messageMap => {
+                if (cancelled) return;
+                const obj = {};
+                messageMap.forEach((v, k) => { obj[k] = v; });
+                setTipMessages(obj);
+            })
+            .catch(err => { if (!cancelled) console.warn('Failed to fetch tip messages:', err.message || err); })
+            .finally(() => { if (!cancelled) setMessagesLoading(false); });
+        return () => { cancelled = true; };
+    }, [tips]);
 
-            setTips(tipEvents);
-            setApiOffset(data.results.length);
-            setHasMore(data.offset + data.results.length < data.total);
-            setTotalApiEvents(data.total);
-            setLoading(false);
-            setLastRefresh(new Date());
+    // Merge messages into the tip objects for display.
+    const enrichedTips = useMemo(
+        () => tips.map(t => {
+            const msg = tipMessages[String(t.tipId)];
+            return msg ? { ...t, message: msg } : t;
+        }),
+        [tips, tipMessages],
+    );
 
-            // Second phase: fetch on-chain messages for each tip
-            const tipIds = tipEvents.map(t => t.tipId).filter(id => id && id !== '0');
-            if (tipIds.length > 0) {
-                setMessagesLoading(true);
-                try {
-                    const messageMap = await fetchTipMessages(tipIds);
-                    setTips(prev => prev.map(t => {
-                        const msg = messageMap.get(String(t.tipId));
-                        return msg ? { ...t, message: msg } : t;
-                    }));
-                } catch (msgErr) {
-                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
-                } finally {
-                    setMessagesLoading(false);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to fetch recent tips:', err.message || err);
-            const isNet = err.message?.includes('fetch') || err.name === 'TypeError';
-            setError(isNet ? 'Unable to reach the Stacks API. Check your connection.' : `Failed to load tips: ${err.message}`);
-            setLoading(false);
-        }
-    }, []);
-
-    const loadMoreTips = useCallback(async () => {
-        try {
-            setLoadingMore(true);
-            const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-            const response = await fetch(`${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${API_LIMIT}&offset=${apiOffset}`);
-            if (!response.ok) throw new Error(`API returned ${response.status}`);
-
-            const data = await response.json();
-            const newTipEvents = data.results
-                .filter(e => e.contract_log?.value?.repr)
-                .map(e => parseTipEvent(e.contract_log.value.repr))
-                .filter(t => t !== null && t.event === 'tip-sent');
-
-            setTips(prev => [...prev, ...newTipEvents]);
-            setApiOffset(prev => prev + data.results.length);
-            setHasMore(data.offset + data.results.length < data.total);
-
-            // Fetch messages for new tips
-            const tipIds = newTipEvents.map(t => t.tipId).filter(id => id && id !== '0');
-            if (tipIds.length > 0) {
-                try {
-                    const messageMap = await fetchTipMessages(tipIds);
-                    setTips(prev => prev.map(t => {
-                        const msg = messageMap.get(String(t.tipId));
-                        return msg ? { ...t, message: msg } : t;
-                    }));
-                } catch (msgErr) {
-                    console.warn('Failed to fetch tip messages:', msgErr.message || msgErr);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to load more tips:', err.message || err);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [apiOffset]);
-
-    useEffect(() => { fetchRecentTips(); }, [fetchRecentTips, refreshCounter]);
-    useEffect(() => { const i = setInterval(fetchRecentTips, 60000); return () => clearInterval(i); }, [fetchRecentTips]);
+    const handleLoadMore = async () => {
+        setLoadingMore(true);
+        try { await contextLoadMore(); } finally { setLoadingMore(false); }
+    };
 
     /** Handle changes to the tip-back amount input with real-time validation. */
     const handleTipBackAmountChange = (value) => {
@@ -180,7 +139,7 @@ export default function RecentTips({ addToast }) {
     };
 
     const filteredTips = useMemo(() => {
-        let result = [...tips];
+        let result = [...enrichedTips];
         if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
             result = result.filter(t => [t.sender, t.recipient, t.message || ''].some(s => s.toLowerCase().includes(q)));
@@ -191,7 +150,7 @@ export default function RecentTips({ addToast }) {
         else if (sortBy === 'amount-high') result.sort((a, b) => parseInt(b.amount) - parseInt(a.amount));
         else if (sortBy === 'amount-low') result.sort((a, b) => parseInt(a.amount) - parseInt(b.amount));
         return result;
-    }, [tips, searchQuery, minAmount, maxAmount, sortBy]);
+    }, [enrichedTips, searchQuery, minAmount, maxAmount, sortBy]);
 
     const paginatedTips = useMemo(() => filteredTips.slice(offset, offset + PAGE_SIZE), [filteredTips, offset]);
     const totalPages = Math.max(1, Math.ceil(filteredTips.length / PAGE_SIZE));
@@ -199,18 +158,18 @@ export default function RecentTips({ addToast }) {
     const hasActiveFilters = searchQuery || minAmount || maxAmount || sortBy !== 'newest';
     const clearFilters = () => { setSearchQuery(''); setMinAmount(''); setMaxAmount(''); setSortBy('newest'); setOffset(0); };
 
-    if (loading) return (
+    if (eventsLoading) return (
         <div className="space-y-4 animate-pulse">
             {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl" />)}
         </div>
     );
 
-    if (error) return (
+    if (eventsError) return (
         <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Live Feed</h2>
             <div className="text-center py-12 bg-red-50 dark:bg-red-900/10 rounded-xl border-2 border-dashed border-red-200 dark:border-red-900/30">
-                <p className="text-red-500 text-sm mb-4">{error}</p>
-                <button onClick={fetchRecentTips} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
+                <p className="text-red-500 text-sm mb-4">{eventsError}</p>
+                <button onClick={refreshEvents} className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Retry</button>
             </div>
         </div>
     );
@@ -228,8 +187,8 @@ export default function RecentTips({ addToast }) {
                     )}
                 </div>
                 <div className="flex items-center gap-3">
-                    {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={fetchRecentTips} className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    {lastEventRefresh && <span className="text-xs text-gray-400">{lastEventRefresh.toLocaleTimeString()}</span>}
+                    <button onClick={refreshEvents} aria-label="Refresh tip feed" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
@@ -271,8 +230,8 @@ export default function RecentTips({ addToast }) {
                         </div>
                     </div>
                 )}
-                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {tips.length} tips{totalApiEvents !== null && totalApiEvents > tips.length ? ` (${totalApiEvents} total on-chain)` : ''}</p>}
-                {!hasActiveFilters && totalApiEvents !== null && <p className="text-xs text-gray-500 dark:text-gray-400">Loaded {tips.length} of {totalApiEvents} on-chain events</p>}
+                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {enrichedTips.length} tips{eventsMeta.total > enrichedTips.length ? ` (${eventsMeta.total} total on-chain)` : ''}</p>}
+                {!hasActiveFilters && eventsMeta.total > 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Loaded {enrichedTips.length} of {eventsMeta.total} on-chain events</p>}
             </div>
 
             {/* Tip cards */}
@@ -331,9 +290,10 @@ export default function RecentTips({ addToast }) {
             )}
 
             {/* Load More from API */}
-            {hasMore && (
+            {eventsMeta.hasMore && (
                 <div className="flex justify-center mt-4">
-                    <button onClick={loadMoreTips} disabled={loadingMore}
+                    <button onClick={handleLoadMore} disabled={loadingMore}
+                        aria-label="Load more tips from the blockchain"
                         className="px-6 py-2.5 text-sm font-semibold bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                         {loadingMore ? 'Loading...' : 'Load More Tips'}
                     </button>
