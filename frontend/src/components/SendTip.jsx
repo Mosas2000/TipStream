@@ -32,6 +32,17 @@ const TIP_CATEGORIES = [
     { id: 6, label: 'Bug Bounty' },
 ];
 
+/**
+ * SendTip -- form for sending an STX micro-tip to a Stacks address.
+ *
+ * Handles validation, fee preview, post-condition construction, and
+ * wallet interaction via @stacks/connect.  Once a transaction is
+ * broadcast the component renders a TxStatus poller to track the
+ * on-chain result.
+ *
+ * @param {Object}   props
+ * @param {Function} props.addToast - Callback to display a toast notification.
+ */
 export default function SendTip({ addToast }) {
     const { notifyTipSent } = useTipContext();
     const { toUsd } = useStxPrice();
@@ -197,6 +208,14 @@ export default function SendTip({ addToast }) {
         }
     };
 
+    const handleTxConfirmed = useCallback(() => {
+        addToast('Tip confirmed on-chain!', 'success');
+    }, [addToast]);
+
+    const handleTxFailed = useCallback((reason) => {
+        addToast(`Transaction failed: ${reason}`, 'error');
+    }, [addToast]);
+
     return (
         <div className="max-w-md mx-auto">
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
@@ -321,13 +340,13 @@ export default function SendTip({ addToast }) {
 
                 {/* Pending TX */}
                 {pendingTx && (
-                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                    <div data-testid="pending-tx" className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                             Sent {pendingTx.amount} STX to <span className="font-mono text-xs">{pendingTx.recipient.slice(0, 8)}...{pendingTx.recipient.slice(-4)}</span>
                         </p>
                         <TxStatus txId={pendingTx.txId}
-                            onConfirmed={() => addToast('Tip confirmed on-chain!', 'success')}
-                            onFailed={(reason) => addToast(`Transaction failed: ${reason}`, 'error')} />
+                            onConfirmed={handleTxConfirmed}
+                            onFailed={handleTxFailed} />
                         <button onClick={() => setPendingTx(null)} className="mt-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Dismiss</button>
                     </div>
                 )}
