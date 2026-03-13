@@ -23,21 +23,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `fetchTipMessages` now normalizes, validates (positive integer only),
   and deduplicates tip IDs per batch to avoid redundant read-only calls
   and silently skip invalid identifiers.
+- `RecentTips` and `TipHistory` now deduplicate tip IDs before invoking
+  `fetchTipMessages`, reducing duplicate message lookups when event
+  streams contain repeated `tip-sent` entries.
 
 - `fetchTipDetails` now exports `getCacheSize()` and `getCachedEntry()`
   as test/debug helpers to verify cache entry lifecycle and expiration.
 
 ### Added (Issue #235)
 
-- `frontend/src/test/fetchTipDetails.test.js` with 29 tests covering
+- `frontend/src/test/fetchTipDetails.test.js` with 33 tests covering
   cold/warm cache paths, TTL expiry, null/error handling, cache clear
   semantics, helper exports, and batch message fetch behavior.
-- `frontend/src/test/RecentTips.refresh.test.jsx` with 3 tests proving
+- `frontend/src/test/RecentTips.refresh.test.jsx` with 4 tests proving
   `clearTipCache()` is not called by automatic enrichment and is only
-  triggered by user `Refresh`/`Retry` actions.
-- `frontend/src/test/TipHistory.refresh.test.jsx` with 3 tests proving
+  triggered by user `Refresh`/`Retry` actions, plus tip ID deduplication
+  before message enrichment.
+- `frontend/src/test/TipHistory.refresh.test.jsx` with 4 tests proving
   `clearTipCache()` is not called by automatic enrichment and is only
-  triggered by user `Refresh`/`Retry` actions.
+  triggered by user `Refresh`/`Retry` actions, plus tip ID deduplication
+  before message enrichment.
 
 - Four components (`Leaderboard`, `RecentTips`, `TipHistory`,
   `useNotifications`) each polled the same Stacks API contract-events
