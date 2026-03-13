@@ -5,6 +5,7 @@
   command = "npm run build"
   publish = "dist"
 
+# Build environment variables
 [build.environment]
   NODE_VERSION = "20"
   VITE_NETWORK = "mainnet"
