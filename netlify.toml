@@ -1,3 +1,5 @@
+# Build configuration
+# base sets the working directory for the build; publish is relative to base.
 [build]
   base = "frontend"
   command = "npm run build"
