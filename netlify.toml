@@ -19,6 +19,7 @@
   status = 200  # rewrite, not a visible redirect
 
 # Security headers
+# Applied to every response. See OWASP Secure Headers for rationale.
 [[headers]]
   for = "/*"
   [headers.values]
