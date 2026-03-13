@@ -9,9 +9,16 @@
  * retrieve the full record and expose a caching layer so repeated renders
  * do not trigger duplicate API requests.
  *
+ * Cache entries expire after CACHE_TTL_MS milliseconds (default 5 minutes).
+ * Use clearTipCache() only for user-initiated hard refreshes, not in
+ * automated polling loops.
+ *
  * Exports:
  *   fetchTipDetail(tipId)     - Fetch a single tip record (cached).
  *   fetchTipMessages(tipIds)  - Batch-fetch messages for many tips at once.
+ *   clearTipCache()           - Evict all cache entries (manual refresh only).
+ *   getCacheSize()            - Return the number of cached entries.
+ *   CACHE_TTL_MS              - TTL for cached tip records in milliseconds.
  */
 
 import { fetchCallReadOnlyFunction, cvToJSON, uintCV } from '@stacks/transactions';
@@ -19,8 +26,16 @@ import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 
 /**
+ * Time-to-live for cached tip records, in milliseconds.
+ * Entries older than this threshold are treated as stale and re-fetched
+ * on the next access.  Five minutes balances freshness with API call volume.
+ */
+export const CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
  * In-memory cache for tip details to avoid redundant API calls.
- * Keys are tip IDs (as strings), values are the parsed tip objects.
+ * Keys are tip IDs (as strings).
+ * Values are { value: <tip detail object>, expiresAt: <unix ms timestamp> }.
  */
 const tipCache = new Map();
 
@@ -36,9 +51,11 @@ const tipCache = new Map();
  */
 export async function fetchTipDetail(tipId) {
     const cacheKey = String(tipId);
-    if (tipCache.has(cacheKey)) {
-        return tipCache.get(cacheKey);
+    const cached = tipCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+        return cached.value;
     }
+    const staleValue = cached?.value ?? null;
 
     try {
         const result = await fetchCallReadOnlyFunction({
@@ -55,11 +72,11 @@ export async function fetchTipDetail(tipId) {
             return null;
         }
 
-        tipCache.set(cacheKey, parsed.value);
+        tipCache.set(cacheKey, { value: parsed.value, expiresAt: Date.now() + CACHE_TTL_MS });
         return parsed.value;
     } catch (err) {
         console.error(`Failed to fetch tip #${tipId}:`, err.message || err);
-        return null;
+        return staleValue;
     }
 }
 
@@ -68,6 +85,27 @@ export async function fetchTipDetail(tipId) {
  * Keeps Hiro API rate-limit pressure low while still being faster than serial.
  */
 const CONCURRENCY_LIMIT = 5;
+
+/**
+ * Convert arbitrary tip ID input into a canonical positive-integer string.
+ * Returns null for empty, zero, negative, non-integer, or non-numeric values.
+ *
+ * @param {number|string} tipId
+ * @returns {string|null}
+ */
+function normalizeTipId(tipId) {
+    const raw = String(tipId ?? '').trim();
+    if (!raw || raw === '0') {
+        return null;
+    }
+
+    const numeric = Number(raw);
+    if (!Number.isInteger(numeric) || numeric <= 0) {
+        return null;
+    }
+
+    return String(numeric);
+}
 
 /**
  * Fetch messages for a batch of tip IDs.
@@ -81,7 +119,17 @@ const CONCURRENCY_LIMIT = 5;
  */
 export async function fetchTipMessages(tipIds) {
     const messages = new Map();
-    const queue = [...tipIds];
+    const queue = [
+        ...new Set(
+            tipIds
+                .map(normalizeTipId)
+                .filter(Boolean),
+        ),
+    ];
+
+    if (queue.length === 0) {
+        return messages;
+    }
 
     async function worker() {
         while (queue.length > 0) {
@@ -105,9 +153,36 @@ export async function fetchTipMessages(tipIds) {
 /**
  * Clear the in-memory tip detail cache.
  *
- * Useful when the user manually refreshes or when new tips are submitted
- * and the UI should re-fetch updated records from the chain.
+ * This is a hard-reset intended for user-initiated refresh actions (e.g.
+ * clicking a "Refresh" button).  Do NOT call this in automated polling
+ * loops or useEffect dependencies -- doing so destroys shared cached data
+ * for other mounted components, causing redundant API calls (Issue #235).
  */
 export function clearTipCache() {
     tipCache.clear();
+}
+
+/**
+ * Return the number of currently cached tip detail entries.
+ * Includes both unexpired and stale entries not yet evicted.
+ *
+ * Intended for use in tests and debugging only.
+ *
+ * @returns {number}
+ */
+export function getCacheSize() {
+    return tipCache.size;
+}
+
+/**
+ * Return the raw cache entry for a tip ID, or undefined if not cached.
+ * The entry shape is { value, expiresAt }.
+ *
+ * Intended for use in tests and debugging only.
+ *
+ * @param {number|string} tipId
+ * @returns {{ value: Object, expiresAt: number } | undefined}
+ */
+export function getCachedEntry(tipId) {
+    return tipCache.get(String(tipId));
 }

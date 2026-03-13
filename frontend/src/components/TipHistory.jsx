@@ -42,6 +42,13 @@ export default function TipHistory({ userAddress }) {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [loadingMore, setLoadingMore] = useState(false);
 
+    // Manual refresh only: invalidate local tip-detail cache, then ask
+    // TipContext to refresh shared events. Keep this out of auto effects.
+    const handleRefresh = useCallback(() => {
+        clearTipCache();
+        refreshEvents();
+    }, [refreshEvents]);
+
     // Build a category lookup from tip-categorized events in the cache.
     const categoryMap = useMemo(() => {
         const map = {};
@@ -63,15 +70,17 @@ export default function TipHistory({ userAddress }) {
             })),
         [events, userAddress, categoryMap],
     );
+    const tipIds = useMemo(
+        () => [...new Set(tips.map(t => t.tipId).filter(id => id && id !== '0'))],
+        [tips],
+    );
 
     // Enrich tips with on-chain messages whenever the tip list changes.
     const [tipMessages, setTipMessages] = useState({});
     useEffect(() => {
-        const tipIds = tips.map(t => t.tipId).filter(id => id && id !== '0');
         if (tipIds.length === 0) return;
         let cancelled = false;
         setMessagesLoading(true);
-        clearTipCache();
         fetchTipMessages(tipIds)
             .then(messageMap => {
                 if (cancelled) return;
@@ -82,7 +91,7 @@ export default function TipHistory({ userAddress }) {
             .catch(err => { if (!cancelled) console.warn('Failed to fetch tip messages:', err.message || err); })
             .finally(() => { if (!cancelled) setMessagesLoading(false); });
         return () => { cancelled = true; };
-    }, [tips]);
+    }, [tipIds]);
 
     // Merge messages into the tip objects for display.
     const enrichedTips = useMemo(
@@ -134,7 +143,7 @@ export default function TipHistory({ userAddress }) {
     if (eventsError) return (
         <div className="max-w-md mx-auto text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-red-100 dark:border-red-900/30 p-8">
             <p className="text-red-500 text-sm mb-4">{eventsError}</p>
-            <button onClick={refreshEvents}
+            <button onClick={handleRefresh}
                 className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">
                 Retry
             </button>
@@ -153,7 +162,7 @@ export default function TipHistory({ userAddress }) {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Activity</h2>
                 <div className="flex items-center gap-3">
                     {lastEventRefresh && <span className="text-xs text-gray-400">{lastEventRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={refreshEvents} aria-label="Refresh activity" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
+                    <button onClick={handleRefresh} aria-label="Refresh activity" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
 
