@@ -26,7 +26,7 @@
     X-Frame-Options = "DENY"  # prevent clickjacking
     X-Content-Type-Options = "nosniff"  # prevent MIME-type sniffing
     Referrer-Policy = "strict-origin-when-cross-origin"  # send origin only cross-site
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"  # disable unused APIs
     Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.hiro.so https://api.mainnet.hiro.so https://api.testnet.hiro.so https://api.coingecko.com https://stacks-node-api.mainnet.stacks.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
 
 # Cache hashed assets aggressively
