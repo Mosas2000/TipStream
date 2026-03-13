@@ -8,7 +8,7 @@
 # Build environment variables
 [build.environment]
   NODE_VERSION = "20"  # LTS version used for builds
-  VITE_NETWORK = "mainnet"
+  VITE_NETWORK = "mainnet"  # passed to Vite at build time
 
 # SPA fallback - redirect all routes to index.html
 [[redirects]]
