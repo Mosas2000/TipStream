@@ -322,6 +322,13 @@ describe('fetchTipMessages', () => {
         expect(result.size).toBe(0);
     });
 
+    it('returns an empty Map and makes no API calls when all IDs are invalid', async () => {
+        const result = await fetchTipMessages([0, '0', null, undefined, '', 'abc', -1, '1.5']);
+        expect(result).toBeInstanceOf(Map);
+        expect(result.size).toBe(0);
+        expect(fetchCallReadOnlyFunction).not.toHaveBeenCalled();
+    });
+
     it('includes only tips that have a message field', async () => {
         // Tip 1 has a message; tip 2 returns none.
         fetchCallReadOnlyFunction.mockResolvedValue({});
