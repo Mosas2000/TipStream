@@ -42,8 +42,8 @@ export default function TipHistory({ userAddress }) {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [loadingMore, setLoadingMore] = useState(false);
 
-    // Clears the tip-detail cache before triggering a context refresh so that
-    // a user-initiated "Refresh" always fetches fresh on-chain message data.
+    // Manual refresh only: invalidate local tip-detail cache, then ask
+    // TipContext to refresh shared events. Keep this out of auto effects.
     const handleRefresh = useCallback(() => {
         clearTipCache();
         refreshEvents();
