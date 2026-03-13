@@ -49,8 +49,8 @@ export default function RecentTips({ addToast }) {
     const [offset, setOffset] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
 
-    // Clears the tip-detail cache before triggering a context refresh so that
-    // a user-initiated "Refresh" always fetches fresh on-chain message data.
+    // Manual refresh only: invalidate local tip-detail cache, then ask
+    // TipContext to refresh shared events. Keep this out of auto effects.
     const handleRefresh = useCallback(() => {
         clearTipCache();
         refreshEvents();
