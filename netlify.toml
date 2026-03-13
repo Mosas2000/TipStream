@@ -10,7 +10,9 @@
   NODE_VERSION = "20"  # LTS version used for builds
   VITE_NETWORK = "mainnet"  # passed to Vite at build time
 
-# SPA fallback - redirect all routes to index.html
+# SPA fallback
+# All client-side routes fall through to index.html so the
+# React router can handle them.
 [[redirects]]
   from = "/*"
   to = "/index.html"
