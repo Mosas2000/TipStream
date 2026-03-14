@@ -46,6 +46,7 @@ export default function ProfileManager({ addToast }) {
         fetchProfile();
     }, [senderAddress]);
 
+    /** Fetch the existing on-chain profile for the connected wallet. */
     const fetchProfile = async () => {
         try {
             setLoading(true);
