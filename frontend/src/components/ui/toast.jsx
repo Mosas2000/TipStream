@@ -76,7 +76,7 @@ export function useToast() {
     const idRef = useRef(0);
 
     const addToast = useCallback((message, type = 'info') => {
-        const id = ++toastId;
+        const id = ++idRef.current;
         setToasts((prev) => [...prev, { id, message, type }]);
     }, []);
 
