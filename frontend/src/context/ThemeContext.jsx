@@ -4,9 +4,17 @@ const ThemeContext = createContext(null);
 
 function getInitialTheme() {
   if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem('tipstream-theme');
-  if (stored === 'dark' || stored === 'light') return stored;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  try {
+    const stored = localStorage.getItem('tipstream-theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+  } catch {
+    // localStorage may be unavailable in private browsing or restricted contexts
+  }
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
 }
 
 export function ThemeProvider({ children }) {
