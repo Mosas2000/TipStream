@@ -173,6 +173,7 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
+  // POST /api/chainhook/events -- ingest webhook payloads
   if (req.method === "POST" && path === "/api/chainhook/events") {
     // Early rejection based on Content-Length header
     const contentLength = parseInt(req.headers["content-length"], 10);
