@@ -23,6 +23,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     X-DNS-Prefetch-Control = "on"
     X-Frame-Options = "DENY"  # prevent clickjacking
     X-Content-Type-Options = "nosniff"  # prevent MIME-type sniffing
