@@ -269,6 +269,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, tip);
   }
 
+  // GET /api/stats -- aggregate tip statistics
   if (req.method === "GET" && path === "/api/stats") {
     const allEvents = loadEvents();
     const tips = allEvents.map(parseTipEvent).filter(Boolean);
