@@ -11,7 +11,7 @@ import { microToStx } from '../lib/balance-utils';
  * convert for display rather than dividing by a magic number.
  *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
- * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, refetch: () => Promise<void> }}
+ * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, lastFetched: number|null, refetch: () => Promise<void> }}
  */
 export function useBalance(address) {
     const [balance, setBalance] = useState(null);
