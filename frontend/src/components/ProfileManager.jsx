@@ -232,7 +232,7 @@ export default function ProfileManager({ addToast }) {
                                 referrerPolicy="no-referrer"
                                 crossOrigin="anonymous"
                                 loading="lazy"
-                                className="h-12 w-12 rounded-xl object-cover bg-gray-200 dark:bg-gray-700"
+                                className="h-12 w-12 max-w-[3rem] rounded-xl object-cover bg-gray-200 dark:bg-gray-700"
                                 onError={(e) => { e.target.style.display = 'none'; }}
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400">Preview</p>
