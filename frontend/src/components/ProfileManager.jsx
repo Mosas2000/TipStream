@@ -218,6 +218,12 @@ export default function ProfileManager({ addToast }) {
                         </div>
                     )}
 
+                    {avatarUrl && !isValidAvatarUrl(avatarUrl) && (
+                        <p className="text-xs text-red-500">
+                            Avatar URL must use HTTPS
+                        </p>
+                    )}
+
                     <button
                         onClick={handleSaveProfile}
                         disabled={saving || !displayName.trim()}
