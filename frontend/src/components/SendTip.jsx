@@ -254,6 +254,7 @@ export default function SendTip({ addToast }) {
                     <div>
                         <label htmlFor="tip-recipient" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Recipient Address</label>
                         <input id="tip-recipient" type="text" value={recipient} onChange={(e) => handleRecipientChange(e.target.value)}
+                            aria-describedby={recipientError ? "tip-recipient-error" : undefined}
                             className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="SP2..." />
                         {recipientError && <p className="mt-1 text-xs text-red-500">{recipientError}</p>}
