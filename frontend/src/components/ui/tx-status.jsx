@@ -124,6 +124,11 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
           Still waiting. Check the explorer for the latest status.
         </p>
       )}
+      {status === 'pending' && pollCount > 0 && pollCount < MAX_POLLS && (
+        <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+          Stacks blocks typically take 10-30 minutes.
+        </p>
+      )}
     </div>
   );
 }
