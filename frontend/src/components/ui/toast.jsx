@@ -70,7 +70,6 @@ export function ToastContainer({ toasts, removeToast }) {
     );
 }
 
-let toastId = 0;
 
 export function useToast() {
     const [toasts, setToasts] = useState([]);
