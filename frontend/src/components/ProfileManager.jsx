@@ -226,7 +226,7 @@ export default function ProfileManager({ addToast }) {
                     )}
 
                     {avatarUrl && !isValidAvatarUrl(avatarUrl) && (
-                        <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800">
+                        <div data-testid="avatar-invalid" className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800">
                             <div className="h-12 w-12 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
                                 <ImageOff className="w-5 h-5 text-red-400" aria-hidden="true" />
                             </div>
