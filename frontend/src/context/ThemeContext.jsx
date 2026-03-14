@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback } 
 export const ThemeContext = createContext(null);
 ThemeContext.displayName = 'ThemeContext';
 
-function getInitialTheme() {
+export function getInitialTheme() {
   if (typeof window === 'undefined') return 'light';
   try {
     const stored = localStorage.getItem('tipstream-theme');
