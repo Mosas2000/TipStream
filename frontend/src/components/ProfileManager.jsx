@@ -83,6 +83,10 @@ export default function ProfileManager({ addToast }) {
             addToast?.('Avatar URL must be 256 characters or fewer', 'warning');
             return false;
         }
+        if (avatarUrl && !isValidAvatarUrl(avatarUrl)) {
+            addToast?.('Avatar URL must use HTTPS', 'warning');
+            return false;
+        }
         return true;
     };
 
