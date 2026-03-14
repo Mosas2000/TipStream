@@ -86,3 +86,9 @@
   for = "/favicon.ico"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+# Font files are typically versioned in the URL or rarely change.
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
