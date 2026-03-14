@@ -43,6 +43,11 @@ function loadEvents() {
   }
 }
 
+/**
+ * Persist events to the JSON file.
+ * Must only be called within withEventLock to avoid race conditions.
+ * @param {Array<object>} events
+ */
 function saveEvents(events) {
   writeFileSync(DB_FILE, JSON.stringify(events, null, 2));
 }
