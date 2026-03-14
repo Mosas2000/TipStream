@@ -14,6 +14,9 @@ const RETRY_DELAY_MS = 1500;
  * should use the balance-utils helpers (`microToStx`, `formatBalance`) to
  * convert for display rather than dividing by a magic number.
  *
+ * On error the hook retries up to MAX_RETRIES times before setting the
+ * error state. Call refetch() to manually retry after a failure.
+ *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
  * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, lastFetched: number|null, refetch: () => Promise<void> }}
  */
