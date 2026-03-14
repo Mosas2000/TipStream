@@ -20,13 +20,15 @@ const icons = {
 function Toast({ message, type = 'info', onClose = () => {} }) {
     const [visible, setVisible] = useState(true);
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setVisible(false);
-            setTimeout(onClose, 300);
-        }, TOAST_DURATION);
-        return () => clearTimeout(timer);
+    const dismiss = useCallback(() => {
+        setVisible(false);
+        setTimeout(onClose, 300);
     }, [onClose]);
+
+    useEffect(() => {
+        const timer = setTimeout(dismiss, TOAST_DURATION);
+        return () => clearTimeout(timer);
+    }, [dismiss]);
 
     return (
         <div
@@ -39,10 +41,7 @@ function Toast({ message, type = 'info', onClose = () => {} }) {
             <span className="flex-shrink-0 mt-0.5">{icons[type]}</span>
             <p className="text-sm font-medium flex-1">{message}</p>
             <button
-                onClick={() => {
-                    setVisible(false);
-                    setTimeout(onClose, 300);
-                }}
+                onClick={dismiss}
                 className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity text-current"
                 aria-label={`Dismiss ${type} notification`}
             >
