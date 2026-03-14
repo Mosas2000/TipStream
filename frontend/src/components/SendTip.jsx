@@ -182,7 +182,6 @@ export default function SendTip({ addToast }) {
                     setMessage('');
                     setCategory(0);
                     notifyTipSent();
-                    refetchBalance();
                     startCooldown();
                     analytics.trackTipConfirmed();
                     addToast('Tip sent! Tx: ' + data.txId, 'success');
