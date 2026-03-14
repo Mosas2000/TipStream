@@ -21,6 +21,7 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
     const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
