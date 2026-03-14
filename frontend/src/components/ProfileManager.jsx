@@ -164,6 +164,7 @@ export default function ProfileManager({ addToast }) {
                         </label>
                         <input
                             id="profile-name"
+                            data-testid="profile-name-input"
                             type="text"
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
