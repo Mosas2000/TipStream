@@ -299,7 +299,7 @@ export default function SendTip({ addToast }) {
 
                     {/* Breakdown with fee preview and post-condition ceiling */}
                     {amount && parseFloat(amount) > 0 && (
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm">
+                        <div data-testid="fee-preview" className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm">
                             <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Fee Preview</p>
                             <div className="space-y-1 text-gray-600 dark:text-gray-400">
                                 <div className="flex justify-between">
