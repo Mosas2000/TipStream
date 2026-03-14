@@ -145,7 +145,7 @@ export default function ProfileManager({ addToast }) {
 
     return (
         <div className="max-w-md mx-auto">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <div role="form" aria-label="Profile settings" className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white">
                         <User className="w-5 h-5" aria-hidden="true" />
