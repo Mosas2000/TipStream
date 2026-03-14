@@ -1,36 +1,98 @@
+# Build configuration
+# base sets the working directory for the build; publish is relative to base.
 [build]
   base = "frontend"
   command = "npm run build"
-  publish = "frontend/dist"
+  publish = "dist"
 
+# Build environment variables
 [build.environment]
-  NODE_VERSION = "20"
-  VITE_NETWORK = "mainnet"
+  NODE_VERSION = "20"  # LTS version used for builds
+  VITE_NETWORK = "mainnet"  # passed to Vite at build time
 
-# SPA fallback - redirect all routes to index.html
+# SPA routing
+# This replaces a _redirects file; Netlify prefers toml configuration.
+# All client-side routes fall through to index.html so the
+# React router can handle them.
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200
+  status = 200  # rewrite, not a visible redirect
+  force = false  # do not override existing files
 
 # Security headers
+# Applied to every response. See OWASP Secure Headers for rationale.
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.hiro.so https://api.mainnet.hiro.so https://api.testnet.hiro.so https://api.coingecko.com https://stacks-node-api.mainnet.stacks.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-DNS-Prefetch-Control = "on"
+    X-Frame-Options = "DENY"  # prevent clickjacking
+    X-Content-Type-Options = "nosniff"  # prevent MIME-type sniffing
+    Referrer-Policy = "strict-origin-when-cross-origin"  # send origin only cross-site
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"  # disable unused APIs
+    Cross-Origin-Opener-Policy = "same-origin"
+    X-Permitted-Cross-Domain-Policies = "none"
+    Content-Security-Policy = "\
+      default-src 'self'; \
+      script-src 'self'; \
+      style-src 'self' 'unsafe-inline'; \
+      img-src 'self' data: https:; \
+      font-src 'self' data:; \
+      connect-src 'self' \
+        https://api.hiro.so \
+        https://api.mainnet.hiro.so \
+        https://api.testnet.hiro.so \
+        https://api.coingecko.com \
+        https://stacks-node-api.mainnet.stacks.co; \
+      frame-ancestors 'none'; \
+      base-uri 'self'; \
+      form-action 'self'; \
+      object-src 'none'; \
+      upgrade-insecure-requests\
+    "
 
-# Cache hashed assets aggressively
+# Cache control
+# Vite hashed assets are immutable and can be cached indefinitely.
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=31536000, immutable"  # 1 year
+    Cross-Origin-Resource-Policy = "same-origin"
+    X-Content-Type-Options = "nosniff"
 
-# Don't cache service worker
+# Service worker must never be cached so updates propagate immediately.
 [[headers]]
   for = "/sw.js"
   [headers.values]
+    Cache-Control = "no-cache"  # always revalidate
+
+# Prevent stale index.html after deployments.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
     Cache-Control = "no-cache"
+
+# PWA manifest should revalidate reasonably often.
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# Allow crawlers to pick up robots.txt changes fairly quickly.
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# Favicons rarely change but should still revalidate eventually.
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Font files are typically versioned in the URL or rarely change.
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
