@@ -17,7 +17,7 @@ const icons = {
     info: <Info className="w-5 h-5 text-blue-500 dark:text-blue-400" aria-hidden="true" />,
 };
 
-function Toast({ message, type = 'info', onClose }) {
+function Toast({ message, type = 'info', onClose = () => {} }) {
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
