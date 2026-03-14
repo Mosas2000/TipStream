@@ -206,7 +206,7 @@ export default function ProfileManager({ addToast }) {
                         </p>
                     </div>
 
-                    {avatarUrl && (
+                    {avatarUrl && isValidAvatarUrl(avatarUrl) && (
                         <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
                             <img
                                 src={avatarUrl}
