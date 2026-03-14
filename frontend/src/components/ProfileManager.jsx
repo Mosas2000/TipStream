@@ -99,6 +99,7 @@ export default function ProfileManager({ addToast }) {
         return true;
     };
 
+    /** Submit the profile update transaction to the wallet. */
     const handleSaveProfile = async () => {
         if (!validateForm()) return;
 
