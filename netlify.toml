@@ -18,6 +18,7 @@
   from = "/*"
   to = "/index.html"
   status = 200  # rewrite, not a visible redirect
+  force = false  # do not override existing files
 
 # Security headers
 # Applied to every response. See OWASP Secure Headers for rationale.
