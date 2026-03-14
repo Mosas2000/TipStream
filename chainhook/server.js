@@ -167,6 +167,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     return res.end();
