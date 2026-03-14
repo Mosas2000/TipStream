@@ -153,7 +153,11 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, withEventLock };
+function __test_resetQueue() {
+  writeQueue = Promise.resolve();
+}
+
+export { parseBody, extractEvents, parseTipEvent, sendJson, withEventLock, __test_resetQueue };
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
