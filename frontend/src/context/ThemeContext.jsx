@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const ThemeContext = createContext(null);
+export const ThemeContext = createContext(null);
 ThemeContext.displayName = 'ThemeContext';
 
 function getInitialTheme() {
