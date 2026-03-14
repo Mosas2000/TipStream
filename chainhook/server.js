@@ -315,7 +315,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { bypasses, total: bypasses.length });
   }
 
-  sendJson(res, 404, { error: "not found" });
+  sendJson(res, 404, { error: "not found", path: path });
 });
 
 export { server };
