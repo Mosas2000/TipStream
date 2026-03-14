@@ -11,6 +11,13 @@ import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PROFILE, FN_UPDATE_PROFILE } from '../config/contracts';
 import { User, Save, Loader2, ImageOff } from 'lucide-react';
 
+/**
+ * Validate that a URL is safe to render as an avatar image.
+ * Only HTTPS URLs are accepted to prevent tracking pixels,
+ * data: URI abuse, and internal network probes.
+ * @param {string} url
+ * @returns {boolean}
+ */
 function isValidAvatarUrl(url) {
     if (!url) return false;
     try {
