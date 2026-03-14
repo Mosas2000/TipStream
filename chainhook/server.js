@@ -15,6 +15,8 @@ if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
 }
 
+let writeQueue = Promise.resolve();
+
 function loadEvents() {
   if (!existsSync(DB_FILE)) return [];
   try {
