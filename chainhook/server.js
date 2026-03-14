@@ -167,23 +167,24 @@ const server = http.createServer(async (req, res) => {
       const payload = await parseBody(req);
       const newEvents = extractEvents(payload);
       if (newEvents.length > 0) {
-        const stored = loadEvents();
+        await withEventLock(() => {
+          const stored = loadEvents();
 
-        // Check for timelock bypass events
-        for (const evt of newEvents) {
-          const detection = detectBypass(evt, stored.slice(-50));
-          if (detection.isBypass) {
-            console.warn(formatBypassAlert(detection, evt));
+          for (const evt of newEvents) {
+            const detection = detectBypass(evt, stored.slice(-50));
+            if (detection.isBypass) {
+              console.warn(formatBypassAlert(detection, evt));
+            }
+            const adminEvt = parseAdminEvent(evt);
+            if (adminEvt) {
+              console.log(`Admin event: ${adminEvt.eventType} at block ${adminEvt.blockHeight}`);
+            }
           }
-          const adminEvt = parseAdminEvent(evt);
-          if (adminEvt) {
-            console.log(`Admin event: ${adminEvt.eventType} at block ${adminEvt.blockHeight}`);
-          }
-        }
 
-        stored.push(...newEvents);
-        saveEvents(stored);
-        console.log(`Indexed ${newEvents.length} events (total: ${stored.length})`);
+          stored.push(...newEvents);
+          saveEvents(stored);
+          console.log(`Indexed ${newEvents.length} events (total: ${stored.length})`);
+        });
       }
       return sendJson(res, 200, { ok: true, indexed: newEvents.length });
     } catch (err) {
