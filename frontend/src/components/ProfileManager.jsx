@@ -9,7 +9,7 @@ import {
 } from '@stacks/transactions';
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PROFILE, FN_UPDATE_PROFILE } from '../config/contracts';
-import { User, Save, Loader2 } from 'lucide-react';
+import { User, Save, Loader2, ImageOff } from 'lucide-react';
 
 function isValidAvatarUrl(url) {
     if (!url) return false;
