@@ -40,8 +40,10 @@ export function ThemeProvider({ children }) {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
+  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
