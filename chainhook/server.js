@@ -222,6 +222,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // GET /api/tips -- paginated list of parsed tips
   if (req.method === "GET" && path === "/api/tips") {
     const limit = sanitizeQueryInt(url.searchParams.get("limit") || "20", 1, 100);
     const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
