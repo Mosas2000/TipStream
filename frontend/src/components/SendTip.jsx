@@ -232,6 +232,11 @@ export default function SendTip({ addToast }) {
                                     ? formatBalance(balance)
                                     : 'Unavailable'}
                             </p>
+                            {pendingTx && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                    Pending confirmation
+                                </p>
+                            )}
                         </div>
                         <button onClick={refetchBalance} disabled={balanceLoading}
                             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50" title="Refresh balance" aria-label="Refresh balance">
