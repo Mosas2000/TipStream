@@ -284,6 +284,7 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // GET /api/admin/events -- admin event log
   if (req.method === "GET" && path === "/api/admin/events") {
     const allEvents = loadEvents();
     const adminEvents = allEvents
