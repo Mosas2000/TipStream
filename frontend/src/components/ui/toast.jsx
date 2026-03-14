@@ -34,7 +34,7 @@ function Toast({ message, type = 'info', onClose = () => {} }) {
         <div
             role="alert"
             data-testid="toast-item"
-            className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg dark:shadow-black/30 transition-all duration-300 ${
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg dark:shadow-black/30 transition-all duration-300 ${
                 visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
             } ${variants[type]}`}
         >
@@ -55,7 +55,7 @@ export function ToastContainer({ toasts, removeToast }) {
     return (
         <div
             data-testid="toast-container"
-            className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full"
+            className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
             aria-live="polite"
             aria-atomic="false"
             tabIndex={-1}
