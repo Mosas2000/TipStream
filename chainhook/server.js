@@ -17,6 +17,11 @@ if (!existsSync(DATA_DIR)) {
 
 let writeQueue = Promise.resolve();
 
+function withEventLock(fn) {
+  writeQueue = writeQueue.then(fn, fn);
+  return writeQueue;
+}
+
 function loadEvents() {
   if (!existsSync(DB_FILE)) return [];
   try {
