@@ -203,7 +203,7 @@ export default function ProfileManager({ addToast }) {
                             className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 outline-none transition-all"
                             placeholder="https://example.com/avatar.png"
                             maxLength={256}
-                            aria-describedby="profile-avatar-count"
+                            aria-describedby={avatarUrl && !isValidAvatarUrl(avatarUrl) ? "avatar-validation-error profile-avatar-count" : "profile-avatar-count"}
                         />
                         <p id="profile-avatar-count" className={`text-xs mt-1 text-right ${avatarUrl.length >= 256 ? 'text-red-500' : 'text-gray-400'}`}>
                             {avatarUrl.length}/256
