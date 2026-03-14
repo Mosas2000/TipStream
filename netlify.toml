@@ -10,7 +10,8 @@
   NODE_VERSION = "20"  # LTS version used for builds
   VITE_NETWORK = "mainnet"  # passed to Vite at build time
 
-# SPA fallback
+# SPA routing
+# This replaces a _redirects file; Netlify prefers toml configuration.
 # All client-side routes fall through to index.html so the
 # React router can handle them.
 [[redirects]]
