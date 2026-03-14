@@ -17,6 +17,7 @@ export function useBalance(address) {
     const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [lastFetched, setLastFetched] = useState(null);
 
     const fetchBalance = useCallback(async () => {
         if (!address) {
