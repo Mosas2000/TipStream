@@ -73,6 +73,7 @@ export function ToastContainer({ toasts, removeToast }) {
 
 export function useToast() {
     const [toasts, setToasts] = useState([]);
+    const idRef = useRef(0);
 
     const addToast = useCallback((message, type = 'info') => {
         const id = ++toastId;
