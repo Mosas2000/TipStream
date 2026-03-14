@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 export const ThemeContext = createContext(null);
+const STORAGE_KEY = 'tipstream-theme';
 ThemeContext.displayName = 'ThemeContext';
 
 export function getInitialTheme() {
   if (typeof window === 'undefined') return 'light';
   try {
-    const stored = localStorage.getItem('tipstream-theme');
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'dark' || stored === 'light') return stored;
   } catch {
     // localStorage may be unavailable in private browsing or restricted contexts
@@ -30,7 +31,7 @@ export function ThemeProvider({ children }) {
       root.classList.remove('dark');
     }
     try {
-      localStorage.setItem('tipstream-theme', theme);
+      localStorage.setItem(STORAGE_KEY, theme);
     } catch {
       // localStorage may be unavailable
     }
