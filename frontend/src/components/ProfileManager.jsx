@@ -210,7 +210,7 @@ export default function ProfileManager({ addToast }) {
                             aria-invalid={avatarUrl && !isValidAvatarUrl(avatarUrl) ? "true" : undefined}
                             type="url"
                             value={avatarUrl}
-                            onChange={(e) => setAvatarUrl(e.target.value)}
+                            onChange={(e) => setAvatarUrl(e.target.value.trim())}
                             className={`w-full px-4 py-2.5 border bg-white dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 outline-none transition-all ${avatarUrl && !isValidAvatarUrl(avatarUrl) ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="https://example.com/avatar.png"
                             maxLength={256}
