@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
 const DATA_DIR = join(__dirname, "data"); // persistent storage directory
-const DB_FILE = join(DATA_DIR, "events.json");
+const DB_FILE = join(DATA_DIR, "events.json"); // JSON event store
 
 if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
