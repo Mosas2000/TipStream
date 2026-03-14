@@ -44,7 +44,7 @@ function Toast({ message, type = 'info', onClose = () => {} }) {
                     setTimeout(onClose, 300);
                 }}
                 className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity text-current"
-                aria-label="Dismiss notification"
+                aria-label={`Dismiss ${type} notification`}
             >
                 <X className="w-4 h-4" aria-hidden="true" />
             </button>
