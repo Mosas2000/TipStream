@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
-const TOAST_DURATION = 5000;
+const TOAST_DURATION = 5000; // ms
 
 const variants = {
     success: 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200',
@@ -17,32 +17,33 @@ const icons = {
     info: <Info className="w-5 h-5 text-blue-500 dark:text-blue-400" aria-hidden="true" />,
 };
 
-function Toast({ message, type = 'info', onClose }) {
+function Toast({ message, type = 'info', onClose = () => {} }) {
     const [visible, setVisible] = useState(true);
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setVisible(false);
-            setTimeout(onClose, 300);
-        }, TOAST_DURATION);
-        return () => clearTimeout(timer);
+    const dismiss = useCallback(() => {
+        setVisible(false);
+        setTimeout(onClose, 300);
     }, [onClose]);
+
+    useEffect(() => {
+        const timer = setTimeout(dismiss, TOAST_DURATION);
+        return () => clearTimeout(timer);
+    }, [dismiss]);
 
     return (
         <div
-            className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg dark:shadow-black/30 transition-all duration-300 ${
+            role="alert"
+            data-testid="toast-item"
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg dark:shadow-black/30 transition-all duration-300 ${
                 visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
             } ${variants[type]}`}
         >
             <span className="flex-shrink-0 mt-0.5">{icons[type]}</span>
             <p className="text-sm font-medium flex-1">{message}</p>
             <button
-                onClick={() => {
-                    setVisible(false);
-                    setTimeout(onClose, 300);
-                }}
+                onClick={dismiss}
                 className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity text-current"
-                aria-label="Dismiss notification"
+                aria-label={`Dismiss ${type} notification`}
             >
                 <X className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -53,9 +54,11 @@ function Toast({ message, type = 'info', onClose }) {
 export function ToastContainer({ toasts, removeToast }) {
     return (
         <div
-            className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full"
+            data-testid="toast-container"
+            className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
             aria-live="polite"
             aria-atomic="false"
+            tabIndex={-1}
             role="status"
         >
             {toasts.map((toast) => (
@@ -70,13 +73,12 @@ export function ToastContainer({ toasts, removeToast }) {
     );
 }
 
-let toastId = 0;
-
 export function useToast() {
     const [toasts, setToasts] = useState([]);
+    const idRef = useRef(0);
 
     const addToast = useCallback((message, type = 'info') => {
-        const id = ++toastId;
+        const id = ++idRef.current;
         setToasts((prev) => [...prev, { id, message, type }]);
     }, []);
 
