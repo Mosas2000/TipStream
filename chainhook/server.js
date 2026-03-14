@@ -257,6 +257,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { tips, total: tips.length });
   }
 
+  // GET /api/tips/:id -- single tip by numeric ID
   if (req.method === "GET" && path.match(/^\/api\/tips\/\d+$/)) {
     const tipId = parseInt(path.split("/api/tips/")[1], 10);
     if (isNaN(tipId) || tipId < 0) {
