@@ -58,3 +58,9 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"  # always revalidate
+
+# Prevent stale index.html after deployments.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
