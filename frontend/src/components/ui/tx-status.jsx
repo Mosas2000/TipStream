@@ -105,6 +105,9 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
       <div className="flex items-center gap-3">
         <span className={`h-2.5 w-2.5 rounded-full ${config.dot}`} aria-hidden="true" />
         <span className="text-sm font-medium">{config.label}</span>
+        {status === 'pending' && pollCount > 0 && (
+          <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">({pollCount}/{MAX_POLLS})</span>
+        )}
       </div>
       <div className="mt-2 flex items-center gap-2">
         <a
