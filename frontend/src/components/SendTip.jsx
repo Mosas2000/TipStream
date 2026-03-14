@@ -213,6 +213,7 @@ export default function SendTip({ addToast }) {
         addToast('Tip confirmed on-chain!', 'success');
     }, [addToast, refetchBalance]);
 
+    /** Called by TxStatus when the transaction is aborted on-chain. */
     const handleTxFailed = useCallback((reason) => {
         refetchBalance();
         addToast(`Transaction failed: ${reason}`, 'error');
