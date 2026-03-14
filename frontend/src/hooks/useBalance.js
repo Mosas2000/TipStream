@@ -60,5 +60,5 @@ export function useBalance(address) {
     /** Derived STX balance — memoised to avoid re-computing on every render. */
     const balanceStx = useMemo(() => microToStx(balance), [balance]);
 
-    return { balance, balanceStx, loading, error, refetch: fetchBalance };
+    return { balance, balanceStx, loading, error, lastFetched, refetch: fetchBalance };
 }
