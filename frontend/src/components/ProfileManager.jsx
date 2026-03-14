@@ -206,6 +206,7 @@ export default function ProfileManager({ addToast }) {
                         </label>
                         <input
                             id="profile-avatar"
+                            data-testid="profile-avatar-input"
                             type="url"
                             value={avatarUrl}
                             onChange={(e) => setAvatarUrl(e.target.value)}
