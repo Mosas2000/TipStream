@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { openContractCall } from '@stacks/connect';
 import { uintCV, stringUtf8CV } from '@stacks/transactions';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_TIP_A_TIP } from '../config/contracts';
@@ -48,6 +48,8 @@ export default function RecentTips({ addToast }) {
     const [showFilters, setShowFilters] = useState(false);
     const [offset, setOffset] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
+    const tipBackModalRef = useRef(null);
+    const previousFocusRef = useRef(null);
 
     // Manual refresh only: invalidate local tip-detail cache, then ask
     // TipContext to refresh shared events. Keep this out of auto effects.
@@ -98,6 +100,80 @@ export default function RecentTips({ addToast }) {
         try { await contextLoadMore(); } finally { setLoadingMore(false); }
     };
 
+    const closeTipBackModal = useCallback(() => {
+        setTipBackTarget(null);
+    }, []);
+
+    const getFocusableElements = useCallback(() => {
+        const modal = tipBackModalRef.current;
+        if (!modal) return [];
+
+        return Array.from(
+            modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+        ).filter((el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true');
+    }, []);
+
+    const handleTipBackModalKeyDown = useCallback((event) => {
+        if (!tipBackTarget) return;
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeTipBackModal();
+            return;
+        }
+
+        if (event.key !== 'Tab') return;
+
+        const focusable = getFocusableElements();
+        if (focusable.length === 0) {
+            event.preventDefault();
+            tipBackModalRef.current?.focus();
+            return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+
+        if (event.shiftKey) {
+            if (active === first || active === tipBackModalRef.current) {
+                event.preventDefault();
+                last.focus();
+            }
+            return;
+        }
+
+        if (active === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    }, [closeTipBackModal, getFocusableElements, tipBackTarget]);
+
+    useEffect(() => {
+        if (!tipBackTarget) {
+            if (previousFocusRef.current && previousFocusRef.current.focus) {
+                previousFocusRef.current.focus();
+            }
+            previousFocusRef.current = null;
+            return undefined;
+        }
+
+        previousFocusRef.current = document.activeElement;
+
+        const timer = window.setTimeout(() => {
+            const focusable = getFocusableElements();
+            if (focusable.length > 0) {
+                focusable[0].focus();
+                return;
+            }
+            tipBackModalRef.current?.focus();
+        }, 0);
+
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [getFocusableElements, tipBackTarget]);
+
     /** Handle changes to the tip-back amount input with real-time validation. */
     const handleTipBackAmountChange = (value) => {
         setTipBackAmount(value);
@@ -132,7 +208,7 @@ export default function RecentTips({ addToast }) {
                 functionArgs: [uintCV(parseInt(tip.tipId)), uintCV(microSTX), stringUtf8CV(tipBackMessage || 'Tipping back!')],
                 postConditions: [tipPostCondition(senderAddress, microSTX)],
                 postConditionMode: SAFE_POST_CONDITION_MODE,
-                onFinish: (data) => { setSending(false); setTipBackTarget(null); setTipBackMessage(''); addToast?.('Tip-a-tip sent! Tx: ' + data.txId, 'success'); },
+                onFinish: (data) => { setSending(false); closeTipBackModal(); setTipBackMessage(''); addToast?.('Tip-a-tip sent! Tx: ' + data.txId, 'success'); },
                 onCancel: () => { setSending(false); addToast?.('Tip-a-tip cancelled', 'info'); },
             });
         } catch (err) {
@@ -312,9 +388,14 @@ export default function RecentTips({ addToast }) {
             {/* Tip-back modal */}
             {tipBackTarget && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                    onClick={closeTipBackModal}
                     role="dialog" aria-modal="true" aria-labelledby="tipback-modal-title"
                     data-testid="tipback-modal">
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700">
+                    <div ref={tipBackModalRef}
+                        tabIndex={-1}
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={handleTipBackModalKeyDown}
+                        className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700">
                         <h3 id="tipback-modal-title" className="text-lg font-bold text-gray-900 dark:text-white mb-2">Tip Back</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Send a tip to the original sender of tip #{tipBackTarget.tipId}</p>
                         <div className="space-y-3 mb-4">
@@ -338,7 +419,7 @@ export default function RecentTips({ addToast }) {
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setTipBackTarget(null)}
+                            <button onClick={closeTipBackModal}
                                 data-testid="tipback-cancel-btn"
                                 className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
                             <button onClick={() => handleTipBack(tipBackTarget)} disabled={sending || !!tipBackError}
