@@ -180,6 +180,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 413, { error: "payload too large" });
     }
 
+    // Verify bearer token when AUTH_TOKEN is configured
     if (AUTH_TOKEN) {
       const auth = req.headers.authorization || "";
       if (auth !== `Bearer ${AUTH_TOKEN}`) {
