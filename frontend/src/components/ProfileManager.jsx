@@ -249,7 +249,7 @@ export default function ProfileManager({ addToast }) {
                     <button
                         data-testid="profile-save-button"
                         onClick={handleSaveProfile}
-                        disabled={saving || !displayName.trim()}
+                        disabled={saving || !displayName.trim() || (avatarUrl && !isValidAvatarUrl(avatarUrl))}
                         className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {saving ? (
