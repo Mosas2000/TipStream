@@ -17,6 +17,9 @@ if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Serialized write queue. Node.js is single-threaded but async handlers
+// can interleave between await points. This queue ensures file operations
+// are atomic by chaining them sequentially.
 let writeQueue = Promise.resolve();
 
 /**
