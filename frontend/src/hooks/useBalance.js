@@ -22,6 +22,8 @@ export function useBalance(address) {
     const [error, setError] = useState(null);
     const [lastFetched, setLastFetched] = useState(null);
 
+    const retryCount = useRef(0);
+
     const fetchBalance = useCallback(async () => {
         if (!address) {
             setBalance(null);
@@ -30,30 +32,40 @@ export function useBalance(address) {
 
         setLoading(true);
         setError(null);
+        retryCount.current = 0;
 
-        try {
-            const res = await fetch(
-                `${STACKS_API_BASE}/extended/v1/address/${address}/stx`
-            );
+        const attempt = async () => {
+            try {
+                const res = await fetch(
+                    `${STACKS_API_BASE}/extended/v1/address/${address}/stx`
+                );
 
-            if (!res.ok) {
-                throw new Error(`API returned ${res.status}`);
+                if (!res.ok) {
+                    throw new Error(`API returned ${res.status}`);
+                }
+
+                const data = await res.json();
+
+                if (typeof data?.balance !== 'string' && typeof data?.balance !== 'number') {
+                    throw new Error('Unexpected balance format in API response');
+                }
+
+                setBalance(String(data.balance));
+                setLastFetched(Date.now());
+                setLoading(false);
+            } catch (err) {
+                if (retryCount.current < MAX_RETRIES) {
+                    retryCount.current += 1;
+                    await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+                    return attempt();
+                }
+                console.error('Failed to fetch balance:', err.message);
+                setError(err.message);
+                setLoading(false);
             }
+        };
 
-            const data = await res.json();
-
-            if (typeof data?.balance !== 'string' && typeof data?.balance !== 'number') {
-                throw new Error('Unexpected balance format in API response');
-            }
-
-            setBalance(String(data.balance));
-            setLastFetched(Date.now());
-        } catch (err) {
-            console.error('Failed to fetch balance:', err.message);
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
+        await attempt();
     }, [address]);
 
     useEffect(() => {
