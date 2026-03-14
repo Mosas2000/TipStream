@@ -243,6 +243,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { tips: paged, total: tips.length });
   }
 
+  // GET /api/tips/user/:address -- tips sent or received by address
   if (req.method === "GET" && path.startsWith("/api/tips/user/")) {
     const address = path.split("/api/tips/user/")[1];
     if (!isValidStacksAddress(address)) {
