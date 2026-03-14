@@ -328,5 +328,6 @@ const isMain =
 if (isMain) {
   server.listen(PORT, () => {
     console.log(`Chainhook callback server running on port ${PORT}`);
+    console.log(`Auth: ${AUTH_TOKEN ? "enabled" : "disabled"}`);
   });
 }
