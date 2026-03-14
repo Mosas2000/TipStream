@@ -208,8 +208,9 @@ export default function SendTip({ addToast }) {
     };
 
     const handleTxConfirmed = useCallback(() => {
+        refetchBalance();
         addToast('Tip confirmed on-chain!', 'success');
-    }, [addToast]);
+    }, [addToast, refetchBalance]);
 
     const handleTxFailed = useCallback((reason) => {
         addToast(`Transaction failed: ${reason}`, 'error');
