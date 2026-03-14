@@ -44,6 +44,7 @@ export function useBalance(address) {
             }
 
             setBalance(String(data.balance));
+            setLastFetched(Date.now());
         } catch (err) {
             console.error('Failed to fetch balance:', err.message);
             setError(err.message);
