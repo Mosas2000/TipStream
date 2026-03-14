@@ -230,7 +230,7 @@ export default function ProfileManager({ addToast }) {
                             <div className="h-12 w-12 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
                                 <ImageOff className="w-5 h-5 text-red-400" aria-hidden="true" />
                             </div>
-                            <p className="text-xs text-red-500">
+                            <p id="avatar-validation-error" role="alert" className="text-xs text-red-500">
                                 Avatar URL must use HTTPS
                             </p>
                         </div>
