@@ -46,7 +46,8 @@
       upgrade-insecure-requests\
     "
 
-# Cache hashed assets aggressively
+# Cache control
+# Vite hashed assets are immutable and can be cached indefinitely.
 [[headers]]
   for = "/assets/*"
   [headers.values]
