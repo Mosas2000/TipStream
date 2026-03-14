@@ -257,7 +257,7 @@ export default function SendTip({ addToast }) {
                             aria-describedby={recipientError ? "tip-recipient-error" : undefined}
                             className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="SP2..." />
-                        {recipientError && <p className="mt-1 text-xs text-red-500">{recipientError}</p>}
+                        {recipientError && <p id="tip-recipient-error" className="mt-1 text-xs text-red-500" role="alert">{recipientError}</p>}
                         {blockedWarning && (
                             <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                                 This recipient has blocked you. The transaction will likely fail on-chain.
