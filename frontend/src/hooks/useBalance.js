@@ -7,6 +7,7 @@ const RETRY_DELAY_MS = 1500;
 
 /**
  * Fetch and track the STX balance for a Stacks address.
+ * Includes automatic retry on transient failures.
  *
  * The balance is stored as the raw string returned by the Stacks API
  * (`/extended/v1/address/:addr/stx`), representing micro-STX. Consumers
