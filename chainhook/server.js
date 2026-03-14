@@ -134,7 +134,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson };
+export { parseBody, extractEvents, parseTipEvent, sendJson, withEventLock };
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
