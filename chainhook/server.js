@@ -2,19 +2,45 @@ import http from "node:http";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+// Timelock bypass detection utilities
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
+// Input validation utilities
 import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3100;
-const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
-const DATA_DIR = join(__dirname, "data");
-const DB_FILE = join(DATA_DIR, "events.json");
+const PORT = process.env.PORT || 3100; // default webhook listener port
+const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || ""; // optional bearer token
+const DATA_DIR = join(__dirname, "data"); // persistent storage directory
+const DB_FILE = join(DATA_DIR, "events.json"); // JSON event store
 
 if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Serialized write queue. Node.js is single-threaded but async handlers
+// can interleave between await points. This queue ensures file operations
+// are atomic by chaining them sequentially.
+let writeQueue = Promise.resolve();
+
+/**
+ * Serialize access to the events file.
+ * Chains the provided function onto a promise queue so that only one
+ * read-modify-write cycle runs at a time.
+ * @param {() => void} fn - Synchronous function that reads and writes events.
+ * @returns {Promise<void>}
+ */
+function withEventLock(fn) {
+  writeQueue = writeQueue.then(fn).catch((err) => {
+    console.error('Event lock operation failed:', err.message);
+  });
+  return writeQueue;
+}
+
+/**
+ * Load all stored events from the JSON file.
+ * Returns an empty array if the file does not exist or is corrupted.
+ * @returns {Array<object>}
+ */
 function loadEvents() {
   if (!existsSync(DB_FILE)) return [];
   try {
@@ -24,6 +50,11 @@ function loadEvents() {
   }
 }
 
+/**
+ * Persist events to the JSON file.
+ * Must only be called within withEventLock to avoid race conditions.
+ * @param {Array<object>} events
+ */
 function saveEvents(events) {
   writeFileSync(DB_FILE, JSON.stringify(events, null, 2));
 }
@@ -127,7 +158,11 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson };
+function __test_resetQueue() {
+  writeQueue = Promise.resolve();
+}
+
+export { parseBody, extractEvents, parseTipEvent, sendJson, withEventLock, loadEvents, __test_resetQueue };
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -136,12 +171,15 @@ const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Max-Age", "86400");
 
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     return res.end();
   }
 
+  // POST /api/chainhook/events -- ingest webhook payloads
   if (req.method === "POST" && path === "/api/chainhook/events") {
     // Early rejection based on Content-Length header
     const contentLength = parseInt(req.headers["content-length"], 10);
@@ -149,6 +187,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 413, { error: "payload too large" });
     }
 
+    // Verify bearer token when AUTH_TOKEN is configured
     if (AUTH_TOKEN) {
       const auth = req.headers.authorization || "";
       if (auth !== `Bearer ${AUTH_TOKEN}`) {
@@ -160,23 +199,24 @@ const server = http.createServer(async (req, res) => {
       const payload = await parseBody(req);
       const newEvents = extractEvents(payload);
       if (newEvents.length > 0) {
-        const stored = loadEvents();
+        await withEventLock(() => {
+          const stored = loadEvents();
 
-        // Check for timelock bypass events
-        for (const evt of newEvents) {
-          const detection = detectBypass(evt, stored.slice(-50));
-          if (detection.isBypass) {
-            console.warn(formatBypassAlert(detection, evt));
+          for (const evt of newEvents) {
+            const detection = detectBypass(evt, stored.slice(-50));
+            if (detection.isBypass) {
+              console.warn(formatBypassAlert(detection, evt));
+            }
+            const adminEvt = parseAdminEvent(evt);
+            if (adminEvt) {
+              console.log(`Admin event: ${adminEvt.eventType} at block ${adminEvt.blockHeight}`);
+            }
           }
-          const adminEvt = parseAdminEvent(evt);
-          if (adminEvt) {
-            console.log(`Admin event: ${adminEvt.eventType} at block ${adminEvt.blockHeight}`);
-          }
-        }
 
-        stored.push(...newEvents);
-        saveEvents(stored);
-        console.log(`Indexed ${newEvents.length} events (total: ${stored.length})`);
+          stored.push(...newEvents);
+          saveEvents(stored);
+          console.log(`Indexed ${newEvents.length} events (total: ${stored.length})`);
+        });
       }
       return sendJson(res, 200, { ok: true, indexed: newEvents.length });
     } catch (err) {
@@ -188,6 +228,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // GET /api/tips -- paginated list of parsed tips
   if (req.method === "GET" && path === "/api/tips") {
     const limit = sanitizeQueryInt(url.searchParams.get("limit") || "20", 1, 100);
     const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
@@ -208,6 +249,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { tips: paged, total: tips.length });
   }
 
+  // GET /api/tips/user/:address -- tips sent or received by address
   if (req.method === "GET" && path.startsWith("/api/tips/user/")) {
     const address = path.split("/api/tips/user/")[1];
     if (!isValidStacksAddress(address)) {
@@ -221,6 +263,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { tips, total: tips.length });
   }
 
+  // GET /api/tips/:id -- single tip by numeric ID
   if (req.method === "GET" && path.match(/^\/api\/tips\/\d+$/)) {
     const tipId = parseInt(path.split("/api/tips/")[1], 10);
     if (isNaN(tipId) || tipId < 0) {
@@ -232,6 +275,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, tip);
   }
 
+  // GET /api/stats -- aggregate tip statistics
   if (req.method === "GET" && path === "/api/stats") {
     const allEvents = loadEvents();
     const tips = allEvents.map(parseTipEvent).filter(Boolean);
@@ -246,6 +290,7 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // GET /api/admin/events -- admin event log
   if (req.method === "GET" && path === "/api/admin/events") {
     const allEvents = loadEvents();
     const adminEvents = allEvents
@@ -255,6 +300,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { events: adminEvents, total: adminEvents.length });
   }
 
+  // GET /api/admin/bypasses -- detected timelock bypass events
   if (req.method === "GET" && path === "/api/admin/bypasses") {
     const allEvents = loadEvents();
     const bypasses = [];
@@ -272,7 +318,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { bypasses, total: bypasses.length });
   }
 
-  sendJson(res, 404, { error: "not found" });
+  sendJson(res, 404, { error: "not found", path: path });
 });
 
 export { server };
@@ -285,5 +331,6 @@ const isMain =
 if (isMain) {
   server.listen(PORT, () => {
     console.log(`Chainhook callback server running on port ${PORT}`);
+    console.log(`Auth: ${AUTH_TOKEN ? "enabled" : "disabled"}`);
   });
 }
