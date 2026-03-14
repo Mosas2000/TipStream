@@ -59,6 +59,7 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"  # 1 year
     Cross-Origin-Resource-Policy = "same-origin"
+    X-Content-Type-Options = "nosniff"
 
 # Service worker must never be cached so updates propagate immediately.
 [[headers]]
