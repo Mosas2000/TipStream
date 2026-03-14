@@ -216,6 +216,7 @@ export default function ProfileManager({ addToast }) {
                                 src={avatarUrl}
                                 alt="Avatar preview"
                                 referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
                                 className="h-12 w-12 rounded-xl object-cover bg-gray-200 dark:bg-gray-700"
                                 onError={(e) => { e.target.style.display = 'none'; }}
                             />
