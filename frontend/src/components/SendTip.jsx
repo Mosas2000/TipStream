@@ -18,7 +18,7 @@ import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
 
-const MIN_TIP_STX = 0.001;
+const MIN_TIP_STX = 0.001; // minimum tip in STX
 const MAX_TIP_STX = 10000;
 const COOLDOWN_SECONDS = 10;
 
