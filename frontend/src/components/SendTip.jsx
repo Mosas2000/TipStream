@@ -226,7 +226,7 @@ export default function SendTip({ addToast }) {
 
                 {/* Balance */}
                 {senderAddress && (
-                    <div className="mb-5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700">
+                    <div data-testid="balance-section" className="mb-5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Your Balance</p>
                             <p className="text-lg font-bold text-gray-900 dark:text-white">
