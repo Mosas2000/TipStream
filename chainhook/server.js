@@ -6,7 +6,7 @@ import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detec
 import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3100;
+const PORT = process.env.PORT || 3100; // default webhook listener port
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
 const DATA_DIR = join(__dirname, "data"); // persistent storage directory
 const DB_FILE = join(DATA_DIR, "events.json"); // JSON event store
