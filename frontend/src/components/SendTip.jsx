@@ -18,9 +18,9 @@ import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
 
-const MIN_TIP_STX = 0.001;
-const MAX_TIP_STX = 10000;
-const COOLDOWN_SECONDS = 10;
+const MIN_TIP_STX = 0.001; // minimum tip in STX
+const MAX_TIP_STX = 10000; // maximum tip in STX
+const COOLDOWN_SECONDS = 10; // seconds between allowed tips
 
 const TIP_CATEGORIES = [
     { id: 0, label: 'General' },
@@ -182,7 +182,6 @@ export default function SendTip({ addToast }) {
                     setMessage('');
                     setCategory(0);
                     notifyTipSent();
-                    refetchBalance();
                     startCooldown();
                     analytics.trackTipConfirmed();
                     addToast('Tip sent! Tx: ' + data.txId, 'success');
@@ -208,13 +207,17 @@ export default function SendTip({ addToast }) {
         }
     };
 
+    /** Called by TxStatus when the transaction reaches 'success' status. */
     const handleTxConfirmed = useCallback(() => {
+        refetchBalance();
         addToast('Tip confirmed on-chain!', 'success');
-    }, [addToast]);
+    }, [addToast, refetchBalance]);
 
+    /** Called by TxStatus when the transaction is aborted on-chain. */
     const handleTxFailed = useCallback((reason) => {
+        refetchBalance();
         addToast(`Transaction failed: ${reason}`, 'error');
-    }, [addToast]);
+    }, [addToast, refetchBalance]);
 
     return (
         <div className="max-w-md mx-auto">
@@ -223,7 +226,7 @@ export default function SendTip({ addToast }) {
 
                 {/* Balance */}
                 {senderAddress && (
-                    <div className="mb-5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700">
+                    <div data-testid="balance-section" className="mb-5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Your Balance</p>
                             <p className="text-lg font-bold text-gray-900 dark:text-white">
@@ -231,6 +234,11 @@ export default function SendTip({ addToast }) {
                                     ? formatBalance(balance)
                                     : 'Unavailable'}
                             </p>
+                            {pendingTx && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                    Pending confirmation
+                                </p>
+                            )}
                         </div>
                         <button onClick={refetchBalance} disabled={balanceLoading}
                             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50" title="Refresh balance" aria-label="Refresh balance">
@@ -246,9 +254,10 @@ export default function SendTip({ addToast }) {
                     <div>
                         <label htmlFor="tip-recipient" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Recipient Address</label>
                         <input id="tip-recipient" type="text" value={recipient} onChange={(e) => handleRecipientChange(e.target.value)}
+                            aria-describedby={recipientError ? "tip-recipient-error" : undefined}
                             className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="SP2..." />
-                        {recipientError && <p className="mt-1 text-xs text-red-500">{recipientError}</p>}
+                        {recipientError && <p id="tip-recipient-error" className="mt-1 text-xs text-red-500" role="alert">{recipientError}</p>}
                         {blockedWarning && (
                             <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                                 This recipient has blocked you. The transaction will likely fail on-chain.
@@ -260,9 +269,10 @@ export default function SendTip({ addToast }) {
                     <div>
                         <label htmlFor="tip-amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Amount (STX)</label>
                         <input id="tip-amount" type="number" value={amount} onChange={(e) => handleAmountChange(e.target.value)}
+                            aria-describedby={amountError ? "tip-amount-error" : undefined}
                             className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${amountError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="0.5" step="0.001" min={MIN_TIP_STX} max={MAX_TIP_STX} />
-                        {amountError && <p className="mt-1 text-xs text-red-500">{amountError}</p>}
+                        {amountError && <p id="tip-amount-error" className="mt-1 text-xs text-red-500" role="alert">{amountError}</p>}
                     </div>
 
                     {/* Message */}
@@ -289,7 +299,7 @@ export default function SendTip({ addToast }) {
 
                     {/* Breakdown with fee preview and post-condition ceiling */}
                     {amount && parseFloat(amount) > 0 && (
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm">
+                        <div data-testid="fee-preview" className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm">
                             <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Fee Preview</p>
                             <div className="space-y-1 text-gray-600 dark:text-gray-400">
                                 <div className="flex justify-between">
@@ -325,6 +335,7 @@ export default function SendTip({ addToast }) {
 
                     {/* Submit */}
                     <button onClick={validateAndConfirm} disabled={loading || cooldown > 0}
+                        aria-disabled={loading || cooldown > 0}
                         className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -340,7 +351,7 @@ export default function SendTip({ addToast }) {
 
                 {/* Pending TX */}
                 {pendingTx && (
-                    <div data-testid="pending-tx" className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                    <div data-testid="pending-tx" aria-live="polite" className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                             Sent {pendingTx.amount} STX to <span className="font-mono text-xs">{pendingTx.recipient.slice(0, 8)}...{pendingTx.recipient.slice(-4)}</span>
                         </p>

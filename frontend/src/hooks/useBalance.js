@@ -1,22 +1,32 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
 import { microToStx } from '../lib/balance-utils';
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+
 /**
  * Fetch and track the STX balance for a Stacks address.
+ * Includes automatic retry on transient failures.
  *
  * The balance is stored as the raw string returned by the Stacks API
  * (`/extended/v1/address/:addr/stx`), representing micro-STX. Consumers
  * should use the balance-utils helpers (`microToStx`, `formatBalance`) to
  * convert for display rather than dividing by a magic number.
  *
+ * On error the hook retries up to MAX_RETRIES times before setting the
+ * error state. Call refetch() to manually retry after a failure.
+ *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
- * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, refetch: () => Promise<void> }}
+ * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, lastFetched: number|null, refetch: () => Promise<void> }}
  */
 export function useBalance(address) {
     const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [lastFetched, setLastFetched] = useState(null);
+
+    const retryCount = useRef(0);
 
     const fetchBalance = useCallback(async () => {
         if (!address) {
@@ -26,29 +36,40 @@ export function useBalance(address) {
 
         setLoading(true);
         setError(null);
+        retryCount.current = 0;
 
-        try {
-            const res = await fetch(
-                `${STACKS_API_BASE}/extended/v1/address/${address}/stx`
-            );
+        const attempt = async () => {
+            try {
+                const res = await fetch(
+                    `${STACKS_API_BASE}/extended/v1/address/${address}/stx`
+                );
 
-            if (!res.ok) {
-                throw new Error(`API returned ${res.status}`);
+                if (!res.ok) {
+                    throw new Error(`API returned ${res.status}`);
+                }
+
+                const data = await res.json();
+
+                if (typeof data?.balance !== 'string' && typeof data?.balance !== 'number') {
+                    throw new Error('Unexpected balance format in API response');
+                }
+
+                setBalance(String(data.balance));
+                setLastFetched(Date.now());
+                setLoading(false);
+            } catch (err) {
+                if (retryCount.current < MAX_RETRIES) {
+                    retryCount.current += 1;
+                    await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+                    return attempt();
+                }
+                console.error('Failed to fetch balance:', err.message);
+                setError(err.message);
+                setLoading(false);
             }
+        };
 
-            const data = await res.json();
-
-            if (typeof data?.balance !== 'string' && typeof data?.balance !== 'number') {
-                throw new Error('Unexpected balance format in API response');
-            }
-
-            setBalance(String(data.balance));
-        } catch (err) {
-            console.error('Failed to fetch balance:', err.message);
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
+        await attempt();
     }, [address]);
 
     useEffect(() => {
@@ -58,5 +79,5 @@ export function useBalance(address) {
     /** Derived STX balance — memoised to avoid re-computing on every render. */
     const balanceStx = useMemo(() => microToStx(balance), [balance]);
 
-    return { balance, balanceStx, loading, error, refetch: fetchBalance };
+    return { balance, balanceStx, loading, error, lastFetched, refetch: fetchBalance };
 }

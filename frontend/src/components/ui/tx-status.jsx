@@ -101,10 +101,13 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   const explorerUrl = `${EXPLORER_BASE_URL}/${txId}?chain=mainnet`;
 
   return (
-    <div data-testid="tx-status" className={`mt-4 p-4 rounded-xl border ${config.color}`} role="status" aria-live="polite">
+    <div data-testid="tx-status" data-status={status} aria-busy={status === 'pending'} className={`mt-4 p-4 rounded-xl border ${config.color}`} role="status" aria-live="polite">
       <div className="flex items-center gap-3">
         <span className={`h-2.5 w-2.5 rounded-full ${config.dot}`} aria-hidden="true" />
         <span className="text-sm font-medium">{config.label}</span>
+        {status === 'pending' && pollCount > 0 && (
+          <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">({pollCount}/{MAX_POLLS})</span>
+        )}
       </div>
       <div className="mt-2 flex items-center gap-2">
         <a
@@ -119,6 +122,11 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
       {status === 'pending' && pollCount >= MAX_POLLS && (
         <p className="mt-2 text-xs opacity-70 dark:opacity-60">
           Still waiting. Check the explorer for the latest status.
+        </p>
+      )}
+      {status === 'pending' && pollCount > 0 && pollCount < MAX_POLLS && (
+        <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+          Stacks blocks typically take 10-30 minutes.
         </p>
       )}
     </div>
