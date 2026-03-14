@@ -53,7 +53,7 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"  # 1 year
 
-# Don't cache service worker
+# Service worker must never be cached so updates propagate immediately.
 [[headers]]
   for = "/sw.js"
   [headers.values]
