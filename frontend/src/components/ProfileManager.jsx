@@ -11,6 +11,16 @@ import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PROFILE, FN_UPDATE_PROFILE } from '../config/contracts';
 import { User, Save, Loader2 } from 'lucide-react';
 
+function isValidAvatarUrl(url) {
+    if (!url) return false;
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 export default function ProfileManager({ addToast }) {
     const [displayName, setDisplayName] = useState('');
     const [bio, setBio] = useState('');
