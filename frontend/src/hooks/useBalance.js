@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
 import { microToStx } from '../lib/balance-utils';
 
