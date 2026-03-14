@@ -27,7 +27,11 @@ export function ThemeProvider({ children }) {
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('tipstream-theme', theme);
+    try {
+      localStorage.setItem('tipstream-theme', theme);
+    } catch {
+      // localStorage may be unavailable
+    }
   }, [theme]);
 
   const toggleTheme = () => {
