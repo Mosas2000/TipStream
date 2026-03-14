@@ -74,6 +74,7 @@ export default function ProfileManager({ addToast }) {
         }
     };
 
+    /** Validate all form fields before submission. */
     const validateForm = () => {
         if (!displayName.trim()) {
             addToast?.('Display name is required', 'warning');
