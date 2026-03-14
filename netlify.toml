@@ -74,3 +74,9 @@
   for = "/manifest.json"
   [headers.values]
     Cache-Control = "public, max-age=3600"
+
+# Allow crawlers to pick up robots.txt changes fairly quickly.
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
