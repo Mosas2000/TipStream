@@ -30,6 +30,7 @@ function Toast({ message, type = 'info', onClose = () => {} }) {
 
     return (
         <div
+            role="alert"
             className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg dark:shadow-black/30 transition-all duration-300 ${
                 visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
             } ${variants[type]}`}
