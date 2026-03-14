@@ -41,7 +41,7 @@ export function ThemeProvider({ children }) {
   }, []);
 
   const isDark = theme === 'dark';
-  const value = useMemo(() => ({ theme, isDark, toggleTheme }), [theme, isDark, toggleTheme]);
+  const value = useMemo(() => ({ theme, isDark, toggleTheme, setTheme }), [theme, isDark, toggleTheme]);
 
   return (
     <ThemeContext.Provider value={value}>
