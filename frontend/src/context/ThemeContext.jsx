@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext(null);
+ThemeContext.displayName = 'ThemeContext';
 
 function getInitialTheme() {
   if (typeof window === 'undefined') return 'light';
