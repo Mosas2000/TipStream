@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
 import { microToStx } from '../lib/balance-utils';
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+
 /**
  * Fetch and track the STX balance for a Stacks address.
  *
