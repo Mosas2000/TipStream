@@ -294,6 +294,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { events: adminEvents, total: adminEvents.length });
   }
 
+  // GET /api/admin/bypasses -- detected timelock bypass events
   if (req.method === "GET" && path === "/api/admin/bypasses") {
     const allEvents = loadEvents();
     const bypasses = [];
