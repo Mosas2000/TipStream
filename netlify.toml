@@ -30,6 +30,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"  # send origin only cross-site
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"  # disable unused APIs
     Cross-Origin-Opener-Policy = "same-origin"
+    X-Permitted-Cross-Domain-Policies = "none"
     Content-Security-Policy = "\
       default-src 'self'; \
       script-src 'self'; \
