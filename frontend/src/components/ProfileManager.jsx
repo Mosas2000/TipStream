@@ -137,7 +137,7 @@ export default function ProfileManager({ addToast }) {
 
     if (loading) {
         return (
-            <div className="max-w-md mx-auto flex justify-center py-16">
+            <div data-testid="profile-loading" className="max-w-md mx-auto flex justify-center py-16">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
             </div>
         );
