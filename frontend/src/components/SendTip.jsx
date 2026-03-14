@@ -207,6 +207,7 @@ export default function SendTip({ addToast }) {
         }
     };
 
+    /** Called by TxStatus when the transaction reaches 'success' status. */
     const handleTxConfirmed = useCallback(() => {
         refetchBalance();
         addToast('Tip confirmed on-chain!', 'success');
