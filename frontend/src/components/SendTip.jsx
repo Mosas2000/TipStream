@@ -213,8 +213,9 @@ export default function SendTip({ addToast }) {
     }, [addToast, refetchBalance]);
 
     const handleTxFailed = useCallback((reason) => {
+        refetchBalance();
         addToast(`Transaction failed: ${reason}`, 'error');
-    }, [addToast]);
+    }, [addToast, refetchBalance]);
 
     return (
         <div className="max-w-md mx-auto">
