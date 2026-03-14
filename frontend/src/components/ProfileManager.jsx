@@ -207,6 +207,7 @@ export default function ProfileManager({ addToast }) {
                         <input
                             id="profile-avatar"
                             data-testid="profile-avatar-input"
+                            aria-invalid={avatarUrl && !isValidAvatarUrl(avatarUrl) ? "true" : undefined}
                             type="url"
                             value={avatarUrl}
                             onChange={(e) => setAvatarUrl(e.target.value)}
