@@ -17,6 +17,13 @@ if (!existsSync(DATA_DIR)) {
 
 let writeQueue = Promise.resolve();
 
+/**
+ * Serialize access to the events file.
+ * Chains the provided function onto a promise queue so that only one
+ * read-modify-write cycle runs at a time.
+ * @param {() => void} fn - Synchronous function that reads and writes events.
+ * @returns {Promise<void>}
+ */
 function withEventLock(fn) {
   writeQueue = writeQueue.then(fn, fn);
   return writeQueue;
