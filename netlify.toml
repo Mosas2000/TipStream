@@ -80,3 +80,9 @@
   for = "/robots.txt"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+
+# Favicons rarely change but should still revalidate eventually.
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
