@@ -29,6 +29,11 @@ function withEventLock(fn) {
   return writeQueue;
 }
 
+/**
+ * Load all stored events from the JSON file.
+ * Returns an empty array if the file does not exist or is corrupted.
+ * @returns {Array<object>}
+ */
 function loadEvents() {
   if (!existsSync(DB_FILE)) return [];
   try {
