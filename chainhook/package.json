@@ -9,5 +9,6 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "description": "Chainhook webhook listener for TipStream on-chain events"
 }
