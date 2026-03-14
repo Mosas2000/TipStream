@@ -25,7 +25,9 @@ let writeQueue = Promise.resolve();
  * @returns {Promise<void>}
  */
 function withEventLock(fn) {
-  writeQueue = writeQueue.then(fn, fn);
+  writeQueue = writeQueue.then(fn).catch((err) => {
+    console.error('Event lock operation failed:', err.message);
+  });
   return writeQueue;
 }
 
