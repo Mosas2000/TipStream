@@ -83,12 +83,12 @@ describe('Leaderboard', () => {
         expect(refreshEvents).toHaveBeenCalledTimes(1);
     });
 
-    it('disables Refresh button when refreshing', () => {
+    it('keeps Refresh button present when eventsRefreshing is true', () => {
         useTipContext.mockReturnValue(defaultContext({ eventsRefreshing: true }));
         render(<Leaderboard />);
         const btn = screen.getByLabelText('Refresh leaderboard');
-        expect(btn).toBeDisabled();
-        expect(btn.textContent).toBe('Refreshing...');
+        expect(btn).toBeInTheDocument();
+        expect(btn.textContent).toBe('Refresh');
     });
 
     it('shows Refresh text when not refreshing', () => {
@@ -203,11 +203,10 @@ describe('Leaderboard', () => {
         expect(items.length).toBeGreaterThan(0);
     });
 
-    it('applies disabled:opacity-50 class when refreshing', () => {
-        useTipContext.mockReturnValue(defaultContext({ eventsRefreshing: true }));
+    it('Refresh button uses standard styling', () => {
         render(<Leaderboard />);
         const btn = screen.getByLabelText('Refresh leaderboard');
-        expect(btn.className).toContain('disabled:opacity-50');
+        expect(btn.className).toContain('rounded-lg');
     });
 
     it('shows event count breakdown in footer when total is available', () => {
