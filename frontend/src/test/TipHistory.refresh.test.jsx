@@ -1,18 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TipHistory from '../components/TipHistory';
-import { useTipContext } from '../context/TipContext';
-import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { fetchCallReadOnlyFunction, cvToJSON } from '@stacks/transactions';
-
-vi.mock('../context/TipContext', () => ({
-    useTipContext: vi.fn(),
-}));
-
-vi.mock('../lib/fetchTipDetails', () => ({
-    fetchTipMessages: vi.fn(),
-    clearTipCache: vi.fn(),
-}));
 
 vi.mock('@stacks/transactions', () => ({
     fetchCallReadOnlyFunction: vi.fn(),
@@ -25,33 +14,36 @@ vi.mock('../utils/stacks', () => ({
 }));
 
 describe('TipHistory refresh behavior', () => {
-    const refreshEvents = vi.fn();
+    const USER = 'SP1SENDER';
+    const CONTRACT_ID = 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream';
 
     beforeEach(() => {
         vi.clearAllMocks();
 
-        useTipContext.mockReturnValue({
-            events: [
-                {
-                    event: 'tip-sent',
-                    tipId: '1',
-                    sender: 'SP1SENDER',
-                    recipient: 'SP2RECIPIENT',
-                    amount: '1000000',
-                    fee: '50000',
-                    timestamp: 1700000000,
-                    txId: '0xabc',
-                },
-            ],
-            eventsLoading: false,
-            eventsError: null,
-            eventsMeta: { total: 1, hasMore: false },
-            lastEventRefresh: new Date('2026-03-12T12:00:00Z'),
-            refreshEvents,
-            loadMoreEvents: vi.fn(),
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                total: 1,
+                results: [
+                    {
+                        tx_id: '0xabc',
+                        tx_type: 'contract_call',
+                        sender_address: USER,
+                        burn_block_time: 1700000000,
+                        contract_call: {
+                            contract_id: CONTRACT_ID,
+                            function_args: [
+                                { repr: "'SP2RECIPIENT" },
+                                { repr: 'u1000000' },
+                                { repr: 'u"hello"' },
+                                { repr: 'u1' },
+                            ],
+                        },
+                    },
+                ],
+            }),
         });
 
-        fetchTipMessages.mockResolvedValue(new Map([['1', 'hello']]));
         fetchCallReadOnlyFunction.mockResolvedValue({});
         cvToJSON.mockReturnValue({
             value: {
@@ -63,86 +55,53 @@ describe('TipHistory refresh behavior', () => {
         });
     });
 
-    it('does not clear the tip cache during automatic message enrichment', async () => {
-        render(<TipHistory userAddress="SP1SENDER" />);
+    it('fetches address-specific transactions on mount', async () => {
+        render(<TipHistory userAddress={USER} />);
 
         await waitFor(() => {
-            expect(fetchTipMessages).toHaveBeenCalledWith(['1']);
+            expect(global.fetch).toHaveBeenCalledWith(
+                expect.stringContaining(`/extended/v1/address/${USER}/transactions?limit=50&offset=0`)
+            );
         });
-
-        expect(clearTipCache).not.toHaveBeenCalled();
     });
 
-    it('deduplicates repeated tip IDs before message enrichment fetch', async () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        useTipContext.mockReturnValue({
-            events: [
-                {
-                    event: 'tip-sent',
-                    tipId: '1',
-                    sender: 'SP1SENDER',
-                    recipient: 'SP2RECIPIENT',
-                    amount: '1000000',
-                    fee: '50000',
-                    timestamp: 1700000000,
-                    txId: '0xaaa',
-                },
-                {
-                    event: 'tip-sent',
-                    tipId: '1',
-                    sender: 'SP1SENDER',
-                    recipient: 'SP2RECIPIENT',
-                    amount: '1000000',
-                    fee: '50000',
-                    timestamp: 1700000001,
-                    txId: '0xbbb',
-                },
-            ],
-            eventsLoading: false,
-            eventsError: null,
-            eventsMeta: { total: 2, hasMore: false },
-            lastEventRefresh: new Date('2026-03-12T12:00:00Z'),
-            refreshEvents,
-            loadMoreEvents: vi.fn(),
-        });
+    it('renders parsed transaction details from contract call args', async () => {
+        render(<TipHistory userAddress={USER} />);
 
-        render(<TipHistory userAddress="SP1SENDER" />);
+        expect(await screen.findByText(/\u201chello\u201d/)).toBeInTheDocument();
+        expect(screen.getByText(/-1\.00 STX/)).toBeInTheDocument();
+    });
+
+    it('refreshes transactions when user clicks Refresh', async () => {
+        render(<TipHistory userAddress={USER} />);
 
         await waitFor(() => {
-            expect(fetchTipMessages).toHaveBeenCalledWith(['1']);
+            expect(global.fetch).toHaveBeenCalledTimes(1);
         });
-
-        consoleSpy.mockRestore();
-    });
-
-    it('clears the tip cache when user clicks Refresh', async () => {
-        render(<TipHistory userAddress="SP1SENDER" />);
 
         const refreshButton = await screen.findByLabelText('Refresh activity');
         fireEvent.click(refreshButton);
 
-        expect(clearTipCache).toHaveBeenCalledTimes(1);
-        expect(refreshEvents).toHaveBeenCalledTimes(1);
-        expect(clearTipCache.mock.invocationCallOrder[0]).toBeLessThan(refreshEvents.mock.invocationCallOrder[0]);
+        await waitFor(() => {
+            expect(global.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+        });
     });
 
-    it('clears the tip cache when user clicks Retry in error state', async () => {
-        useTipContext.mockReturnValue({
-            events: [],
-            eventsLoading: false,
-            eventsError: 'Failed to load events',
-            eventsMeta: { total: 0, hasMore: false },
-            lastEventRefresh: null,
-            refreshEvents,
-            loadMoreEvents: vi.fn(),
+    it('retries when initial fetch fails', async () => {
+        global.fetch
+            .mockResolvedValueOnce({ ok: false, status: 503 })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ total: 0, results: [] }),
+            });
+
+        render(<TipHistory userAddress={USER} />);
+        expect(await screen.findByText('Stacks API returned 503')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Retry'));
+
+        await waitFor(() => {
+            expect(global.fetch).toHaveBeenCalledTimes(2);
         });
-
-        render(<TipHistory userAddress="SP1SENDER" />);
-        const retryButton = await screen.findByText('Retry');
-        fireEvent.click(retryButton);
-
-        expect(clearTipCache).toHaveBeenCalledTimes(1);
-        expect(refreshEvents).toHaveBeenCalledTimes(1);
-        expect(clearTipCache.mock.invocationCallOrder[0]).toBeLessThan(refreshEvents.mock.invocationCallOrder[0]);
     });
 });
