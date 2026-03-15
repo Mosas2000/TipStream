@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `BatchTip` now reports accurate outcome summaries after on-chain
+  confirmation instead of always showing a blanket success toast. Non-strict
+  batch results are parsed to show full success, partial success, or all
+  failed outcomes (Issue #238).
+
 - `RecentTips` tip-back modal now provides complete dialog keyboard support:
   it traps `Tab`/`Shift+Tab` focus within the modal, closes on `Escape`,
   restores focus to the previously focused trigger on close, and supports
@@ -55,6 +60,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   tests covering modal role semantics, initial focus placement,
   `Escape` close with focus restoration, focus trapping, and backdrop
   click close behavior.
+
+### Added (Issue #238)
+
+- `frontend/src/lib/batchTipResults.js` with result parsing helpers used to
+  summarize per-recipient outcomes from confirmed batch-tip transactions.
+- `frontend/src/test/batch-tip-results.test.js` with 6 tests covering
+  non-strict result parsing, strict-mode fallback parsing, and final
+  user-facing outcome message generation.
 
 - Four components (`Leaderboard`, `RecentTips`, `TipHistory`,
   `useNotifications`) each polled the same Stacks API contract-events
