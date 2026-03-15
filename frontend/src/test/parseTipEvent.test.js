@@ -99,4 +99,30 @@ describe('parseTipEvent', () => {
         const result = parseTipEvent(repr);
         expect(result.category).toBeNull();
     });
+
+    it('parses sender addresses case-insensitively', () => {
+        const repr = '(tuple (event "tip-sent") (sender \'sp1sender))';
+        const result = parseTipEvent(repr);
+        expect(result.sender).toBe('sp1sender');
+    });
+
+    it('handles repr with extra whitespace', () => {
+        const repr = '(tuple  (event  "tip-sent")  (tip-id  u5)  (amount  u1000))';
+        const result = parseTipEvent(repr);
+        expect(result.event).toBe('tip-sent');
+        expect(result.tipId).toBe('5');
+        expect(result.amount).toBe('1000');
+    });
+
+    it('extracts fee correctly', () => {
+        const repr = '(tuple (event "tip-sent") (fee u12345))';
+        const result = parseTipEvent(repr);
+        expect(result.fee).toBe('12345');
+    });
+
+    it('handles completely malformed input without throwing', () => {
+        expect(parseTipEvent(42)).toBeNull();
+        expect(parseTipEvent({})).toBeNull();
+        expect(parseTipEvent([])).toBeNull();
+    });
 });
