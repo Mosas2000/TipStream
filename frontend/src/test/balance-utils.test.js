@@ -266,3 +266,20 @@ describe('isValidBalance', () => {
     expect(isValidBalance(NaN)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Roundtrip: micro -> STX -> micro
+// ---------------------------------------------------------------------------
+describe('micro/STX roundtrip', () => {
+  it('converts micro to STX and back for whole numbers', () => {
+    expect(stxToMicro(microToStx(5_000_000))).toBe(5_000_000);
+  });
+
+  it('converts micro to STX and back for fractional amounts', () => {
+    expect(stxToMicro(microToStx(1_500_000))).toBe(1_500_000);
+  });
+
+  it('converts STX to micro and back for small amounts', () => {
+    expect(microToStx(stxToMicro(0.001))).toBeCloseTo(0.001);
+  });
+});
