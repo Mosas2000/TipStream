@@ -83,6 +83,18 @@ describe('Leaderboard', () => {
         expect(refreshEvents).toHaveBeenCalledTimes(1);
     });
 
+    it('does not suppress consecutive refresh clicks', () => {
+        const refreshEvents = vi.fn();
+        useTipContext.mockReturnValue(defaultContext({ refreshEvents }));
+        render(<Leaderboard />);
+
+        const refreshButton = screen.getByLabelText('Refresh leaderboard');
+        fireEvent.click(refreshButton);
+        fireEvent.click(refreshButton);
+
+        expect(refreshEvents).toHaveBeenCalledTimes(2);
+    });
+
     it('keeps Refresh button present when eventsRefreshing is true', () => {
         useTipContext.mockReturnValue(defaultContext({ eventsRefreshing: true }));
         render(<Leaderboard />);
