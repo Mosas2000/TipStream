@@ -228,4 +228,91 @@ describe('useStxPrice', () => {
         expect(result.current.price).toBe(0);
         expect(result.current.toUsd(100)).toBe('0.00');
     });
+
+    it('polls for updated price after 60 seconds', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 1.0 } }),
+        });
+
+        const { result } = renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        expect(result.current.price).toBe(1.0);
+
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 1.5 } }),
+        });
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        expect(result.current.price).toBe(1.5);
+    });
+
+    it('stops polling after unmount', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 1.0 } }),
+        });
+
+        const { unmount } = renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        const callsAfterMount = global.fetch.mock.calls.length;
+        unmount();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(120_000);
+        });
+
+        expect(global.fetch).toHaveBeenCalledTimes(callsAfterMount);
+    });
+
+    it('preserves price when a subsequent poll fails', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 1.25 } }),
+        });
+
+        const { result } = renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        expect(result.current.price).toBe(1.25);
+
+        global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        expect(result.current.price).toBe(1.25);
+        expect(result.current.error).toBe('HTTP 503');
+    });
+
+    it('toUsd returns zero string for zero STX amount', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 2.0 } }),
+        });
+
+        const { result } = renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        expect(result.current.toUsd(0)).toBe('0.00');
+    });
 });
