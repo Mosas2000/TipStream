@@ -95,6 +95,46 @@ describe('useBalance', () => {
             );
         });
     });
+
+    it('sets lastFetched timestamp on successful fetch', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1000000' }),
+        });
+
+        const { result } = renderHook(() =>
+            useBalance('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T'),
+        );
+
+        await waitFor(() => {
+            expect(result.current.loading).toBe(false);
+        });
+
+        expect(result.current.lastFetched).toBeTypeOf('number');
+        expect(result.current.lastFetched).toBeGreaterThan(0);
+    });
+
+    it('exposes a refetch function', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1000000' }),
+        });
+
+        const { result } = renderHook(() =>
+            useBalance('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T'),
+        );
+
+        await waitFor(() => {
+            expect(result.current.loading).toBe(false);
+        });
+
+        expect(typeof result.current.refetch).toBe('function');
+    });
+
+    it('has null lastFetched before any fetch', () => {
+        const { result } = renderHook(() => useBalance(null));
+        expect(result.current.lastFetched).toBeNull();
+    });
 });
 
 describe('useBalance retry and error handling', () => {
