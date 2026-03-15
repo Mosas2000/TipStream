@@ -197,4 +197,35 @@ describe('useStxPrice', () => {
         expect(result.current.error).toBeNull();
         expect(result.current.price).toBe(1.5);
     });
+
+    it('toUsd formats to two decimal places', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 1.333 } }),
+        });
+
+        const { result } = renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        expect(result.current.toUsd(3)).toBe('4.00');
+    });
+
+    it('handles zero price from API', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 0 } }),
+        });
+
+        const { result } = renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        expect(result.current.price).toBe(0);
+        expect(result.current.toUsd(100)).toBe('0.00');
+    });
 });
