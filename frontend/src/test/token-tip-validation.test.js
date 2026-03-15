@@ -74,3 +74,69 @@ describe('TokenTip validation flow', () => {
         expect(isValidContractId('SM31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.token')).toBe(true);
     });
 });
+
+describe('TokenTip integer amount parsing', () => {
+    function parseTokenAmount(value) {
+        return parseInt(value, 10);
+    }
+
+    it('parses integer string to number', () => {
+        expect(parseTokenAmount('100')).toBe(100);
+    });
+
+    it('truncates decimal to integer', () => {
+        expect(parseTokenAmount('1.5')).toBe(1);
+    });
+
+    it('returns NaN for non-numeric input', () => {
+        expect(parseTokenAmount('abc')).toBeNaN();
+    });
+
+    it('parses zero correctly', () => {
+        expect(parseTokenAmount('0')).toBe(0);
+    });
+
+    it('handles leading/trailing spaces in parseInt', () => {
+        expect(parseTokenAmount(' 42 ')).toBe(42);
+    });
+});
+
+describe('TokenTip whitelist status logic', () => {
+    function checkWhitelistResponse(json) {
+        return json.value?.value === true || json.value === true;
+    }
+
+    it('detects whitelisted via nested value.value', () => {
+        expect(checkWhitelistResponse({ value: { value: true } })).toBe(true);
+    });
+
+    it('detects whitelisted via flat value', () => {
+        expect(checkWhitelistResponse({ value: true })).toBe(true);
+    });
+
+    it('rejects non-whitelisted nested value', () => {
+        expect(checkWhitelistResponse({ value: { value: false } })).toBe(false);
+    });
+
+    it('rejects null value', () => {
+        expect(checkWhitelistResponse({ value: null })).toBe(false);
+    });
+
+    it('rejects missing value', () => {
+        expect(checkWhitelistResponse({})).toBe(false);
+    });
+});
+
+describe('TokenTip contract ID with multiple dots', () => {
+    it('rejects IDs with more than one dot', () => {
+        expect(isValidContractId('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.name.extra')).toBe(false);
+    });
+
+    it('rejects null input', () => {
+        expect(isValidContractId(null)).toBe(false);
+    });
+
+    it('rejects undefined input', () => {
+        expect(isValidContractId(undefined)).toBe(false);
+    });
+});
