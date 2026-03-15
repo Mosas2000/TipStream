@@ -71,4 +71,24 @@ describe('validateTipBackAmount', () => {
         expect(validateTipBackAmount('0.001')).toBe('');
         expect(validateTipBackAmount('0.0009')).toBe(`Minimum tip is ${MIN_TIP_STX} STX`);
     });
+
+    it('returns error for NaN string', () => {
+        expect(validateTipBackAmount('NaN')).toBe('Amount must be a positive number');
+    });
+
+    it('returns error for Infinity string', () => {
+        expect(validateTipBackAmount('Infinity')).toContain('Maximum tip');
+    });
+
+    it('returns error for negative Infinity', () => {
+        expect(validateTipBackAmount('-Infinity')).toBe('Amount must be a positive number');
+    });
+
+    it('handles numeric input passed as string', () => {
+        expect(validateTipBackAmount('5')).toBe('');
+    });
+
+    it('handles very small positive amount just above minimum', () => {
+        expect(validateTipBackAmount('0.002')).toBe('');
+    });
 });
