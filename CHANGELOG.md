@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `useBalance` tests now use fake timers to correctly handle the hook's
+  retry logic (MAX_RETRIES=2, RETRY_DELAY_MS=1500), fixing 4 previously
+  failing error-path tests. Added retry count verification and recovery
+  test (Issue #248).
+
+### Added (Issue #248)
+
+- `frontend/src/test/useStxPrice.test.js` with 14 tests covering
+  initial loading, price fetch, error states, toUsd conversion with
+  various inputs, refetch behavior, and error recovery.
+- `frontend/src/test/useBlockCheck.test.js` with 12 tests covering
+  initial state, empty/self recipient, checking state, blocked/not-
+  blocked results, error handling, reset, stale response discard.
+- `frontend/src/test/parseTipEvent.test.js` with 17 tests covering
+  tip-sent and tip-categorized parsing, missing fields, messages,
+  large values, case sensitivity, whitespace, and malformed input.
+- `frontend/src/test/tipBackValidation.test.js` with 16 tests covering
+  constants, empty/null inputs, boundary amounts, and typical values.
+- `frontend/src/test/address-validation.test.js` with 22 tests covering
+  Stacks address regex (SP/SM/ST prefixes, length, special chars) and
+  contract ID validation (dots, missing parts, invalid address).
+- `frontend/src/test/send-tip-validation.test.js` with 14 tests covering
+  amount validation and self-tip detection.
+- `frontend/src/test/batch-tip-validation.test.js` with 16 tests covering
+  duplicate address detection and per-recipient amount validation.
+- `frontend/src/test/token-tip-validation.test.js` with 10 tests covering
+  parseContractId splitting and TokenTip validation flow.
+
 - `BatchTip` now reports accurate outcome summaries after on-chain
   confirmation instead of always showing a blanket success toast. Non-strict
   batch results are parsed to show full success, partial success, or all
