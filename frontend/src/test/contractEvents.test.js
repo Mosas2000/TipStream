@@ -227,4 +227,45 @@ describe('fetchAllContractEvents', () => {
         expect(result.total).toBe(0);
         expect(result.hasMore).toBe(false);
     });
+
+    it('stops pagination when a page returns fewer than PAGE_LIMIT results', async () => {
+        const shortPage = [fakeApiEntry(tipSentRepr({ tipId: '1' }))];
+        const total = PAGE_LIMIT + 1;
+
+        fetchSpy
+            .mockReturnValueOnce(mockFetchResponse(
+                Array.from({ length: PAGE_LIMIT }, (_, i) => fakeApiEntry(tipSentRepr({ tipId: String(i) }))),
+                total,
+                0,
+            ))
+            .mockReturnValueOnce(mockFetchResponse(shortPage, total, PAGE_LIMIT));
+
+        const result = await fetchAllContractEvents({ maxPages: 5 });
+
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+        expect(result.events).toHaveLength(PAGE_LIMIT + 1);
+    });
+
+    it('throws when second page fails mid-pagination', async () => {
+        const fullPage = Array.from({ length: PAGE_LIMIT }, (_, i) =>
+            fakeApiEntry(tipSentRepr({ tipId: String(i) })),
+        );
+
+        fetchSpy
+            .mockReturnValueOnce(mockFetchResponse(fullPage, PAGE_LIMIT * 3, 0))
+            .mockReturnValueOnce(Promise.resolve({ ok: false, status: 503 }));
+
+        await expect(fetchAllContractEvents({ maxPages: 3 })).rejects.toThrow('Stacks API returned 503');
+    });
+
+    it('combines startOffset and maxPages', async () => {
+        const entries = [fakeApiEntry(tipSentRepr())];
+        fetchSpy.mockReturnValueOnce(mockFetchResponse(entries, 200, 100));
+
+        const result = await fetchAllContractEvents({ startOffset: 100, maxPages: 1 });
+
+        const url = fetchSpy.mock.calls[0][0];
+        expect(url).toContain('offset=100');
+        expect(result.events).toHaveLength(1);
+    });
 });
