@@ -14,10 +14,12 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
 import { formatBalance } from '../lib/balance-utils';
 import { analytics } from '../lib/analytics';
+import { summarizeBatchTipResult, buildBatchTipOutcomeMessage } from '../lib/batchTipResults';
 import { useBalance } from '../hooks/useBalance';
 import { useTipContext } from '../context/TipContext';
 import { Users, Plus, Trash2, Send, Loader2, AlertTriangle } from 'lucide-react';
 import ConfirmDialog from './ui/confirm-dialog';
+import TxStatus from './ui/tx-status';
 
 const MAX_BATCH_SIZE = 50;
 const MIN_TIP_STX = 0.001;
@@ -33,6 +35,7 @@ export default function BatchTip({ addToast }) {
     const [sending, setSending] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [errors, setErrors] = useState({});
+    const [pendingTx, setPendingTx] = useState(null);
 
     const senderAddress = useMemo(() => getSenderAddress(), []);
 
@@ -187,13 +190,12 @@ export default function BatchTip({ addToast }) {
                 postConditionMode: PostConditionMode.Deny,
                 onFinish: (data) => {
                     setSending(false);
-                    analytics.trackBatchTipConfirmed();
+                    setPendingTx({ txId: data.txId, totalRecipients: recipients.length, strictMode });
                     setRecipients([emptyRecipient()]);
                     setErrors({});
-                    notifyTipSent();
                     addToast?.(
-                        `Batch of ${recipients.length} tips sent! Tx: ${data.txId}`,
-                        'success'
+                        `Batch transaction submitted. Waiting for confirmation... Tx: ${data.txId}`,
+                        'info'
                     );
                 },
                 onCancel: () => {
@@ -209,6 +211,25 @@ export default function BatchTip({ addToast }) {
             setSending(false);
         }
     };
+
+    const handleBatchTxConfirmed = useCallback((txData) => {
+        analytics.trackBatchTipConfirmed();
+        notifyTipSent();
+
+        const summary = summarizeBatchTipResult(txData, pendingTx?.totalRecipients ?? 0);
+        const toastType = summary.failureCount === 0
+            ? 'success'
+            : summary.successCount > 0
+                ? 'warning'
+                : 'error';
+
+        addToast?.(buildBatchTipOutcomeMessage(summary), toastType);
+    }, [addToast, notifyTipSent, pendingTx?.totalRecipients]);
+
+    const handleBatchTxFailed = useCallback((reason) => {
+        analytics.trackBatchTipFailed();
+        addToast?.(`Batch transaction failed: ${reason}`, 'error');
+    }, [addToast]);
 
     return (
         <div className="max-w-2xl mx-auto">
@@ -407,6 +428,14 @@ export default function BatchTip({ addToast }) {
                         </>
                     )}
                 </button>
+
+                {pendingTx?.txId && (
+                    <TxStatus
+                        txId={pendingTx.txId}
+                        onConfirmed={handleBatchTxConfirmed}
+                        onFailed={handleBatchTxFailed}
+                    />
+                )}
             </div>
 
             <ConfirmDialog
