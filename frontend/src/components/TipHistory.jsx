@@ -1,10 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
 import { network } from '../utils/stacks';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
-import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
-import { useTipContext } from '../context/TipContext';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
 
@@ -12,6 +10,24 @@ const CATEGORY_LABELS = {
     0: 'General', 1: 'Content Creation', 2: 'Open Source',
     3: 'Community Help', 4: 'Appreciation', 5: 'Education', 6: 'Bug Bounty',
 };
+const TRANSACTIONS_PAGE_SIZE = 50;
+const TRANSACTIONS_REFRESH_MS = 30_000;
+
+function parsePrincipal(repr) {
+    if (!repr || typeof repr !== 'string') return null;
+    return repr.startsWith("'") ? repr.slice(1) : repr;
+}
+
+function parseUint(repr) {
+    if (!repr || typeof repr !== 'string' || !repr.startsWith('u')) return null;
+    return repr.slice(1);
+}
+
+function parseUtf8(repr) {
+    if (!repr || typeof repr !== 'string') return null;
+    if (!repr.startsWith('u"') || !repr.endsWith('"')) return null;
+    return repr.slice(2, -1);
+}
 
 /**
  * TipHistory -- displays a user's personal tip activity with stats,
@@ -26,81 +42,99 @@ const CATEGORY_LABELS = {
  * @param {string} props.userAddress - The STX address of the logged-in user.
  */
 export default function TipHistory({ userAddress }) {
-    const {
-        events,
-        eventsLoading,
-        eventsError,
-        eventsMeta,
-        lastEventRefresh,
-        refreshEvents,
-        loadMoreEvents: contextLoadMore,
-    } = useTipContext();
+    const [tips, setTips] = useState([]);
+    const [tipsLoading, setTipsLoading] = useState(true);
+    const [tipsError, setTipsError] = useState(null);
+    const [tipsMeta, setTipsMeta] = useState({ offset: 0, total: 0, hasMore: false });
+    const [lastTipsRefresh, setLastTipsRefresh] = useState(null);
     const [stats, setStats] = useState(null);
     const [statsLoading, setStatsLoading] = useState(true);
-    const [messagesLoading, setMessagesLoading] = useState(false);
     const [tab, setTab] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [loadingMore, setLoadingMore] = useState(false);
 
-    // Manual refresh only: invalidate local tip-detail cache, then ask
-    // TipContext to refresh shared events. Keep this out of auto effects.
+    const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+
+    const fetchTips = useCallback(async (reset = true) => {
+        if (!userAddress) {
+            setTips([]);
+            setTipsLoading(false);
+            setTipsError(null);
+            setTipsMeta({ offset: 0, total: 0, hasMore: false });
+            return;
+        }
+
+        const offset = reset ? 0 : tipsMeta.offset;
+        if (reset) {
+            setTipsLoading(true);
+        }
+
+        try {
+            setTipsError(null);
+            const response = await fetch(
+                `${STACKS_API_BASE}/extended/v1/address/${userAddress}/transactions?limit=${TRANSACTIONS_PAGE_SIZE}&offset=${offset}`
+            );
+            if (!response.ok) throw new Error(`Stacks API returned ${response.status}`);
+
+            const data = await response.json();
+            const rows = Array.isArray(data?.results) ? data.results : [];
+
+            const parsed = rows
+                .filter((tx) => tx?.tx_type === 'contract_call' && tx?.contract_call?.contract_id === contractId)
+                .map((tx) => {
+                    const args = tx?.contract_call?.function_args || [];
+                    const recipient = parsePrincipal(args[0]?.repr) || '';
+                    const amount = parseUint(args[1]?.repr) || '0';
+                    const message = parseUtf8(args[2]?.repr);
+                    const category = parseUint(args[3]?.repr);
+                    const sender = tx?.sender_address || '';
+
+                    let direction = null;
+                    if (sender === userAddress) direction = 'sent';
+                    else if (recipient === userAddress) direction = 'received';
+                    if (!direction) return null;
+
+                    return {
+                        tipId: tx.tx_id,
+                        txId: tx.tx_id,
+                        sender,
+                        recipient,
+                        amount,
+                        message,
+                        category: category !== null ? Number(category) : null,
+                        direction,
+                        timestamp: tx?.burn_block_time || tx?.block_time || null,
+                    };
+                })
+                .filter(Boolean);
+
+            const nextOffset = offset + rows.length;
+            setTips(prev => reset ? parsed : [...prev, ...parsed]);
+            setTipsMeta({
+                offset: nextOffset,
+                total: data?.total || 0,
+                hasMore: nextOffset < (data?.total || 0),
+            });
+            setLastTipsRefresh(new Date());
+        } catch (err) {
+            setTipsError(err.message || 'Failed to load activity');
+        } finally {
+            setTipsLoading(false);
+        }
+    }, [userAddress, tipsMeta.offset, contractId]);
+
     const handleRefresh = useCallback(() => {
-        clearTipCache();
-        refreshEvents();
-    }, [refreshEvents]);
+        fetchTips(true);
+    }, [fetchTips]);
 
-    // Build a category lookup from tip-categorized events in the cache.
-    const categoryMap = useMemo(() => {
-        const map = {};
-        events.filter(e => e.event === 'tip-categorized').forEach(e => {
-            map[e.tipId] = Number(e.category || 0);
-        });
-        return map;
-    }, [events]);
-
-    // Derive this user's tips from the shared event cache.
-    const tips = useMemo(
-        () => events
-            .filter(t => t.event === 'tip-sent')
-            .filter(t => t.sender === userAddress || t.recipient === userAddress)
-            .map(t => ({
-                ...t,
-                direction: t.sender === userAddress ? 'sent' : 'received',
-                category: categoryMap[t.tipId] ?? null,
-            })),
-        [events, userAddress, categoryMap],
-    );
-    const tipIds = useMemo(
-        () => [...new Set(tips.map(t => t.tipId).filter(id => id && id !== '0'))],
-        [tips],
-    );
-
-    // Enrich tips with on-chain messages whenever the tip list changes.
-    const [tipMessages, setTipMessages] = useState({});
     useEffect(() => {
-        if (tipIds.length === 0) return;
-        let cancelled = false;
-        setMessagesLoading(true);
-        fetchTipMessages(tipIds)
-            .then(messageMap => {
-                if (cancelled) return;
-                const obj = {};
-                messageMap.forEach((v, k) => { obj[k] = v; });
-                setTipMessages(obj);
-            })
-            .catch(err => { if (!cancelled) console.warn('Failed to fetch tip messages:', err.message || err); })
-            .finally(() => { if (!cancelled) setMessagesLoading(false); });
-        return () => { cancelled = true; };
-    }, [tipIds]);
+        fetchTips(true);
+    }, [fetchTips]);
 
-    // Merge messages into the tip objects for display.
-    const enrichedTips = useMemo(
-        () => tips.map(t => {
-            const msg = tipMessages[String(t.tipId)];
-            return msg ? { ...t, message: msg } : t;
-        }),
-        [tips, tipMessages],
-    );
+    useEffect(() => {
+        const id = setInterval(() => fetchTips(true), TRANSACTIONS_REFRESH_MS);
+        return () => clearInterval(id);
+    }, [fetchTips]);
 
     // Fetch on-chain user stats (tips sent/received counts and volume).
     // This is user-specific data not available from the shared event cache.
@@ -123,26 +157,26 @@ export default function TipHistory({ userAddress }) {
 
     const handleLoadMore = async () => {
         setLoadingMore(true);
-        try { await contextLoadMore(); } finally { setLoadingMore(false); }
+        try { await fetchTips(false); } finally { setLoadingMore(false); }
     };
 
-    const filteredTips = enrichedTips.filter(t => {
+    const filteredTips = tips.filter(t => {
         if (tab === 'sent' && t.direction !== 'sent') return false;
         if (tab === 'received' && t.direction !== 'received') return false;
         if (categoryFilter !== 'all' && t.category !== Number(categoryFilter)) return false;
         return true;
     });
 
-    if (eventsLoading || statsLoading) return (
+    if (tipsLoading || statsLoading) return (
         <div className="flex flex-col items-center justify-center py-16">
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-white mb-4" />
             <p className="text-gray-500 dark:text-gray-400 text-sm">Loading activity...</p>
         </div>
     );
 
-    if (eventsError) return (
+    if (tipsError) return (
         <div className="max-w-md mx-auto text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-red-100 dark:border-red-900/30 p-8">
-            <p className="text-red-500 text-sm mb-4">{eventsError}</p>
+            <p className="text-red-500 text-sm mb-4">{tipsError}</p>
             <button onClick={handleRefresh}
                 className="px-6 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">
                 Retry
@@ -161,7 +195,7 @@ export default function TipHistory({ userAddress }) {
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Activity</h2>
                 <div className="flex items-center gap-3">
-                    {lastEventRefresh && <span className="text-xs text-gray-400">{lastEventRefresh.toLocaleTimeString()}</span>}
+                    {lastTipsRefresh && <span className="text-xs text-gray-400">{lastTipsRefresh.toLocaleTimeString()}</span>}
                     <button onClick={handleRefresh} aria-label="Refresh activity" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
@@ -222,8 +256,6 @@ export default function TipHistory({ userAddress }) {
                                         </div>
                                         {tip.message ? (
                                             <span className="text-xs text-gray-400 italic">&ldquo;{tip.message}&rdquo;</span>
-                                        ) : messagesLoading ? (
-                                            <span className="inline-block h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-0.5" />
                                         ) : null}
                                     </div>
                                 </div>
@@ -240,15 +272,15 @@ export default function TipHistory({ userAddress }) {
             </div>
 
             {/* Load More from API */}
-            {eventsMeta.hasMore && (
+            {tipsMeta.hasMore && (
                 <div className="flex flex-col items-center gap-2 mt-4">
                     <button onClick={handleLoadMore} disabled={loadingMore}
                         aria-label="Load more activity from the blockchain"
                         className="px-6 py-2.5 text-sm font-semibold bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50">
                         {loadingMore ? 'Loading...' : 'Load More Activity'}
                     </button>
-                    {eventsMeta.total > 0 && (
-                        <span className="text-xs text-gray-400">Showing {enrichedTips.length} of {eventsMeta.total} on-chain events</span>
+                    {tipsMeta.total > 0 && (
+                        <span className="text-xs text-gray-400">Showing {tips.length} of {tipsMeta.total} address transactions</span>
                     )}
                 </div>
             )}
