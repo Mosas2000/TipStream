@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `RecentTips` tip-back modal now provides complete dialog keyboard support:
+  it traps `Tab`/`Shift+Tab` focus within the modal, closes on `Escape`,
+  restores focus to the previously focused trigger on close, and supports
+  backdrop click-to-close while preserving dialog semantics (Issue #236).
+
 - `clearTipCache()` was executed inside automatic message-enrichment
   effects in both `RecentTips` and `TipHistory`, causing each refresh
   cycle to wipe shared tip-detail cache data for all mounted consumers.
@@ -43,6 +48,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `clearTipCache()` is not called by automatic enrichment and is only
   triggered by user `Refresh`/`Retry` actions, plus tip ID deduplication
   before message enrichment.
+
+### Added (Issue #236)
+
+- `frontend/src/test/RecentTips.modal-a11y.test.jsx` with 4 integration
+  tests covering modal role semantics, initial focus placement,
+  `Escape` close with focus restoration, focus trapping, and backdrop
+  click close behavior.
 
 - Four components (`Leaderboard`, `RecentTips`, `TipHistory`,
   `useNotifications`) each polled the same Stacks API contract-events
