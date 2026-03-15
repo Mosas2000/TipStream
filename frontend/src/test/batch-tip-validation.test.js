@@ -21,6 +21,7 @@ function detectDuplicateAddresses(recipients) {
  * BatchTip amount validation logic extracted for testability.
  */
 const MIN_TIP_STX = 0.001;
+const MAX_BATCH_SIZE = 50;
 
 function validateBatchAmounts(recipients) {
     const errors = {};
@@ -162,5 +163,127 @@ describe('BatchTip amount validation', () => {
         expect(errors['0-amount']).toBeUndefined();
         expect(errors['1-amount']).toBe('Enter a valid amount');
         expect(errors['2-amount']).toBeUndefined();
+    });
+});
+
+describe('BatchTip message validation', () => {
+    function validateMessages(recipients) {
+        const errors = {};
+        recipients.forEach((r, i) => {
+            if (r.message && r.message.length > 280) {
+                errors[`${i}-message`] = 'Max 280 characters';
+            }
+        });
+        return errors;
+    }
+
+    it('accepts empty message', () => {
+        const errors = validateMessages([{ address: 'SP1', amount: '1', message: '' }]);
+        expect(Object.keys(errors).length).toBe(0);
+    });
+
+    it('accepts message at exactly 280 characters', () => {
+        const msg = 'a'.repeat(280);
+        const errors = validateMessages([{ address: 'SP1', amount: '1', message: msg }]);
+        expect(Object.keys(errors).length).toBe(0);
+    });
+
+    it('rejects message exceeding 280 characters', () => {
+        const msg = 'a'.repeat(281);
+        const errors = validateMessages([{ address: 'SP1', amount: '1', message: msg }]);
+        expect(errors['0-message']).toBe('Max 280 characters');
+    });
+
+    it('accepts undefined message field', () => {
+        const errors = validateMessages([{ address: 'SP1', amount: '1' }]);
+        expect(Object.keys(errors).length).toBe(0);
+    });
+});
+
+describe('BatchTip self-tip detection', () => {
+    function detectSelfTips(recipients, senderAddress) {
+        const errors = {};
+        recipients.forEach((r, i) => {
+            if (r.address.trim() === senderAddress) {
+                errors[`${i}-address`] = 'Cannot tip yourself';
+            }
+        });
+        return errors;
+    }
+
+    it('flags self-tip when address matches sender', () => {
+        const sender = 'SP1SENDER';
+        const errors = detectSelfTips(
+            [{ address: 'SP1SENDER', amount: '1' }],
+            sender,
+        );
+        expect(errors['0-address']).toBe('Cannot tip yourself');
+    });
+
+    it('allows different addresses', () => {
+        const sender = 'SP1SENDER';
+        const errors = detectSelfTips(
+            [{ address: 'SP2OTHER', amount: '1' }],
+            sender,
+        );
+        expect(Object.keys(errors).length).toBe(0);
+    });
+
+    it('trims address whitespace before self-tip check', () => {
+        const sender = 'SP1SENDER';
+        const errors = detectSelfTips(
+            [{ address: '  SP1SENDER  ', amount: '1' }],
+            sender,
+        );
+        expect(errors['0-address']).toBe('Cannot tip yourself');
+    });
+});
+
+describe('BatchTip totalAmount computation', () => {
+    function computeTotal(recipients) {
+        return recipients.reduce((sum, r) => {
+            const parsed = parseFloat(r.amount);
+            return sum + (isNaN(parsed) ? 0 : parsed);
+        }, 0);
+    }
+
+    it('sums all valid amounts', () => {
+        const total = computeTotal([
+            { amount: '1' },
+            { amount: '2.5' },
+            { amount: '0.5' },
+        ]);
+        expect(total).toBe(4);
+    });
+
+    it('ignores NaN amounts', () => {
+        const total = computeTotal([
+            { amount: '1' },
+            { amount: 'abc' },
+            { amount: '3' },
+        ]);
+        expect(total).toBe(4);
+    });
+
+    it('returns zero for empty list', () => {
+        expect(computeTotal([])).toBe(0);
+    });
+
+    it('returns zero when all amounts are invalid', () => {
+        const total = computeTotal([
+            { amount: '' },
+            { amount: 'xyz' },
+        ]);
+        expect(total).toBe(0);
+    });
+});
+
+describe('BatchTip constants', () => {
+    it('MAX_BATCH_SIZE is 50', () => {
+        expect(MAX_BATCH_SIZE).toBe(50);
+    });
+
+    it('MIN_TIP_STX is 0.001', () => {
+        expect(MIN_TIP_STX).toBe(0.001);
     });
 });
