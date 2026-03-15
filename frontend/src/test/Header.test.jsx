@@ -19,7 +19,6 @@ vi.mock('../context/ThemeContext', () => ({
 
 vi.mock('../config/contracts', () => ({
     NETWORK_NAME: 'mainnet',
-    STACKS_API_BASE: 'https://api.hiro.so',
 }));
 
 vi.mock('../utils/stacks', () => ({
@@ -38,6 +37,7 @@ const defaultProps = {
     unreadCount: 0,
     onMarkNotificationsRead: vi.fn(),
     notificationsLoading: false,
+    apiReachable: null,
 };
 
 function setOnline(value) {

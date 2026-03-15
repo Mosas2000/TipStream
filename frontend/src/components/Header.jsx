@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
 import CopyButton from './ui/copy-button';
 import NotificationBell from './NotificationBell';
 import { BANNER_HEIGHT_CLASS } from './OfflineBanner';
 import { useTheme } from '../context/ThemeContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { NETWORK_NAME, STACKS_API_BASE } from '../config/contracts';
+import { NETWORK_NAME } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { getMainnetAddress } from '../utils/stacks';
 import { Sun, Moon } from 'lucide-react';
@@ -25,25 +24,9 @@ import { Sun, Moon } from 'lucide-react';
  * @param {Function} props.onMarkNotificationsRead - Callback to mark all read.
  * @param {boolean} props.notificationsLoading - Whether notifications are loading.
  */
-export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading }) {
+export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
     const { theme, toggleTheme } = useTheme();
     const isOnline = useOnlineStatus();
-    const [apiReachable, setApiReachable] = useState(null);
-
-    useEffect(() => {
-        let cancelled = false;
-        const checkApi = async () => {
-            try {
-                const res = await fetch(`${STACKS_API_BASE}/v2/info`, { signal: AbortSignal.timeout(5000) });
-                if (!cancelled) setApiReachable(res.ok);
-            } catch {
-                if (!cancelled) setApiReachable(false);
-            }
-        };
-        checkApi();
-        const interval = setInterval(checkApi, 30000);
-        return () => { cancelled = true; clearInterval(interval); };
-    }, []);
 
     const networkLabel = NETWORK_NAME.charAt(0).toUpperCase() + NETWORK_NAME.slice(1);
 

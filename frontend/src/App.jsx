@@ -139,6 +139,7 @@ function App() {
         unreadCount={unreadCount}
         onMarkNotificationsRead={markAllRead}
         notificationsLoading={notificationsLoading}
+        apiReachable={healthy}
       />
 
       <main id="main-content" className="flex-1">
