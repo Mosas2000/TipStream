@@ -215,4 +215,41 @@ describe('useBlockCheck', () => {
             }),
         );
     });
+
+    it('handles sequential calls with different recipients', async () => {
+        mockFetchReadOnly.mockResolvedValue({});
+        mockCvToJSON.mockReturnValueOnce({ value: true }).mockReturnValueOnce({ value: false });
+
+        const { result } = renderHook(() => useBlockCheck());
+
+        await act(async () => {
+            result.current.checkBlocked('SP2BLOCKED');
+        });
+
+        await waitFor(() => {
+            expect(result.current.blocked).toBe(true);
+        });
+
+        await act(async () => {
+            result.current.checkBlocked('SP3NOTBLOCKED');
+        });
+
+        await waitFor(() => {
+            expect(result.current.blocked).toBe(false);
+        });
+    });
+
+    it('sets checking to false after error', async () => {
+        mockFetchReadOnly.mockRejectedValue(new Error('fail'));
+
+        const { result } = renderHook(() => useBlockCheck());
+
+        await act(async () => {
+            result.current.checkBlocked('SP2RECIPIENT');
+        });
+
+        await waitFor(() => {
+            expect(result.current.checking).toBe(false);
+        });
+    });
 });
