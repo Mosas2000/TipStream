@@ -301,6 +301,23 @@ describe('useStxPrice', () => {
         expect(result.current.error).toBe('HTTP 503');
     });
 
+    it('calls the correct CoinGecko API endpoint', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ stacks: { usd: 1.0 } }),
+        });
+
+        renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        expect(global.fetch).toHaveBeenCalledWith(
+            'https://api.coingecko.com/api/v3/simple/price?ids=stacks&vs_currencies=usd',
+        );
+    });
+
     it('toUsd returns zero string for zero STX amount', async () => {
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
