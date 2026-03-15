@@ -5,6 +5,7 @@ import { useStxPrice } from '../hooks/useStxPrice';
 describe('useStxPrice', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        localStorage.clear();
     });
 
     afterEach(() => {
@@ -229,7 +230,7 @@ describe('useStxPrice', () => {
         expect(result.current.toUsd(100)).toBe('0.00');
     });
 
-    it('polls for updated price after 60 seconds', async () => {
+    it('polls for updated price after 120 seconds', async () => {
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: () => Promise.resolve({ stacks: { usd: 1.0 } }),
@@ -249,7 +250,7 @@ describe('useStxPrice', () => {
         });
 
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(60_000);
+            await vi.advanceTimersByTimeAsync(120_000);
         });
 
         expect(result.current.price).toBe(1.5);
@@ -294,7 +295,7 @@ describe('useStxPrice', () => {
         global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
 
         await act(async () => {
-            await vi.advanceTimersByTimeAsync(60_000);
+            await vi.advanceTimersByTimeAsync(120_000);
         });
 
         expect(result.current.price).toBe(1.25);
@@ -315,6 +316,7 @@ describe('useStxPrice', () => {
 
         expect(global.fetch).toHaveBeenCalledWith(
             'https://api.coingecko.com/api/v3/simple/price?ids=stacks&vs_currencies=usd',
+            expect.any(Object),
         );
     });
 
