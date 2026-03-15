@@ -117,4 +117,43 @@ describe('isValidContractId (TokenTip validation pattern)', () => {
     it('rejects invalid address portion', () => {
         expect(isValidContractId('INVALID.my-token')).toBe(false);
     });
+
+    it('trims whitespace from contract ID', () => {
+        expect(isValidContractId('  SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.token  ')).toBe(true);
+    });
+});
+
+describe('isValidStacksAddress boundary tests', () => {
+    it('rejects address of length 37 (one below minimum)', () => {
+        const addr = 'SP' + 'A'.repeat(35);
+        expect(addr.length).toBe(37);
+        expect(isValidStacksAddress(addr)).toBe(false);
+    });
+
+    it('rejects address of length 42 (one above maximum)', () => {
+        const addr = 'SP' + 'A'.repeat(40);
+        expect(addr.length).toBe(42);
+        expect(isValidStacksAddress(addr)).toBe(false);
+    });
+
+    it('rejects lowercase prefix sp as valid (case insensitive)', () => {
+        expect(isValidStacksAddress('sp31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T')).toBe(true);
+    });
+
+    it('rejects address with only prefix and no body', () => {
+        expect(isValidStacksAddress('SP')).toBe(false);
+    });
+
+    it('rejects all-numeric body with valid prefix and length', () => {
+        const addr = 'SP' + '1'.repeat(36);
+        expect(isValidStacksAddress(addr)).toBe(true);
+    });
+
+    it('rejects address containing dot (contract principal)', () => {
+        expect(isValidStacksAddress('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream')).toBe(false);
+    });
+
+    it('rejects address with embedded spaces', () => {
+        expect(isValidStacksAddress('SP31PKQVQ VZCK3FM3NH67CGD6G1FMR17VQVS2W5T')).toBe(false);
+    });
 });
