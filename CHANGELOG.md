@@ -8,6 +8,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `useBalance` tests now use fake timers to correctly handle the hook's
+  retry logic (MAX_RETRIES=2, RETRY_DELAY_MS=1500), fixing 4 previously
+  failing error-path tests. Added retry count verification and recovery
+  test (Issue #248).
+
+### Added (Issue #248)
+
+- `frontend/src/test/useStxPrice.test.js` with 19 tests covering
+  initial loading, price fetch, error states, toUsd conversion,
+  refetch behavior, 60s interval polling, unmount cleanup, price
+  preservation on poll failure, and CoinGecko URL verification.
+- `frontend/src/test/useBlockCheck.test.js` with 14 tests covering
+  initial state, empty/self recipient, checking state, blocked/not-
+  blocked results, error handling, reset, stale response discard,
+  sequential calls, and error completion.
+- `frontend/src/test/parseTipEvent.test.js` with 23 tests covering
+  tip-sent and tip-categorized parsing, missing fields, messages,
+  large values, case sensitivity, whitespace, malformed input, u0
+  amounts/tip-ids, empty messages, high categories, and contract
+  principal addresses.
+- `frontend/src/test/tipBackValidation.test.js` with 21 tests covering
+  constants, empty/null inputs, boundary amounts, typical values,
+  NaN/Infinity strings, and small positive amounts.
+- `frontend/src/test/address-validation.test.js` with 30 tests covering
+  Stacks address regex (SP/SM/ST prefixes, length boundaries at 37-42,
+  special chars, dots, spaces) and contract ID validation.
+- `frontend/src/test/send-tip-validation.test.js` with 26 tests covering
+  amount validation, self-tip detection, balance-insufficient check,
+  constants, TIP_CATEGORIES, and default message fallback.
+- `frontend/src/test/batch-tip-validation.test.js` with 29 tests covering
+  duplicate address detection, per-recipient amount validation, message
+  length limits, self-tip detection, totalAmount computation, and
+  MAX_BATCH_SIZE/MIN_TIP_STX constants.
+- `frontend/src/test/token-tip-validation.test.js` with 23 tests covering
+  parseContractId splitting, integer amount parsing, whitelist status
+  response shapes, multi-dot rejection, and null/undefined inputs.
+- `frontend/src/test/useBalance.test.js` expanded to 17 tests adding
+  refetch behavior, address change re-fetch, null address reset,
+  lastFetched timestamp, and refetch function exposure.
+- `frontend/src/test/stacks-utils.test.js` with 7 tests covering
+  isWalletInstalled with various provider combinations, appDetails
+  name and icon, and network resolution.
+- `frontend/src/test/pwa-cache-rules.test.js` with 58 tests covering
+  PWA runtime cache strategy validation for balance, transaction,
+  nonce, and static asset endpoints.
+- `frontend/src/test/Leaderboard.test.jsx` with 12 tests covering
+  rendering, loading skeleton, error state, tab switching, refresh
+  button, timestamp display, and Load More behavior.
+- `frontend/src/test/buildLeaderboardStats.test.js` with 12 tests
+  covering aggregation, self-tips, address counting, and sorting.
+- `frontend/src/test/contractEvents.test.js` expanded to 22 tests
+  adding mid-pagination short page, second-page error, empty repr
+  filtering, falsy block_time, and combined offset+maxPages.
+
 - `BatchTip` now reports accurate outcome summaries after on-chain
   confirmation instead of always showing a blanket success toast. Non-strict
   batch results are parsed to show full success, partial success, or all
