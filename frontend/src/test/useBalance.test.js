@@ -135,6 +135,35 @@ describe('useBalance', () => {
         const { result } = renderHook(() => useBalance(null));
         expect(result.current.lastFetched).toBeNull();
     });
+
+    it('refetch updates balance with fresh data', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1000000' }),
+        });
+
+        const { result } = renderHook(() =>
+            useBalance('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T'),
+        );
+
+        await waitFor(() => {
+            expect(result.current.loading).toBe(false);
+        });
+
+        expect(result.current.balance).toBe('1000000');
+
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '9000000' }),
+        });
+
+        await act(async () => {
+            await result.current.refetch();
+        });
+
+        expect(result.current.balance).toBe('9000000');
+        expect(result.current.balanceStx).toBe(9);
+    });
 });
 
 describe('useBalance retry and error handling', () => {
