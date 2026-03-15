@@ -164,6 +164,61 @@ describe('useBalance', () => {
         expect(result.current.balance).toBe('9000000');
         expect(result.current.balanceStx).toBe(9);
     });
+
+    it('re-fetches when address changes', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1000000' }),
+        });
+
+        const { result, rerender } = renderHook(
+            ({ addr }) => useBalance(addr),
+            { initialProps: { addr: 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T' } },
+        );
+
+        await waitFor(() => {
+            expect(result.current.loading).toBe(false);
+        });
+
+        expect(result.current.balance).toBe('1000000');
+
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '7000000' }),
+        });
+
+        rerender({ addr: 'SM2PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T' });
+
+        await waitFor(() => {
+            expect(result.current.balance).toBe('7000000');
+        });
+    });
+
+    it('resets balance when address changes to null', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1000000' }),
+        });
+
+        const { result, rerender } = renderHook(
+            ({ addr }) => useBalance(addr),
+            { initialProps: { addr: 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T' } },
+        );
+
+        await waitFor(() => {
+            expect(result.current.loading).toBe(false);
+        });
+
+        expect(result.current.balance).toBe('1000000');
+
+        rerender({ addr: null });
+
+        await waitFor(() => {
+            expect(result.current.balance).toBeNull();
+        });
+
+        expect(result.current.balanceStx).toBeNull();
+    });
 });
 
 describe('useBalance retry and error handling', () => {
