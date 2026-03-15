@@ -42,15 +42,43 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
           {
+            urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/extended\/v1\/address\/.+\/stx/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/extended\/v1\/address\/.+\/balances/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/extended\/v1\/address\/.+\/nonces/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/extended\/v1\/tx\/mempool/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/extended\/v1\/tx\/.+/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/v2\/fees\/.*/i,
+            handler: 'NetworkOnly',
+          },
+          {
             urlPattern: /^https:\/\/api\.(hiro\.so|testnet\.hiro\.so)\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'stacks-api-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 300,
+                maxAgeSeconds: 60,
               },
             },
+          },
+          {
+            urlPattern: /^https:\/\/api\.coingecko\.com\/.*/i,
+            handler: 'NetworkOnly',
           },
         ],
       },
