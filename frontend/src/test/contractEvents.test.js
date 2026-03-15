@@ -97,6 +97,22 @@ describe('parseRawEvents', () => {
         expect(parsed[0].timestamp).toBeNull();
         expect(parsed[0].txId).toBeNull();
     });
+
+    it('filters out entries with empty repr string', () => {
+        const results = [
+            { contract_log: { value: { repr: '' } } },
+            fakeApiEntry(tipSentRepr()),
+        ];
+        const parsed = parseRawEvents(results);
+        expect(parsed).toHaveLength(1);
+        expect(parsed[0].event).toBe('tip-sent');
+    });
+
+    it('treats zero block_time as falsy (maps to null)', () => {
+        const results = [fakeApiEntry(tipSentRepr(), { block_time: 0 })];
+        const parsed = parseRawEvents(results);
+        expect(parsed[0].timestamp).toBeNull();
+    });
 });
 
 // ---------------------------------------------------------------------------
