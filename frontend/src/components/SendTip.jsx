@@ -9,6 +9,7 @@ import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { microToStx, formatBalance } from '../lib/balance-utils';
+import { isContractPrincipal, isValidStacksPrincipal } from '../lib/stacks-principal';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
@@ -55,6 +56,7 @@ export default function SendTip({ addToast }) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [pendingTx, setPendingTx] = useState(null);
     const [recipientError, setRecipientError] = useState('');
+    const [recipientWarning, setRecipientWarning] = useState('');
     const [amountError, setAmountError] = useState('');
     const [cooldown, setCooldown] = useState(0);
     const cooldownRef = useRef(null);
@@ -83,21 +85,20 @@ export default function SendTip({ addToast }) {
         }, 1000);
     }, []);
 
-    const isValidStacksAddress = (address) => {
-        if (!address) return false;
-        const trimmed = address.trim();
-        if (trimmed.length < 38 || trimmed.length > 41) return false;
-        return /^(SP|SM|ST)[0-9A-Z]{33,39}$/i.test(trimmed);
-    };
-
     const handleRecipientChange = (value) => {
         setRecipient(value);
         resetBlockCheck();
-        if (value && !isValidStacksAddress(value)) {
-            setRecipientError('Enter a valid Stacks address (SP... or SM...)');
+        setRecipientWarning('');
+
+        if (value && !isValidStacksPrincipal(value)) {
+            setRecipientError('Enter a valid Stacks principal (SP... or SP....contract-name)');
         } else {
             setRecipientError('');
-            if (value && isValidStacksAddress(value)) {
+            if (value && isContractPrincipal(value)) {
+                setRecipientWarning('Warning: This appears to be a contract address. Tips to contracts may be unrecoverable.');
+                return;
+            }
+            if (value) {
                 checkBlocked(value);
             }
         }
@@ -130,7 +131,7 @@ export default function SendTip({ addToast }) {
     const validateAndConfirm = () => {
         if (cooldown > 0) { addToast(`Please wait ${cooldown}s before sending another tip`, 'warning'); return; }
         if (!recipient || !amount) { addToast('Please fill in all required fields', 'warning'); return; }
-        if (!isValidStacksAddress(recipient)) { addToast('Invalid Stacks address format', 'warning'); return; }
+        if (!isValidStacksPrincipal(recipient)) { addToast('Invalid Stacks principal format', 'warning'); return; }
         if (recipient.trim() === senderAddress) { addToast('You cannot send a tip to yourself', 'warning'); return; }
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) { addToast('Please enter a valid amount', 'warning'); return; }
@@ -159,7 +160,7 @@ export default function SendTip({ addToast }) {
             ];
 
             const functionArgs = [
-                principalCV(recipient),
+                principalCV(recipient.trim()),
                 uintCV(microSTX),
                 stringUtf8CV(message || 'Thanks!'),
                 uintCV(category)
@@ -258,6 +259,7 @@ export default function SendTip({ addToast }) {
                             className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
                             placeholder="SP2..." />
                         {recipientError && <p id="tip-recipient-error" className="mt-1 text-xs text-red-500" role="alert">{recipientError}</p>}
+                        {recipientWarning && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400" role="status">{recipientWarning}</p>}
                         {blockedWarning && (
                             <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                                 This recipient has blocked you. The transaction will likely fail on-chain.
