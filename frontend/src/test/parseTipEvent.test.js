@@ -125,4 +125,40 @@ describe('parseTipEvent', () => {
         expect(parseTipEvent({})).toBeNull();
         expect(parseTipEvent([])).toBeNull();
     });
+
+    it('parses amount of u0 as "0"', () => {
+        const repr = '(tuple (event "tip-sent") (amount u0))';
+        const result = parseTipEvent(repr);
+        expect(result.amount).toBe('0');
+    });
+
+    it('parses tip-id u0 as "0"', () => {
+        const repr = '(tuple (event "tip-sent") (tip-id u0))';
+        const result = parseTipEvent(repr);
+        expect(result.tipId).toBe('0');
+    });
+
+    it('parses empty message u"" as empty string', () => {
+        const repr = '(tuple (event "tip-sent") (message u""))';
+        const result = parseTipEvent(repr);
+        expect(result.message).toBe('');
+    });
+
+    it('handles category values beyond standard range', () => {
+        const repr = '(tuple (event "tip-categorized") (category u99))';
+        const result = parseTipEvent(repr);
+        expect(result.category).toBe('99');
+    });
+
+    it('stops at non-alphanumeric characters in sender address', () => {
+        const repr = '(tuple (event "tip-sent") (sender \'SP1SENDER.tipstream))';
+        const result = parseTipEvent(repr);
+        expect(result.sender).toBe('SP1SENDER');
+    });
+
+    it('parses boolean-like event names', () => {
+        const repr = '(tuple (event "user-blocked"))';
+        const result = parseTipEvent(repr);
+        expect(result.event).toBe('user-blocked');
+    });
 });
