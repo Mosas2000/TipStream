@@ -46,5 +46,5 @@ export function useNotifications(userAddress) {
         setUnreadCount(0);
     }, []);
 
-    return { notifications, unreadCount, loading: eventsLoading, markAllRead, refetch: () => {} };
+    return { notifications, unreadCount, lastSeenTimestamp, loading: eventsLoading, markAllRead, refetch: () => {} };
 }
