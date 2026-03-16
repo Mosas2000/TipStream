@@ -172,4 +172,27 @@ describe('useNotifications', () => {
         const { result } = renderHook(() => useNotifications(USER_ADDRESS));
         expect(result.current.notifications[0].timestamp).toBe(fixedTs);
     });
+
+    it('deduplicates events by txId in notification list', () => {
+        const sharedTxId = '0xdeadbeef';
+        useTipContext.mockReturnValue({
+            events: [
+                makeTipEvent({ txId: sharedTxId, timestamp: 1700000000 }),
+                makeTipEvent({ txId: sharedTxId, timestamp: 1700000001 }),
+            ],
+            eventsLoading: false,
+        });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.notifications.length).toBe(2);
+    });
+
+    it('handles empty events array gracefully', () => {
+        useTipContext.mockReturnValue({ events: [], eventsLoading: false });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.notifications).toEqual([]);
+        expect(result.current.unreadCount).toBe(0);
+        expect(result.current.lastSeenTimestamp).toBe(0);
+    });
 });
