@@ -279,4 +279,86 @@ describe('NotificationBell', () => {
             expect(screen.queryByRole('region')).not.toBeInTheDocument();
         });
     });
+
+    describe('notification items', () => {
+        it('renders notification items', () => {
+            const notifications = [makeNotification({ amount: '2000000' })];
+            render(<NotificationBell {...defaultProps} notifications={notifications} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByText(/STX/)).toBeInTheDocument();
+        });
+
+        it('limits displayed items to 20', () => {
+            const notifications = Array.from({ length: 25 }, (_, i) =>
+                makeNotification({ txId: `0x${String(i).padStart(8, '0')}` })
+            );
+            const { container } = render(
+                <NotificationBell {...defaultProps} notifications={notifications} />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const items = container.querySelectorAll('.flex.items-start');
+            expect(items.length).toBe(20);
+        });
+
+        it('unread dot has correct size and shape classes', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: now + 10 })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={now}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dot = container.querySelector('.bg-green-400');
+            expect(dot.className).toContain('w-2');
+            expect(dot.className).toContain('h-2');
+            expect(dot.className).toContain('rounded-full');
+            expect(dot.className).toContain('flex-shrink-0');
+        });
+
+        it('highlights multiple unread items simultaneously', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [
+                makeNotification({ txId: '0xaaa', timestamp: now + 5 }),
+                makeNotification({ txId: '0xbbb', timestamp: now + 10 }),
+                makeNotification({ txId: '0xccc', timestamp: now + 15 }),
+            ];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={now}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const highlighted = container.querySelectorAll('[class*="bg-blue-50"]');
+            expect(highlighted.length).toBe(3);
+        });
+    });
+
+    describe('mark all read button', () => {
+        it('shows mark all read button when notifications exist', () => {
+            const notifications = [makeNotification()];
+            render(<NotificationBell {...defaultProps} notifications={notifications} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByText('Mark all read')).toBeInTheDocument();
+        });
+
+        it('calls onMarkRead when mark all read is clicked', () => {
+            const onMarkRead = vi.fn();
+            const notifications = [makeNotification()];
+            render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    onMarkRead={onMarkRead}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            fireEvent.click(screen.getByText('Mark all read'));
+            expect(onMarkRead).toHaveBeenCalled();
+        });
+    });
 });
