@@ -73,6 +73,12 @@ describe('post-conditions', () => {
             // max = 1000 + 100 + 1 = 1101
             expect(maxTransferForTip(1000, 1000)).toBe(1101);
         });
+
+        it('includes minimum fee in ceiling for 1 uSTX tip', () => {
+            // fee = max(ceil(0.005), 1) = 1
+            // max = 1 + 1 + 1 = 3
+            expect(maxTransferForTip(1)).toBe(3);
+        });
     });
 
     describe('tipPostCondition', () => {
