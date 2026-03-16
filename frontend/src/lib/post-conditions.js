@@ -94,5 +94,7 @@ export function totalDeduction(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
  */
 export function recipientReceives(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
     const amt = Number(amountMicroSTX);
-    return amt - Math.floor(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const rawFee = Math.floor(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const fee = feeBps > 0 ? Math.max(rawFee, MIN_FEE_USTX) : 0;
+    return amt - fee;
 }
