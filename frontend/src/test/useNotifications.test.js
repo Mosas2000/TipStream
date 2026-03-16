@@ -102,4 +102,18 @@ describe('useNotifications', () => {
 
         expect(result.current.lastSeenTimestamp).toBeGreaterThan(before);
     });
+
+    it('markAllRead persists to localStorage', () => {
+        useTipContext.mockReturnValue({ events: [], eventsLoading: false });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+
+        act(() => {
+            result.current.markAllRead();
+        });
+
+        const stored = localStorage.getItem(STORAGE_KEY);
+        expect(stored).toBeTruthy();
+        expect(Number(stored)).toBe(result.current.lastSeenTimestamp);
+    });
 });
