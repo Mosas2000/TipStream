@@ -27,6 +27,10 @@ describe('post-conditions', () => {
             expect(SAFE_POST_CONDITION_MODE).toBeDefined();
         });
 
+        it('defines MIN_FEE_USTX as 1', () => {
+            expect(MIN_FEE_USTX).toBe(1);
+        });
+
         it('exports FEE_PERCENT as a derived percentage', () => {
             expect(FEE_PERCENT).toBe(0.5);
             expect(FEE_PERCENT).toBe(FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100);
