@@ -99,7 +99,9 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 mt-1.5" />
+                                        {isUnread(tip) && (
+                                            <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 mt-1.5" />
+                                        )}
                                     </div>
                                 </div>
                             ))
