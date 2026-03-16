@@ -59,7 +59,8 @@ export function tipPostCondition(senderAddress, amountMicroSTX, feeBps = FEE_BAS
 
 /**
  * Calculate the platform fee in microSTX for a given tip amount.
- * Uses Math.ceil to match the on-chain rounding behavior.
+ * Uses Math.ceil to match the on-chain rounding behavior and enforces
+ * a minimum of MIN_FEE_USTX when fee basis points are positive.
  *
  * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
