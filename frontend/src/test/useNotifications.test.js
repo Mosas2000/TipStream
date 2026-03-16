@@ -74,4 +74,12 @@ describe('useNotifications', () => {
         const { result } = renderHook(() => useNotifications(USER_ADDRESS));
         expect(result.current.unreadCount).toBe(1);
     });
+
+    it('exposes lastSeenTimestamp from localStorage', () => {
+        localStorage.setItem(STORAGE_KEY, '1700000000');
+        useTipContext.mockReturnValue({ events: [], eventsLoading: false });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.lastSeenTimestamp).toBe(1700000000);
+    });
 });
