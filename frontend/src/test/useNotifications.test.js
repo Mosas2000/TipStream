@@ -82,4 +82,11 @@ describe('useNotifications', () => {
         const { result } = renderHook(() => useNotifications(USER_ADDRESS));
         expect(result.current.lastSeenTimestamp).toBe(1700000000);
     });
+
+    it('defaults lastSeenTimestamp to 0 when not in storage', () => {
+        useTipContext.mockReturnValue({ events: [], eventsLoading: false });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.lastSeenTimestamp).toBe(0);
+    });
 });
