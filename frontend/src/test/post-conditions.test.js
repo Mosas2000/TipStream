@@ -142,6 +142,11 @@ describe('post-conditions', () => {
                 expect(feeForTip(amt)).toBeGreaterThanOrEqual(1);
             }
         });
+
+        it('does not apply minimum when fee basis points are zero', () => {
+            expect(feeForTip(10, 0)).toBe(0);
+            expect(feeForTip(1, 0)).toBe(0);
+        });
     });
 
     describe('totalDeduction', () => {
