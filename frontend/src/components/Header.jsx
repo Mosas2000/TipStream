@@ -24,7 +24,7 @@ import { Sun, Moon } from 'lucide-react';
  * @param {Function} props.onMarkNotificationsRead - Callback to mark all read.
  * @param {boolean} props.notificationsLoading - Whether notifications are loading.
  */
-export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
+export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, lastSeenTimestamp, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
     const { theme, toggleTheme } = useTheme();
     const isOnline = useOnlineStatus();
 
