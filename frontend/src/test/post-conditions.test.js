@@ -204,6 +204,12 @@ describe('post-conditions', () => {
             const net = recipientReceives(amount);
             expect(Math.abs(fee + net - amount)).toBeLessThanOrEqual(1);
         });
+
+        it('deducts minimum fee from small tip amounts', () => {
+            // 10 uSTX tip, floor(10 * 50 / 10000) = 0, max(0, 1) = 1
+            // recipient gets 10 - 1 = 9
+            expect(recipientReceives(10)).toBe(9);
+        });
     });
 
     describe('string input coercion', () => {
