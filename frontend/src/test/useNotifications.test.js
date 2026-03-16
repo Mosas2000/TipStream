@@ -246,4 +246,30 @@ describe('useNotifications', () => {
         const { result } = renderHook(() => useNotifications(USER_ADDRESS));
         expect(result.current.notifications.length).toBe(0);
     });
+
+    it('new events after markAllRead appear as unread', () => {
+        const now = Math.floor(Date.now() / 1000);
+        useTipContext.mockReturnValue({
+            events: [makeTipEvent({ timestamp: now })],
+            eventsLoading: false,
+        });
+
+        const { result, rerender } = renderHook(() => useNotifications(USER_ADDRESS));
+
+        act(() => {
+            result.current.markAllRead();
+        });
+        expect(result.current.unreadCount).toBe(0);
+
+        useTipContext.mockReturnValue({
+            events: [
+                makeTipEvent({ timestamp: now }),
+                makeTipEvent({ txId: '0xnew', timestamp: now + 600 }),
+            ],
+            eventsLoading: false,
+        });
+        rerender();
+
+        expect(result.current.unreadCount).toBe(1);
+    });
 });
