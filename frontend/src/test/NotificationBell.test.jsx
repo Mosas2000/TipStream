@@ -203,4 +203,80 @@ describe('NotificationBell', () => {
             expect(dots.length).toBe(2);
         });
     });
+
+    describe('timestamp boundary', () => {
+        it('treats notification at exact lastSeenTimestamp as read', () => {
+            const ts = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: ts })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={ts}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dots = container.querySelectorAll('.bg-green-400');
+            expect(dots.length).toBe(0);
+        });
+
+        it('treats notification one second after lastSeen as unread', () => {
+            const ts = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: ts + 1 })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={ts}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dots = container.querySelectorAll('.bg-green-400');
+            expect(dots.length).toBe(1);
+        });
+    });
+
+    describe('empty states', () => {
+        it('shows loading text when loading with no notifications', () => {
+            render(<NotificationBell {...defaultProps} loading={true} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByText('Loading...')).toBeInTheDocument();
+        });
+
+        it('shows empty message when not loading and no notifications', () => {
+            render(<NotificationBell {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByText('No tips received yet')).toBeInTheDocument();
+        });
+    });
+
+    describe('accessibility', () => {
+        it('bell button has accessible label', () => {
+            render(<NotificationBell {...defaultProps} unreadCount={5} />);
+            const btn = screen.getByRole('button');
+            expect(btn).toHaveAttribute('aria-label', 'Notifications (5 unread)');
+        });
+
+        it('bell button has default label with no unread', () => {
+            render(<NotificationBell {...defaultProps} />);
+            const btn = screen.getByRole('button');
+            expect(btn).toHaveAttribute('aria-label', 'Notifications');
+        });
+
+        it('dropdown has region role', () => {
+            render(<NotificationBell {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByRole('region')).toBeInTheDocument();
+        });
+    });
+
+    describe('click outside', () => {
+        it('closes dropdown when clicking outside', () => {
+            render(<NotificationBell {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByRole('region')).toBeInTheDocument();
+            fireEvent.mouseDown(document.body);
+            expect(screen.queryByRole('region')).not.toBeInTheDocument();
+        });
+    });
 });
