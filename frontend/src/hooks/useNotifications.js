@@ -12,9 +12,9 @@ const STORAGE_KEY = 'tipstream_last_seen_tip_ts';
 export function useNotifications(userAddress) {
     const { events, eventsLoading } = useTipContext();
     const [unreadCount, setUnreadCount] = useState(0);
-    const lastSeenRef = useRef(
-        parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
-    );
+    const initialLastSeen = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    const lastSeenRef = useRef(initialLastSeen);
+    const [lastSeenTimestamp, setLastSeenTimestamp] = useState(initialLastSeen);
 
     /** Derive received tips from the shared event cache. */
     const notifications = useMemo(() => {
