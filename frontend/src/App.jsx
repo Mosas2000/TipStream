@@ -43,7 +43,7 @@ function App() {
   const { healthy, error: healthError, checking: healthChecking, retry: retryHealth } = useContractHealth();
 
   const userAddress = getMainnetAddress(userData);
-  const { notifications, unreadCount, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
+  const { notifications, unreadCount, lastSeenTimestamp, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
   const { isOwner } = useAdmin(userAddress);
 
   usePageTitle();
