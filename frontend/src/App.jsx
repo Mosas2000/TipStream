@@ -137,6 +137,7 @@ function App() {
         authLoading={authLoading}
         notifications={notifications}
         unreadCount={unreadCount}
+        lastSeenTimestamp={lastSeenTimestamp}
         onMarkNotificationsRead={markAllRead}
         notificationsLoading={notificationsLoading}
         apiReachable={healthy}
