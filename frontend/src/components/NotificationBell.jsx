@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { formatSTX, formatAddress } from '../lib/utils';
 import { Bell } from 'lucide-react';
 
-export default function NotificationBell({ notifications, unreadCount, onMarkRead, loading }) {
+export default function NotificationBell({ notifications, unreadCount, onMarkRead, loading, lastSeenTimestamp }) {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -24,6 +24,11 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
     };
 
     const truncateAddr = (addr) => formatAddress(addr, 6, 4);
+
+    const isUnread = (tip) => {
+        if (lastSeenTimestamp == null) return false;
+        return tip.timestamp > lastSeenTimestamp;
+    };
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -75,7 +80,7 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
                             notifications.slice(0, 20).map((tip, i) => (
                                 <div
                                     key={tip.txId || i}
-                                    className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
+                                    className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0${isUnread(tip) ? ' bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 >
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
@@ -94,7 +99,9 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 mt-1.5" />
+                                        {isUnread(tip) && (
+                                            <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 mt-1.5" />
+                                        )}
                                     </div>
                                 </div>
                             ))

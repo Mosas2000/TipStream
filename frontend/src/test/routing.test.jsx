@@ -72,6 +72,7 @@ vi.mock('../hooks/useNotifications', () => ({
   useNotifications: () => ({
     notifications: [],
     unreadCount: 0,
+    lastSeenTimestamp: 0,
     markAllRead: vi.fn(),
     loading: false,
   }),
