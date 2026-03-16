@@ -259,4 +259,10 @@ describe('post-conditions', () => {
             expect(totalDeduction('5')).toBe(totalDeduction(5));
         });
     });
+
+    describe('minimum fee cross-function consistency', () => {
+        it('totalDeduction equals amount plus feeForTip for sub-threshold tip', () => {
+            expect(totalDeduction(10)).toBe(10 + feeForTip(10));
+        });
+    });
 });
