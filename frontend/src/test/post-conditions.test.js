@@ -215,6 +215,11 @@ describe('post-conditions', () => {
             // 1 uSTX tip - 1 uSTX min fee = 0
             expect(recipientReceives(1)).toBe(0);
         });
+
+        it('recipient receives full amount when bps is zero', () => {
+            expect(recipientReceives(1, 0)).toBe(1);
+            expect(recipientReceives(10, 0)).toBe(10);
+        });
     });
 
     describe('string input coercion', () => {
