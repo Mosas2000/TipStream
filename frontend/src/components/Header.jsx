@@ -85,6 +85,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                                 unreadCount={unreadCount}
                                 onMarkRead={onMarkNotificationsRead}
                                 loading={notificationsLoading}
+                                lastSeenTimestamp={lastSeenTimestamp}
                             />
                         )}
 
