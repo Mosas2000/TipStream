@@ -136,6 +136,12 @@ describe('post-conditions', () => {
             // 201 * 50 / 10000 = 1.005, ceil = 2
             expect(feeForTip(201)).toBe(2);
         });
+
+        it('never returns 0 when fee basis points are positive', () => {
+            for (const amt of [1, 2, 5, 10, 50, 100, 150, 199, 200]) {
+                expect(feeForTip(amt)).toBeGreaterThanOrEqual(1);
+            }
+        });
     });
 
     describe('totalDeduction', () => {
