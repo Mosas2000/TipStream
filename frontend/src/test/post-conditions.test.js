@@ -210,6 +210,11 @@ describe('post-conditions', () => {
             // recipient gets 10 - 1 = 9
             expect(recipientReceives(10)).toBe(9);
         });
+
+        it('recipient receives 0 from a 1 uSTX tip', () => {
+            // 1 uSTX tip - 1 uSTX min fee = 0
+            expect(recipientReceives(1)).toBe(0);
+        });
     });
 
     describe('string input coercion', () => {
