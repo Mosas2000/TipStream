@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { formatSTX, formatAddress } from '../lib/utils';
 import { Bell } from 'lucide-react';
 
-export default function NotificationBell({ notifications, unreadCount, onMarkRead, loading }) {
+export default function NotificationBell({ notifications, unreadCount, onMarkRead, loading, lastSeenTimestamp }) {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef(null);
 
