@@ -195,4 +195,38 @@ describe('useNotifications', () => {
         expect(result.current.unreadCount).toBe(0);
         expect(result.current.lastSeenTimestamp).toBe(0);
     });
+
+    it('updates unread count when events change', () => {
+        const now = Math.floor(Date.now() / 1000);
+        const mockContext = { events: [], eventsLoading: false };
+        useTipContext.mockReturnValue(mockContext);
+
+        const { result, rerender } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.unreadCount).toBe(0);
+
+        useTipContext.mockReturnValue({
+            events: [makeTipEvent({ timestamp: now + 100 })],
+            eventsLoading: false,
+        });
+        rerender();
+
+        expect(result.current.unreadCount).toBe(1);
+    });
+
+    it('returns empty when address changes to null', () => {
+        const now = Math.floor(Date.now() / 1000);
+        useTipContext.mockReturnValue({
+            events: [makeTipEvent({ timestamp: now })],
+            eventsLoading: false,
+        });
+
+        const { result, rerender } = renderHook(
+            ({ addr }) => useNotifications(addr),
+            { initialProps: { addr: USER_ADDRESS } }
+        );
+        expect(result.current.notifications.length).toBe(1);
+
+        rerender({ addr: null });
+        expect(result.current.notifications).toEqual([]);
+    });
 });
