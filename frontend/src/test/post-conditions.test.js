@@ -254,5 +254,9 @@ describe('post-conditions', () => {
         it('feeForTip coerces string for sub-threshold amounts', () => {
             expect(feeForTip('10')).toBe(feeForTip(10));
         });
+
+        it('totalDeduction coerces string for sub-threshold amounts', () => {
+            expect(totalDeduction('5')).toBe(totalDeduction(5));
+        });
     });
 });
