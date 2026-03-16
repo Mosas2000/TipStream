@@ -250,5 +250,9 @@ describe('post-conditions', () => {
         it('recipientReceives accepts a string micro-STX value', () => {
             expect(recipientReceives('1000000')).toBe(recipientReceives(1000000));
         });
+
+        it('feeForTip coerces string for sub-threshold amounts', () => {
+            expect(feeForTip('10')).toBe(feeForTip(10));
+        });
     });
 });
