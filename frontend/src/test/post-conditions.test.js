@@ -126,6 +126,11 @@ describe('post-conditions', () => {
             // 199 * 50 / 10000 = 0.995, ceil = 1, max(1, 1) = 1
             expect(feeForTip(199)).toBe(1);
         });
+
+        it('transitions past minimum at 200 uSTX', () => {
+            // 200 * 50 / 10000 = 1.0, ceil = 1, max(1, 1) = 1
+            expect(feeForTip(200)).toBe(1);
+        });
     });
 
     describe('totalDeduction', () => {
