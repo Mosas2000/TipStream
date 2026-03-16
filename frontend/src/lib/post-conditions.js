@@ -13,9 +13,10 @@
 
 import { PostConditionMode, Pc } from '@stacks/transactions';
 
-// Contract fee parameters — keep in sync with tipstream.clar
+// Contract fee parameters -- keep in sync with tipstream.clar
 export const FEE_BASIS_POINTS = 50;
 export const BASIS_POINTS_DIVISOR = 10000;
+export const MIN_FEE_USTX = 1;
 
 /** Human-readable fee percentage (e.g. 0.5 for 0.5%). */
 export const FEE_PERCENT = FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100;
