@@ -173,6 +173,11 @@ describe('post-conditions', () => {
             // 10 uSTX tip, fee = max(ceil(0.05), 1) = 1
             expect(totalDeduction(10)).toBe(11);
         });
+
+        it('deducts 2 uSTX total for a 1 uSTX tip', () => {
+            // 1 uSTX tip + 1 uSTX min fee = 2
+            expect(totalDeduction(1)).toBe(2);
+        });
     });
 
     describe('recipientReceives', () => {
