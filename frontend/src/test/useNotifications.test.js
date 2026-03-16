@@ -229,4 +229,21 @@ describe('useNotifications', () => {
         rerender({ addr: null });
         expect(result.current.notifications).toEqual([]);
     });
+
+    it('excludes events where user is the sender, not recipient', () => {
+        const now = Math.floor(Date.now() / 1000);
+        useTipContext.mockReturnValue({
+            events: [
+                makeTipEvent({
+                    sender: USER_ADDRESS,
+                    recipient: 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T',
+                    timestamp: now,
+                }),
+            ],
+            eventsLoading: false,
+        });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.notifications.length).toBe(0);
+    });
 });
