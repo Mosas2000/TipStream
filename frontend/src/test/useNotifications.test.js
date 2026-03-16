@@ -89,4 +89,17 @@ describe('useNotifications', () => {
         const { result } = renderHook(() => useNotifications(USER_ADDRESS));
         expect(result.current.lastSeenTimestamp).toBe(0);
     });
+
+    it('markAllRead updates lastSeenTimestamp', () => {
+        useTipContext.mockReturnValue({ events: [], eventsLoading: false });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        const before = result.current.lastSeenTimestamp;
+
+        act(() => {
+            result.current.markAllRead();
+        });
+
+        expect(result.current.lastSeenTimestamp).toBeGreaterThan(before);
+    });
 });
