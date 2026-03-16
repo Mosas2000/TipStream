@@ -116,6 +116,11 @@ describe('post-conditions', () => {
             // 10 * 50 / 10000 = 0.05, ceil = 1, max(1, 1) = 1
             expect(feeForTip(10)).toBe(1);
         });
+
+        it('returns minimum fee for 100 uSTX', () => {
+            // 100 * 50 / 10000 = 0.5, ceil = 1, max(1, 1) = 1
+            expect(feeForTip(100)).toBe(1);
+        });
     });
 
     describe('totalDeduction', () => {
