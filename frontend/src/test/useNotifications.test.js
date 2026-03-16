@@ -133,4 +133,19 @@ describe('useNotifications', () => {
 
         expect(result.current.unreadCount).toBe(0);
     });
+
+    it('exposes loading state from TipContext', () => {
+        useTipContext.mockReturnValue({ events: [], eventsLoading: true });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.loading).toBe(true);
+    });
+
+    it('provides a no-op refetch function', () => {
+        useTipContext.mockReturnValue({ events: [], eventsLoading: false });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(typeof result.current.refetch).toBe('function');
+        expect(() => result.current.refetch()).not.toThrow();
+    });
 });
