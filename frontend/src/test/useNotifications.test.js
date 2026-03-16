@@ -272,4 +272,22 @@ describe('useNotifications', () => {
 
         expect(result.current.unreadCount).toBe(1);
     });
+
+    it('counts all matching notifications regardless of order', () => {
+        const now = Math.floor(Date.now() / 1000);
+        useTipContext.mockReturnValue({
+            events: [
+                makeTipEvent({ txId: '0x1', timestamp: now - 10 }),
+                makeTipEvent({ txId: '0x2', timestamp: now + 5 }),
+                makeTipEvent({ txId: '0x3', timestamp: now - 20 }),
+                makeTipEvent({ txId: '0x4', timestamp: now + 15 }),
+            ],
+            eventsLoading: false,
+        });
+
+        localStorage.setItem(STORAGE_KEY, String(now));
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.notifications.length).toBe(4);
+        expect(result.current.unreadCount).toBe(2);
+    });
 });
