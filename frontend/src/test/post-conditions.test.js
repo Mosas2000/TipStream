@@ -168,6 +168,11 @@ describe('post-conditions', () => {
             // maxTransferForTip adds a 1-uSTX rounding buffer
             expect(maxTransferForTip(5000) - totalDeduction(5000)).toBe(1);
         });
+
+        it('includes minimum fee for sub-threshold amounts', () => {
+            // 10 uSTX tip, fee = max(ceil(0.05), 1) = 1
+            expect(totalDeduction(10)).toBe(11);
+        });
     });
 
     describe('recipientReceives', () => {
