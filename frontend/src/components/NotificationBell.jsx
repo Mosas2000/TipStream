@@ -80,7 +80,7 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
                             notifications.slice(0, 20).map((tip, i) => (
                                 <div
                                     key={tip.txId || i}
-                                    className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
+                                    className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0${isUnread(tip) ? ' bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 >
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
