@@ -264,5 +264,9 @@ describe('post-conditions', () => {
         it('totalDeduction equals amount plus feeForTip for sub-threshold tip', () => {
             expect(totalDeduction(10)).toBe(10 + feeForTip(10));
         });
+
+        it('maxTransferForTip equals totalDeduction plus 1 for sub-threshold tip', () => {
+            expect(maxTransferForTip(10)).toBe(totalDeduction(10) + 1);
+        });
     });
 });
