@@ -268,5 +268,12 @@ describe('post-conditions', () => {
         it('maxTransferForTip equals totalDeduction plus 1 for sub-threshold tip', () => {
             expect(maxTransferForTip(10)).toBe(totalDeduction(10) + 1);
         });
+
+        it('recipientReceives plus fee accounts for full amount at boundary', () => {
+            const amt = 200;
+            const net = recipientReceives(amt);
+            const fee = feeForTip(amt);
+            expect(net + fee).toBeGreaterThanOrEqual(amt);
+        });
     });
 });
