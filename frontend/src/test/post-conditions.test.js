@@ -131,6 +131,11 @@ describe('post-conditions', () => {
             // 200 * 50 / 10000 = 1.0, ceil = 1, max(1, 1) = 1
             expect(feeForTip(200)).toBe(1);
         });
+
+        it('returns 2 for 201 uSTX where raw fee exceeds minimum', () => {
+            // 201 * 50 / 10000 = 1.005, ceil = 2
+            expect(feeForTip(201)).toBe(2);
+        });
     });
 
     describe('totalDeduction', () => {
