@@ -13,9 +13,10 @@
 
 import { PostConditionMode, Pc } from '@stacks/transactions';
 
-// Contract fee parameters — keep in sync with tipstream.clar
+// Contract fee parameters -- keep in sync with tipstream.clar
 export const FEE_BASIS_POINTS = 50;
 export const BASIS_POINTS_DIVISOR = 10000;
+export const MIN_FEE_USTX = 1;
 
 /** Human-readable fee percentage (e.g. 0.5 for 0.5%). */
 export const FEE_PERCENT = FEE_BASIS_POINTS / BASIS_POINTS_DIVISOR * 100;
@@ -37,7 +38,8 @@ export const SAFE_POST_CONDITION_MODE = PostConditionMode.Deny;
  */
 export function maxTransferForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
     const amt = Number(amountMicroSTX);
-    const fee = Math.ceil(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const rawFee = Math.ceil(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const fee = feeBps > 0 ? Math.max(rawFee, MIN_FEE_USTX) : 0;
     return amt + fee + 1;
 }
 
@@ -57,14 +59,19 @@ export function tipPostCondition(senderAddress, amountMicroSTX, feeBps = FEE_BAS
 
 /**
  * Calculate the platform fee in microSTX for a given tip amount.
- * Uses Math.ceil to match the on-chain rounding behavior.
+ * Uses Math.ceil to match the on-chain rounding behavior and enforces
+ * a minimum of MIN_FEE_USTX when fee basis points are positive.
  *
  * @param {number|string} amountMicroSTX  Tip amount in microSTX (coerced to Number).
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {number}
  */
 export function feeForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
-    return Math.ceil(Number(amountMicroSTX) * feeBps / BASIS_POINTS_DIVISOR);
+    const raw = Math.ceil(Number(amountMicroSTX) * feeBps / BASIS_POINTS_DIVISOR);
+    if (feeBps > 0) {
+        return Math.max(raw, MIN_FEE_USTX);
+    }
+    return 0;
 }
 
 /**
@@ -89,5 +96,7 @@ export function totalDeduction(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
  */
 export function recipientReceives(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
     const amt = Number(amountMicroSTX);
-    return amt - Math.floor(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const rawFee = Math.floor(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const fee = feeBps > 0 ? Math.max(rawFee, MIN_FEE_USTX) : 0;
+    return amt - fee;
 }

@@ -3,6 +3,7 @@ import {
     FEE_BASIS_POINTS,
     BASIS_POINTS_DIVISOR,
     FEE_PERCENT,
+    MIN_FEE_USTX,
     SAFE_POST_CONDITION_MODE,
     maxTransferForTip,
     tipPostCondition,
@@ -24,6 +25,10 @@ describe('post-conditions', () => {
         it('exports Deny as the safe post-condition mode', () => {
             // PostConditionMode.Deny is 0x02
             expect(SAFE_POST_CONDITION_MODE).toBeDefined();
+        });
+
+        it('defines MIN_FEE_USTX as 1', () => {
+            expect(MIN_FEE_USTX).toBe(1);
         });
 
         it('exports FEE_PERCENT as a derived percentage', () => {
@@ -101,6 +106,31 @@ describe('post-conditions', () => {
             // 1000 * 50 / 10000 = 5
             expect(feeForTip(1000)).toBe(5);
         });
+
+        it('enforces minimum fee of 1 uSTX for tiny amounts', () => {
+            // 1 * 50 / 10000 = 0.005, ceil = 1, max(1, 1) = 1
+            expect(feeForTip(1)).toBe(MIN_FEE_USTX);
+        });
+
+        it('returns minimum fee for amounts below the threshold', () => {
+            // 10 * 50 / 10000 = 0.05, ceil = 1, max(1, 1) = 1
+            expect(feeForTip(10)).toBe(1);
+        });
+
+        it('returns minimum fee for 100 uSTX', () => {
+            // 100 * 50 / 10000 = 0.5, ceil = 1, max(1, 1) = 1
+            expect(feeForTip(100)).toBe(1);
+        });
+
+        it('returns minimum fee for 199 uSTX', () => {
+            // 199 * 50 / 10000 = 0.995, ceil = 1, max(1, 1) = 1
+            expect(feeForTip(199)).toBe(1);
+        });
+
+        it('transitions past minimum at 200 uSTX', () => {
+            // 200 * 50 / 10000 = 1.0, ceil = 1, max(1, 1) = 1
+            expect(feeForTip(200)).toBe(1);
+        });
     });
 
     describe('totalDeduction', () => {
@@ -165,6 +195,46 @@ describe('post-conditions', () => {
 
         it('recipientReceives accepts a string micro-STX value', () => {
             expect(recipientReceives('1000000')).toBe(recipientReceives(1000000));
+        });
+
+        it('feeForTip coerces string for sub-threshold amounts', () => {
+            expect(feeForTip('10')).toBe(feeForTip(10));
+        });
+
+        it('totalDeduction coerces string for sub-threshold amounts', () => {
+            expect(totalDeduction('5')).toBe(totalDeduction(5));
+        });
+    });
+
+    describe('minimum fee cross-function consistency', () => {
+        it('totalDeduction equals amount plus feeForTip for sub-threshold tip', () => {
+            expect(totalDeduction(10)).toBe(10 + feeForTip(10));
+        });
+
+        it('maxTransferForTip equals totalDeduction plus 1 at min fee boundary', () => {
+            expect(maxTransferForTip(10)).toBe(totalDeduction(10) + 1);
+        });
+
+        it('fee plus recipient covers full amount at 200 uSTX boundary', () => {
+            const amt = 200;
+            const net = recipientReceives(amt);
+            const fee = feeForTip(amt);
+            expect(net + fee).toBeGreaterThanOrEqual(amt);
+        });
+
+        it('all functions agree when basis points are zero', () => {
+            expect(feeForTip(10, 0)).toBe(0);
+            expect(totalDeduction(10, 0)).toBe(10);
+            expect(recipientReceives(10, 0)).toBe(10);
+            expect(maxTransferForTip(10, 0)).toBe(11);
+        });
+
+        it('consistency holds across a range of sub-threshold amounts', () => {
+            for (const amt of [1, 2, 5, 50, 100, 150, 199, 200]) {
+                const fee = feeForTip(amt);
+                expect(totalDeduction(amt)).toBe(amt + fee);
+                expect(maxTransferForTip(amt)).toBe(amt + fee + 1);
+            }
         });
     });
 });
