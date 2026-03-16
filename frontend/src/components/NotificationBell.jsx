@@ -25,6 +25,11 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
 
     const truncateAddr = (addr) => formatAddress(addr, 6, 4);
 
+    const isUnread = (tip) => {
+        if (lastSeenTimestamp == null) return false;
+        return tip.timestamp > lastSeenTimestamp;
+    };
+
     return (
         <div className="relative" ref={dropdownRef}>
             <button
