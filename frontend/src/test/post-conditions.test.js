@@ -205,4 +205,36 @@ describe('post-conditions', () => {
             expect(totalDeduction('5')).toBe(totalDeduction(5));
         });
     });
+
+    describe('minimum fee cross-function consistency', () => {
+        it('totalDeduction equals amount plus feeForTip for sub-threshold tip', () => {
+            expect(totalDeduction(10)).toBe(10 + feeForTip(10));
+        });
+
+        it('maxTransferForTip equals totalDeduction plus 1 at min fee boundary', () => {
+            expect(maxTransferForTip(10)).toBe(totalDeduction(10) + 1);
+        });
+
+        it('fee plus recipient covers full amount at 200 uSTX boundary', () => {
+            const amt = 200;
+            const net = recipientReceives(amt);
+            const fee = feeForTip(amt);
+            expect(net + fee).toBeGreaterThanOrEqual(amt);
+        });
+
+        it('all functions agree when basis points are zero', () => {
+            expect(feeForTip(10, 0)).toBe(0);
+            expect(totalDeduction(10, 0)).toBe(10);
+            expect(recipientReceives(10, 0)).toBe(10);
+            expect(maxTransferForTip(10, 0)).toBe(11);
+        });
+
+        it('consistency holds across a range of sub-threshold amounts', () => {
+            for (const amt of [1, 2, 5, 50, 100, 150, 199, 200]) {
+                const fee = feeForTip(amt);
+                expect(totalDeduction(amt)).toBe(amt + fee);
+                expect(maxTransferForTip(amt)).toBe(amt + fee + 1);
+            }
+        });
+    });
 });
