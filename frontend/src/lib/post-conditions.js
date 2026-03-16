@@ -38,7 +38,8 @@ export const SAFE_POST_CONDITION_MODE = PostConditionMode.Deny;
  */
 export function maxTransferForTip(amountMicroSTX, feeBps = FEE_BASIS_POINTS) {
     const amt = Number(amountMicroSTX);
-    const fee = Math.ceil(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const rawFee = Math.ceil(amt * feeBps / BASIS_POINTS_DIVISOR);
+    const fee = feeBps > 0 ? Math.max(rawFee, MIN_FEE_USTX) : 0;
     return amt + fee + 1;
 }
 
