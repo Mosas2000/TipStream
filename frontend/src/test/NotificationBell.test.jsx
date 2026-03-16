@@ -90,4 +90,117 @@ describe('NotificationBell', () => {
             expect(onMarkRead).not.toHaveBeenCalled();
         });
     });
+
+    describe('read/unread visual distinction', () => {
+        it('shows green dot for unread notifications', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: now + 10 })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={now}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dot = container.querySelector('.bg-green-400');
+            expect(dot).toBeInTheDocument();
+        });
+
+        it('hides green dot for read notifications', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: now - 100 })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={now}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dots = container.querySelectorAll('.bg-green-400');
+            expect(dots.length).toBe(0);
+        });
+
+        it('shows background highlight for unread items', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: now + 10 })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={now}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const highlighted = container.querySelector('[class*="bg-blue-50"]');
+            expect(highlighted).toBeInTheDocument();
+        });
+
+        it('does not show background highlight for read items', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: now - 100 })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={now}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const highlighted = container.querySelector('[class*="bg-blue-50"]');
+            expect(highlighted).not.toBeInTheDocument();
+        });
+
+        it('shows mixed read and unread items correctly', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [
+                makeNotification({ txId: '0xnew1', timestamp: now + 10 }),
+                makeNotification({ txId: '0xold1', timestamp: now - 100 }),
+            ];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={now}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dots = container.querySelectorAll('.bg-green-400');
+            expect(dots.length).toBe(1);
+        });
+
+        it('treats all items as read when lastSeenTimestamp is null', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [makeNotification({ timestamp: now + 10 })];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={null}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dots = container.querySelectorAll('.bg-green-400');
+            expect(dots.length).toBe(0);
+        });
+
+        it('shows all items as unread when lastSeenTimestamp is 0', () => {
+            const now = Math.floor(Date.now() / 1000);
+            const notifications = [
+                makeNotification({ txId: '0xa', timestamp: now }),
+                makeNotification({ txId: '0xb', timestamp: now - 60 }),
+            ];
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={notifications}
+                    lastSeenTimestamp={0}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const dots = container.querySelectorAll('.bg-green-400');
+            expect(dots.length).toBe(2);
+        });
+    });
 });
