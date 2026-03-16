@@ -48,5 +48,16 @@ describe('NotificationBell', () => {
             render(<NotificationBell {...defaultProps} unreadCount={0} />);
             expect(screen.queryByText('0')).not.toBeInTheDocument();
         });
+
+        it('shows exact number when unreadCount is 9', () => {
+            render(<NotificationBell {...defaultProps} unreadCount={9} />);
+            expect(screen.getByText('9')).toBeInTheDocument();
+            expect(screen.queryByText('9+')).not.toBeInTheDocument();
+        });
+
+        it('shows 9+ when unreadCount is exactly 10', () => {
+            render(<NotificationBell {...defaultProps} unreadCount={10} />);
+            expect(screen.getByText('9+')).toBeInTheDocument();
+        });
     });
 });
