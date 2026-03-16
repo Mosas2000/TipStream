@@ -41,6 +41,7 @@ export function useNotifications(userAddress) {
     const markAllRead = useCallback(() => {
         const now = Math.floor(Date.now() / 1000);
         lastSeenRef.current = now;
+        setLastSeenTimestamp(now);
         localStorage.setItem(STORAGE_KEY, String(now));
         setUnreadCount(0);
     }, []);
