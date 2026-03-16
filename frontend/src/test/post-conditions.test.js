@@ -275,5 +275,12 @@ describe('post-conditions', () => {
             const fee = feeForTip(amt);
             expect(net + fee).toBeGreaterThanOrEqual(amt);
         });
+
+        it('all functions agree when fee basis points are zero', () => {
+            expect(feeForTip(10, 0)).toBe(0);
+            expect(totalDeduction(10, 0)).toBe(10);
+            expect(recipientReceives(10, 0)).toBe(10);
+            expect(maxTransferForTip(10, 0)).toBe(11);
+        });
     });
 });
