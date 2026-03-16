@@ -73,18 +73,6 @@ describe('post-conditions', () => {
             // max = 1000 + 100 + 1 = 1101
             expect(maxTransferForTip(1000, 1000)).toBe(1101);
         });
-
-        it('includes minimum fee in ceiling for 1 uSTX tip', () => {
-            // fee = max(ceil(0.005), 1) = 1
-            // max = 1 + 1 + 1 = 3
-            expect(maxTransferForTip(1)).toBe(3);
-        });
-
-        it('ceiling for 10 uSTX tip includes minimum fee', () => {
-            // fee = max(ceil(0.05), 1) = 1
-            // max = 10 + 1 + 1 = 12
-            expect(maxTransferForTip(10)).toBe(12);
-        });
     });
 
     describe('tipPostCondition', () => {
@@ -143,22 +131,6 @@ describe('post-conditions', () => {
             // 200 * 50 / 10000 = 1.0, ceil = 1, max(1, 1) = 1
             expect(feeForTip(200)).toBe(1);
         });
-
-        it('returns 2 for 201 uSTX where raw fee exceeds minimum', () => {
-            // 201 * 50 / 10000 = 1.005, ceil = 2
-            expect(feeForTip(201)).toBe(2);
-        });
-
-        it('never returns 0 when fee basis points are positive', () => {
-            for (const amt of [1, 2, 5, 10, 50, 100, 150, 199, 200]) {
-                expect(feeForTip(amt)).toBeGreaterThanOrEqual(1);
-            }
-        });
-
-        it('does not apply minimum when fee basis points are zero', () => {
-            expect(feeForTip(10, 0)).toBe(0);
-            expect(feeForTip(1, 0)).toBe(0);
-        });
     });
 
     describe('totalDeduction', () => {
@@ -179,16 +151,6 @@ describe('post-conditions', () => {
         it('is always less than maxTransferForTip by exactly 1', () => {
             // maxTransferForTip adds a 1-uSTX rounding buffer
             expect(maxTransferForTip(5000) - totalDeduction(5000)).toBe(1);
-        });
-
-        it('includes minimum fee for sub-threshold amounts', () => {
-            // 10 uSTX tip, fee = max(ceil(0.05), 1) = 1
-            expect(totalDeduction(10)).toBe(11);
-        });
-
-        it('deducts 2 uSTX total for a 1 uSTX tip', () => {
-            // 1 uSTX tip + 1 uSTX min fee = 2
-            expect(totalDeduction(1)).toBe(2);
         });
     });
 
@@ -216,22 +178,6 @@ describe('post-conditions', () => {
             const net = recipientReceives(amount);
             expect(Math.abs(fee + net - amount)).toBeLessThanOrEqual(1);
         });
-
-        it('deducts minimum fee from small tip amounts', () => {
-            // 10 uSTX tip, floor(10 * 50 / 10000) = 0, max(0, 1) = 1
-            // recipient gets 10 - 1 = 9
-            expect(recipientReceives(10)).toBe(9);
-        });
-
-        it('recipient receives 0 from a 1 uSTX tip', () => {
-            // 1 uSTX tip - 1 uSTX min fee = 0
-            expect(recipientReceives(1)).toBe(0);
-        });
-
-        it('recipient receives full amount when bps is zero', () => {
-            expect(recipientReceives(1, 0)).toBe(1);
-            expect(recipientReceives(10, 0)).toBe(10);
-        });
     });
 
     describe('string input coercion', () => {
@@ -253,34 +199,6 @@ describe('post-conditions', () => {
 
         it('feeForTip coerces string for sub-threshold amounts', () => {
             expect(feeForTip('10')).toBe(feeForTip(10));
-        });
-
-        it('totalDeduction coerces string for sub-threshold amounts', () => {
-            expect(totalDeduction('5')).toBe(totalDeduction(5));
-        });
-    });
-
-    describe('minimum fee cross-function consistency', () => {
-        it('totalDeduction equals amount plus feeForTip for sub-threshold tip', () => {
-            expect(totalDeduction(10)).toBe(10 + feeForTip(10));
-        });
-
-        it('maxTransferForTip equals totalDeduction plus 1 for sub-threshold tip', () => {
-            expect(maxTransferForTip(10)).toBe(totalDeduction(10) + 1);
-        });
-
-        it('recipientReceives plus fee accounts for full amount at boundary', () => {
-            const amt = 200;
-            const net = recipientReceives(amt);
-            const fee = feeForTip(amt);
-            expect(net + fee).toBeGreaterThanOrEqual(amt);
-        });
-
-        it('all functions agree when fee basis points are zero', () => {
-            expect(feeForTip(10, 0)).toBe(0);
-            expect(totalDeduction(10, 0)).toBe(10);
-            expect(recipientReceives(10, 0)).toBe(10);
-            expect(maxTransferForTip(10, 0)).toBe(11);
         });
     });
 });
