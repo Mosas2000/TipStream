@@ -3,6 +3,7 @@ import {
     FEE_BASIS_POINTS,
     BASIS_POINTS_DIVISOR,
     FEE_PERCENT,
+    MIN_FEE_USTX,
     SAFE_POST_CONDITION_MODE,
     maxTransferForTip,
     tipPostCondition,
