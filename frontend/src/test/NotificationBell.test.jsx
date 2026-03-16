@@ -60,4 +60,34 @@ describe('NotificationBell', () => {
             expect(screen.getByText('9+')).toBeInTheDocument();
         });
     });
+
+    describe('dropdown toggle', () => {
+        it('opens dropdown on click', () => {
+            render(<NotificationBell {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByRole('region', { name: /notifications/i })).toBeInTheDocument();
+        });
+
+        it('closes dropdown on second click', () => {
+            render(<NotificationBell {...defaultProps} />);
+            const btn = screen.getByRole('button', { name: /notifications/i });
+            fireEvent.click(btn);
+            fireEvent.click(btn);
+            expect(screen.queryByRole('region', { name: /notifications/i })).not.toBeInTheDocument();
+        });
+
+        it('calls onMarkRead when opening with unread items', () => {
+            const onMarkRead = vi.fn();
+            render(<NotificationBell {...defaultProps} unreadCount={2} onMarkRead={onMarkRead} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(onMarkRead).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not call onMarkRead when there are no unread items', () => {
+            const onMarkRead = vi.fn();
+            render(<NotificationBell {...defaultProps} unreadCount={0} onMarkRead={onMarkRead} />);
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(onMarkRead).not.toHaveBeenCalled();
+        });
+    });
 });
