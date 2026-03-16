@@ -116,4 +116,21 @@ describe('useNotifications', () => {
         expect(stored).toBeTruthy();
         expect(Number(stored)).toBe(result.current.lastSeenTimestamp);
     });
+
+    it('markAllRead sets unreadCount to 0', () => {
+        const now = Math.floor(Date.now() / 1000);
+        useTipContext.mockReturnValue({
+            events: [makeTipEvent({ timestamp: now })],
+            eventsLoading: false,
+        });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.unreadCount).toBe(1);
+
+        act(() => {
+            result.current.markAllRead();
+        });
+
+        expect(result.current.unreadCount).toBe(0);
+    });
 });
