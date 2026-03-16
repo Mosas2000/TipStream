@@ -148,4 +148,28 @@ describe('useNotifications', () => {
         expect(typeof result.current.refetch).toBe('function');
         expect(() => result.current.refetch()).not.toThrow();
     });
+
+    it('assigns synthetic timestamps when block_time is missing', () => {
+        useTipContext.mockReturnValue({
+            events: [
+                makeTipEvent({ timestamp: undefined }),
+            ],
+            eventsLoading: false,
+        });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.notifications[0].timestamp).toBeDefined();
+        expect(typeof result.current.notifications[0].timestamp).toBe('number');
+    });
+
+    it('preserves existing timestamp from enriched events', () => {
+        const fixedTs = 1700000000;
+        useTipContext.mockReturnValue({
+            events: [makeTipEvent({ timestamp: fixedTs })],
+            eventsLoading: false,
+        });
+
+        const { result } = renderHook(() => useNotifications(USER_ADDRESS));
+        expect(result.current.notifications[0].timestamp).toBe(fixedTs);
+    });
 });
