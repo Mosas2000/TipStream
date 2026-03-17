@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Balance handling is now fully integer-safe end-to-end for issue #227:
+  `useBalance` normalizes API balances to canonical non-negative integer
+  micro-STX strings, `SendTip` and `BatchTip` compare required amounts
+  with precision-safe micro-STX checks (instead of floating-point STX
+  comparisons), and balance utilities now include bigint-safe helpers for
+  normalization, sufficiency checks, and exact decimal conversion.
+
 - `useBalance` tests now use fake timers to correctly handle the hook's
   retry logic (MAX_RETRIES=2, RETRY_DELAY_MS=1500), fixing 4 previously
   failing error-path tests. Added retry count verification and recovery
