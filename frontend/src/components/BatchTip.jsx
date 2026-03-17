@@ -12,7 +12,7 @@ import {
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
-import { formatBalance } from '../lib/balance-utils';
+import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { analytics } from '../lib/analytics';
 import { summarizeBatchTipResult, buildBatchTipOutcomeMessage } from '../lib/batchTipResults';
 import { useBalance } from '../hooks/useBalance';
