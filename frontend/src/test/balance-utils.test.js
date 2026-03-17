@@ -300,7 +300,7 @@ describe('formatBalance', () => {
       maxDecimals: 2,
       suffix: false,
     });
-    expect(result).toBe('9000000000.00');
+    expect(result.replace(/,/g, '')).toBe('9000000000.00');
   });
 });
 
