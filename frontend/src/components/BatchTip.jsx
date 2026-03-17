@@ -48,6 +48,15 @@ export default function BatchTip({ addToast }) {
         }, 0);
     }, [recipients]);
 
+    const totalAmountMicro = useMemo(() => {
+        return recipients.reduce((sum, r) => {
+            if (!r.amount) return sum;
+            const parsed = parseFloat(r.amount);
+            if (isNaN(parsed) || parsed <= 0) return sum;
+            return sum + toMicroSTX(r.amount);
+        }, 0);
+    }, [recipients]);
+
     const isValidStacksAddress = (address) => {
         if (!address) return false;
         const trimmed = address.trim();
