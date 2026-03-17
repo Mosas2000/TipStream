@@ -26,8 +26,9 @@ function normalizeMicroStxBalance(rawBalance) {
  * Fetch and track the STX balance for a Stacks address.
  * Includes automatic retry on transient failures.
  *
- * The balance is stored as the raw string returned by the Stacks API
- * (`/extended/v1/address/:addr/stx`), representing micro-STX. Consumers
+ * The balance is stored as a normalized non-negative integer string
+ * representing micro-STX, derived from `/extended/v1/address/:addr/stx`.
+ * Consumers
  * should use the balance-utils helpers (`microToStx`, `formatBalance`) to
  * convert for display rather than dividing by a magic number.
  *
