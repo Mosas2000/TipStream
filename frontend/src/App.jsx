@@ -143,7 +143,7 @@ function App() {
         apiReachable={healthy}
       />
 
-      <main id="main-content" className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         {userData ? (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
             {/* Navigation */}
