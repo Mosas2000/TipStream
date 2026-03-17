@@ -8,7 +8,7 @@ import {
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
-import { microToStx, formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
+import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { isContractPrincipal, isValidStacksPrincipal } from '../lib/stacks-principal';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
