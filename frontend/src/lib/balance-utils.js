@@ -65,6 +65,26 @@ export function hasSufficientMicroStx(balanceMicroStx, requiredMicroStx) {
 }
 
 /**
+ * Convert micro-STX to a decimal STX string with fixed precision.
+ *
+ * @param {string|number|bigint|null|undefined} microStx
+ * @param {number} [precision=6]
+ * @returns {string|null}
+ */
+export function microToStxDecimalString(microStx, precision = 6) {
+  const normalized = toMicroStxBigInt(microStx);
+  if (normalized === null) return null;
+
+  const whole = normalized / MICRO_STX_BIGINT;
+  const fractionalRaw = normalized % MICRO_STX_BIGINT;
+  const fullFraction = fractionalRaw.toString().padStart(6, '0');
+  const clippedFraction = fullFraction.slice(0, Math.max(0, Math.min(6, precision)));
+
+  if (precision <= 0) return whole.toString();
+  return `${whole.toString()}.${clippedFraction.padEnd(precision, '0')}`;
+}
+
+/**
  * Parse a balance value (string, number, or BigInt) into a finite number.
  *
  * Returns `null` for any input that cannot be safely represented as a
