@@ -62,6 +62,24 @@ describe('useBalance', () => {
         expect(typeof result.current.balance).toBe('string');
     });
 
+    it('rejects decimal balance strings from API payload', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '12.34' }),
+        });
+
+        const { result } = renderHook(() =>
+            useBalance('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T'),
+        );
+
+        await waitFor(() => {
+            expect(result.current.loading).toBe(false);
+        });
+
+        expect(result.current.balance).toBeNull();
+        expect(result.current.error).toBe('Unexpected balance format in API response');
+    });
+
     it('computes balanceStx correctly from a micro-STX string', async () => {
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
