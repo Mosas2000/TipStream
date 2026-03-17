@@ -29,6 +29,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
     const isOnline = useOnlineStatus();
 
     const networkLabel = NETWORK_NAME.charAt(0).toUpperCase() + NETWORK_NAME.slice(1);
+    const apiStatusText = apiReachable === null ? 'Checking' : apiReachable ? 'Online' : 'Offline';
 
     // When the OfflineBanner is visible it occupies layout space above the
     // header.  Shift the header down by the banner's height so the two sticky
@@ -56,6 +57,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                                     aria-hidden="true"
                                 />
                                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{networkLabel}</span>
+                                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{apiStatusText}</span>
                                 <span className="sr-only">
                                     {apiReachable === null ? 'Checking connection' : apiReachable ? 'API connected' : 'API disconnected'}
                                 </span>
@@ -70,6 +72,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                             onClick={toggleTheme}
                             className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                            aria-pressed={theme === 'dark'}
                         >
                             {theme === 'dark' ? (
                                 <Sun className="w-4 h-4" aria-hidden="true" />
