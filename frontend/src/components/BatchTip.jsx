@@ -274,7 +274,7 @@ export default function BatchTip({ addToast }) {
                         {totalAmount > 0 && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Batch Total</p>
-                                <p className={`text-lg font-bold ${balanceSTX !== null && totalAmount > balanceSTX ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`}>
+                                <p className={`text-lg font-bold ${isBatchTotalInsufficient ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`}>
                                     {totalAmount.toFixed(6)} STX
                                 </p>
                             </div>
