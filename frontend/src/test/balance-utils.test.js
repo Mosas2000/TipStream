@@ -293,6 +293,15 @@ describe('formatBalance', () => {
     });
     expect(result).toMatch(/1[.,]5/);
   });
+
+  it('formats very large balances as plain decimal text', () => {
+    const result = formatBalance('9000000000000000', {
+      minDecimals: 2,
+      maxDecimals: 2,
+      suffix: false,
+    });
+    expect(result).toBe('9000000000.00');
+  });
 });
 
 // ---------------------------------------------------------------------------
