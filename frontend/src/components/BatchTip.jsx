@@ -151,7 +151,7 @@ export default function BatchTip({ addToast }) {
             if (addr) seen.add(addr);
         });
 
-        if (valid && balanceSTX !== null && totalAmount > balanceSTX) {
+        if (valid && balanceSTX !== null && !hasSufficientMicroStx(balance, totalAmountMicro)) {
             addToast?.('Insufficient balance for this batch', 'warning');
             return false;
         }
