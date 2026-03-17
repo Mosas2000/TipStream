@@ -47,6 +47,24 @@ export function toMicroStxBigInt(value) {
 }
 
 /**
+ * Check if a balance (micro-STX) can cover a required amount (micro-STX).
+ *
+ * Both values are normalized via bigint conversion to avoid Number precision
+ * issues and BigInt/Number mixing in consumers.
+ *
+ * @param {string|number|bigint|null|undefined} balanceMicroStx
+ * @param {string|number|bigint|null|undefined} requiredMicroStx
+ * @returns {boolean}
+ */
+export function hasSufficientMicroStx(balanceMicroStx, requiredMicroStx) {
+  const balance = toMicroStxBigInt(balanceMicroStx);
+  const required = toMicroStxBigInt(requiredMicroStx);
+
+  if (balance === null || required === null) return false;
+  return balance >= required;
+}
+
+/**
  * Parse a balance value (string, number, or BigInt) into a finite number.
  *
  * Returns `null` for any input that cannot be safely represented as a
