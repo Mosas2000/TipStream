@@ -138,7 +138,7 @@ export default function SendTip({ addToast }) {
         if (parsedAmount > MAX_TIP_STX) { addToast(`Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`, 'warning'); return; }
         if (balanceSTX !== null) {
             const microSTX = toMicroSTX(amount);
-            if (microToStx(totalDeduction(microSTX)) > balanceSTX) {
+            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX))) {
                 addToast('Insufficient balance to cover tip plus platform fee', 'warning');
                 return;
             }
