@@ -88,31 +88,32 @@ describe('SendTip self-tip check', () => {
 });
 
 describe('SendTip balance-insufficient check', () => {
-    function isBalanceInsufficient(amount, balanceSTX) {
-        if (balanceSTX === null) return false;
-        const parsed = parseFloat(amount);
-        if (isNaN(parsed)) return false;
-        return parsed > balanceSTX;
+    function isBalanceInsufficient(balanceMicroStx, requiredMicroStx) {
+        if (balanceMicroStx === null) return false;
+        if (!/^\d+$/.test(String(balanceMicroStx))) return false;
+        if (!/^\d+$/.test(String(requiredMicroStx))) return false;
+        return BigInt(requiredMicroStx) > BigInt(balanceMicroStx);
     }
 
     it('returns false when balance is null (unknown)', () => {
-        expect(isBalanceInsufficient('5', null)).toBe(false);
+        expect(isBalanceInsufficient(null, '5000000')).toBe(false);
     });
 
     it('returns false when amount is within balance', () => {
-        expect(isBalanceInsufficient('5', 10)).toBe(false);
+        expect(isBalanceInsufficient('10000000', '5000000')).toBe(false);
     });
 
     it('returns true when amount exceeds balance', () => {
-        expect(isBalanceInsufficient('15', 10)).toBe(true);
+        expect(isBalanceInsufficient('10000000', '15000000')).toBe(true);
     });
 
     it('returns false when amount equals balance', () => {
-        expect(isBalanceInsufficient('10', 10)).toBe(false);
+        expect(isBalanceInsufficient('10000000', '10000000')).toBe(false);
     });
 
-    it('returns false for non-numeric amount', () => {
-        expect(isBalanceInsufficient('abc', 10)).toBe(false);
+    it('returns false for malformed values', () => {
+        expect(isBalanceInsufficient('abc', '10')).toBe(false);
+        expect(isBalanceInsufficient('10', '1.5')).toBe(false);
     });
 });
 
