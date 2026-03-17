@@ -105,6 +105,28 @@ describe('toMicroStxBigInt', () => {
 });
 
 // ---------------------------------------------------------------------------
+// hasSufficientMicroStx
+// ---------------------------------------------------------------------------
+describe('hasSufficientMicroStx', () => {
+  it('returns true when balance equals required amount', () => {
+    expect(hasSufficientMicroStx('1000', 1000)).toBe(true);
+  });
+
+  it('returns true when balance exceeds required amount', () => {
+    expect(hasSufficientMicroStx('1001', 1000)).toBe(true);
+  });
+
+  it('returns false when balance is lower than required amount', () => {
+    expect(hasSufficientMicroStx('999', 1000)).toBe(false);
+  });
+
+  it('returns false for invalid values', () => {
+    expect(hasSufficientMicroStx('abc', 1000)).toBe(false);
+    expect(hasSufficientMicroStx('1000', '1.5')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // microToStx
 // ---------------------------------------------------------------------------
 describe('microToStx', () => {
