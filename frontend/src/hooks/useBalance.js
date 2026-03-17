@@ -5,6 +5,23 @@ import { microToStx } from '../lib/balance-utils';
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
 
+function normalizeMicroStxBalance(rawBalance) {
+    if (typeof rawBalance === 'number') {
+        if (!Number.isFinite(rawBalance) || !Number.isInteger(rawBalance) || rawBalance < 0) {
+            return null;
+        }
+        return String(rawBalance);
+    }
+
+    if (typeof rawBalance === 'string') {
+        const trimmed = rawBalance.trim();
+        if (!/^\d+$/.test(trimmed)) return null;
+        return trimmed;
+    }
+
+    return null;
+}
+
 /**
  * Fetch and track the STX balance for a Stacks address.
  * Includes automatic retry on transient failures.
@@ -50,11 +67,12 @@ export function useBalance(address) {
 
                 const data = await res.json();
 
-                if (typeof data?.balance !== 'string' && typeof data?.balance !== 'number') {
+                const normalized = normalizeMicroStxBalance(data?.balance);
+                if (normalized === null) {
                     throw new Error('Unexpected balance format in API response');
                 }
 
-                setBalance(String(data.balance));
+                setBalance(normalized);
                 setLastFetched(Date.now());
                 setLoading(false);
             } catch (err) {
