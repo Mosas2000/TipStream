@@ -13,6 +13,39 @@
 /** Number of micro-STX in one STX. */
 export const MICRO_STX = 1_000_000;
 
+/** BigInt variant of MICRO_STX used for precision-safe integer operations. */
+const MICRO_STX_BIGINT = 1_000_000n;
+
+/**
+ * Convert a micro-STX value into a normalized non-negative bigint.
+ *
+ * Accepts decimal digit strings, finite integer numbers, and bigint values.
+ * Returns null for invalid, fractional, or negative values.
+ *
+ * @param {string|number|bigint|null|undefined} value
+ * @returns {bigint|null}
+ */
+export function toMicroStxBigInt(value) {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (typeof value === 'bigint') {
+    return value >= 0n ? value : null;
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) return null;
+    return BigInt(value);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) return null;
+    return BigInt(trimmed);
+  }
+
+  return null;
+}
+
 /**
  * Parse a balance value (string, number, or BigInt) into a finite number.
  *
