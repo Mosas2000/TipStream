@@ -117,8 +117,7 @@ export default function SendTip({ addToast }) {
         } else if (balanceSTX !== null) {
             // Account for the platform fee when checking balance
             const microSTX = toMicroSTX(parsed.toString());
-            const totalSTX = microToStx(totalDeduction(microSTX));
-            if (totalSTX > balanceSTX) {
+            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX))) {
                 setAmountError('Insufficient balance (tip + 0.5% fee exceeds balance)');
             } else {
                 setAmountError('');
