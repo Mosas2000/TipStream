@@ -150,8 +150,17 @@ export function formatBalance(microStx, options = {}) {
     fallback = '--',
   } = options;
 
-  const stx = microToStx(microStx);
-  if (stx === null) return fallback;
+  const stxDecimal = microToStxDecimalString(microStx, maxDecimals);
+  if (stxDecimal === null) return fallback;
+
+  const stx = Number(stxDecimal);
+  if (!Number.isFinite(stx)) {
+    // Fallback for very large balances that exceed Number range.
+    const plain = maxDecimals > 0
+      ? stxDecimal.replace(/\.0+$/, '')
+      : stxDecimal;
+    return suffix ? `${plain} STX` : plain;
+  }
 
   const formatted = stx.toLocaleString(undefined, {
     minimumFractionDigits: minDecimals,
