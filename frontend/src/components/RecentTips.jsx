@@ -287,14 +287,18 @@ export default function RecentTips({ addToast }) {
                             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Search by address or message..." />
                     </div>
-                    <button onClick={() => setShowFilters(!showFilters)}
+                    <button
+                        type="button"
+                        onClick={() => setShowFilters(!showFilters)}
+                        aria-expanded={showFilters}
+                        aria-controls="feed-filters"
                         className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-colors ${showFilters ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black border-gray-900 dark:border-amber-500' : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                         Filters
                     </button>
-                    {hasActiveFilters && <button onClick={clearFilters} className="px-2 py-2 text-xs text-red-500 hover:text-red-600 font-semibold">Clear</button>}
+                    {hasActiveFilters && <button type="button" onClick={clearFilters} className="px-2 py-2 text-xs text-red-500 hover:text-red-600 font-semibold">Clear</button>}
                 </div>
                 {showFilters && (
-                    <div className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div id="feed-filters" className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center gap-2">
                             <label htmlFor="feed-filter-min" className="text-xs font-medium text-gray-500 dark:text-gray-400">Min STX</label>
                             <input id="feed-filter-min" type="number" value={minAmount} onChange={(e) => { setMinAmount(e.target.value); setOffset(0); }}
@@ -326,7 +330,7 @@ export default function RecentTips({ addToast }) {
                         <p className="text-gray-400">{hasActiveFilters ? 'No tips match your filters' : 'No tips in the stream yet. Be the first!'}</p>
                     </div>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2" aria-live="polite" aria-relevant="additions text">
                         {paginatedTips.map((tip, i) => (
                             <div key={tip.tipId || i} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
