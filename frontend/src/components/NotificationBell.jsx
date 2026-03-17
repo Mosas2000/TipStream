@@ -5,6 +5,7 @@ import { Bell } from 'lucide-react';
 export default function NotificationBell({ notifications, unreadCount, onMarkRead, loading, lastSeenTimestamp }) {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const panelId = 'notifications-panel';
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -36,13 +37,17 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
                 onClick={handleToggle}
                 className="relative p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                aria-expanded={open}
+                aria-controls={panelId}
             >
                 <Bell className="w-5 h-5" aria-hidden="true" />
+                <span className="sr-only" aria-live="polite" aria-atomic="true">
+                    {unreadCount > 0 ? `${unreadCount} unread notifications` : 'No unread notifications'}
+                </span>
                 {unreadCount > 0 && (
                     <span
                         className="absolute -top-0.5 -right-0.5 h-5 w-5 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-gray-900"
-                        aria-live="polite"
-                        aria-atomic="true"
+                        aria-hidden="true"
                     >
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
@@ -51,6 +56,7 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
 
             {open && (
                 <div
+                    id={panelId}
                     className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
                     role="region"
                     aria-label="Notifications"
