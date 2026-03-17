@@ -6,6 +6,9 @@ import {
   stxToMicro,
   formatBalance,
   isValidBalance,
+  toMicroStxBigInt,
+  hasSufficientMicroStx,
+  microToStxDecimalString,
 } from '../lib/balance-utils';
 
 // ---------------------------------------------------------------------------
