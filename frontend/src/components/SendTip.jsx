@@ -8,7 +8,7 @@ import {
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
-import { microToStx, formatBalance } from '../lib/balance-utils';
+import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { isContractPrincipal, isValidStacksPrincipal } from '../lib/stacks-principal';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
@@ -117,8 +117,7 @@ export default function SendTip({ addToast }) {
         } else if (balanceSTX !== null) {
             // Account for the platform fee when checking balance
             const microSTX = toMicroSTX(parsed.toString());
-            const totalSTX = microToStx(totalDeduction(microSTX));
-            if (totalSTX > balanceSTX) {
+            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX))) {
                 setAmountError('Insufficient balance (tip + 0.5% fee exceeds balance)');
             } else {
                 setAmountError('');
@@ -139,7 +138,7 @@ export default function SendTip({ addToast }) {
         if (parsedAmount > MAX_TIP_STX) { addToast(`Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`, 'warning'); return; }
         if (balanceSTX !== null) {
             const microSTX = toMicroSTX(amount);
-            if (microToStx(totalDeduction(microSTX)) > balanceSTX) {
+            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX))) {
                 addToast('Insufficient balance to cover tip plus platform fee', 'warning');
                 return;
             }

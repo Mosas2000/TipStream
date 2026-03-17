@@ -6,6 +6,9 @@ import {
   stxToMicro,
   formatBalance,
   isValidBalance,
+  toMicroStxBigInt,
+  hasSufficientMicroStx,
+  microToStxDecimalString,
 } from '../lib/balance-utils';
 
 // ---------------------------------------------------------------------------
@@ -71,6 +74,78 @@ describe('parseBalance', () => {
 
   it('parses decimal strings', () => {
     expect(parseBalance('1.5')).toBe(1.5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toMicroStxBigInt
+// ---------------------------------------------------------------------------
+describe('toMicroStxBigInt', () => {
+  it('normalizes a digit string to bigint', () => {
+    expect(toMicroStxBigInt('1500000')).toBe(1500000n);
+  });
+
+  it('normalizes a non-negative integer number to bigint', () => {
+    expect(toMicroStxBigInt(42)).toBe(42n);
+  });
+
+  it('returns null for decimal strings', () => {
+    expect(toMicroStxBigInt('1.5')).toBeNull();
+  });
+
+  it('returns null for negative values', () => {
+    expect(toMicroStxBigInt('-5')).toBeNull();
+    expect(toMicroStxBigInt(-5)).toBeNull();
+    expect(toMicroStxBigInt(-5n)).toBeNull();
+  });
+
+  it('returns null for scientific notation strings', () => {
+    expect(toMicroStxBigInt('1e6')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hasSufficientMicroStx
+// ---------------------------------------------------------------------------
+describe('hasSufficientMicroStx', () => {
+  it('returns true when balance equals required amount', () => {
+    expect(hasSufficientMicroStx('1000', 1000)).toBe(true);
+  });
+
+  it('returns true when balance exceeds required amount', () => {
+    expect(hasSufficientMicroStx('1001', 1000)).toBe(true);
+  });
+
+  it('returns false when balance is lower than required amount', () => {
+    expect(hasSufficientMicroStx('999', 1000)).toBe(false);
+  });
+
+  it('returns false for invalid values', () => {
+    expect(hasSufficientMicroStx('abc', 1000)).toBe(false);
+    expect(hasSufficientMicroStx('1000', '1.5')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// microToStxDecimalString
+// ---------------------------------------------------------------------------
+describe('microToStxDecimalString', () => {
+  it('converts a whole STX value exactly', () => {
+    expect(microToStxDecimalString('1000000')).toBe('1.000000');
+  });
+
+  it('converts a fractional STX value exactly', () => {
+    expect(microToStxDecimalString('1500000')).toBe('1.500000');
+  });
+
+  it('supports custom precision', () => {
+    expect(microToStxDecimalString('1500000', 2)).toBe('1.50');
+    expect(microToStxDecimalString('1500000', 0)).toBe('1');
+  });
+
+  it('returns null for invalid inputs', () => {
+    expect(microToStxDecimalString('1.5')).toBeNull();
+    expect(microToStxDecimalString(null)).toBeNull();
   });
 });
 
@@ -217,6 +292,15 @@ describe('formatBalance', () => {
       suffix: false,
     });
     expect(result).toMatch(/1[.,]5/);
+  });
+
+  it('formats very large balances as plain decimal text', () => {
+    const result = formatBalance('9000000000000000', {
+      minDecimals: 2,
+      maxDecimals: 2,
+      suffix: false,
+    });
+    expect(result.replace(/,/g, '')).toBe('9000000000.00');
   });
 });
 

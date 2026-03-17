@@ -5,12 +5,30 @@ import { microToStx } from '../lib/balance-utils';
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
 
+function normalizeMicroStxBalance(rawBalance) {
+    if (typeof rawBalance === 'number') {
+        if (!Number.isFinite(rawBalance) || !Number.isInteger(rawBalance) || rawBalance < 0) {
+            return null;
+        }
+        return String(rawBalance);
+    }
+
+    if (typeof rawBalance === 'string') {
+        const trimmed = rawBalance.trim();
+        if (!/^\d+$/.test(trimmed)) return null;
+        return trimmed;
+    }
+
+    return null;
+}
+
 /**
  * Fetch and track the STX balance for a Stacks address.
  * Includes automatic retry on transient failures.
  *
- * The balance is stored as the raw string returned by the Stacks API
- * (`/extended/v1/address/:addr/stx`), representing micro-STX. Consumers
+ * The balance is stored as a normalized non-negative integer string
+ * representing micro-STX, derived from `/extended/v1/address/:addr/stx`.
+ * Consumers
  * should use the balance-utils helpers (`microToStx`, `formatBalance`) to
  * convert for display rather than dividing by a magic number.
  *
@@ -50,11 +68,12 @@ export function useBalance(address) {
 
                 const data = await res.json();
 
-                if (typeof data?.balance !== 'string' && typeof data?.balance !== 'number') {
+                const normalized = normalizeMicroStxBalance(data?.balance);
+                if (normalized === null) {
                     throw new Error('Unexpected balance format in API response');
                 }
 
-                setBalance(String(data.balance));
+                setBalance(normalized);
                 setLastFetched(Date.now());
                 setLoading(false);
             } catch (err) {

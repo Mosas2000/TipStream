@@ -13,6 +13,77 @@
 /** Number of micro-STX in one STX. */
 export const MICRO_STX = 1_000_000;
 
+/** BigInt variant of MICRO_STX used for precision-safe integer operations. */
+const MICRO_STX_BIGINT = 1_000_000n;
+
+/**
+ * Convert a micro-STX value into a normalized non-negative bigint.
+ *
+ * Accepts decimal digit strings, finite integer numbers, and bigint values.
+ * Returns null for invalid, fractional, or negative values.
+ *
+ * @param {string|number|bigint|null|undefined} value
+ * @returns {bigint|null}
+ */
+export function toMicroStxBigInt(value) {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (typeof value === 'bigint') {
+    return value >= 0n ? value : null;
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) return null;
+    return BigInt(value);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) return null;
+    return BigInt(trimmed);
+  }
+
+  return null;
+}
+
+/**
+ * Check if a balance (micro-STX) can cover a required amount (micro-STX).
+ *
+ * Both values are normalized via bigint conversion to avoid Number precision
+ * issues and BigInt/Number mixing in consumers.
+ *
+ * @param {string|number|bigint|null|undefined} balanceMicroStx
+ * @param {string|number|bigint|null|undefined} requiredMicroStx
+ * @returns {boolean}
+ */
+export function hasSufficientMicroStx(balanceMicroStx, requiredMicroStx) {
+  const balance = toMicroStxBigInt(balanceMicroStx);
+  const required = toMicroStxBigInt(requiredMicroStx);
+
+  if (balance === null || required === null) return false;
+  return balance >= required;
+}
+
+/**
+ * Convert micro-STX to a decimal STX string with fixed precision.
+ *
+ * @param {string|number|bigint|null|undefined} microStx
+ * @param {number} [precision=6]
+ * @returns {string|null}
+ */
+export function microToStxDecimalString(microStx, precision = 6) {
+  const normalized = toMicroStxBigInt(microStx);
+  if (normalized === null) return null;
+
+  const whole = normalized / MICRO_STX_BIGINT;
+  const fractionalRaw = normalized % MICRO_STX_BIGINT;
+  const fullFraction = fractionalRaw.toString().padStart(6, '0');
+  const clippedFraction = fullFraction.slice(0, Math.max(0, Math.min(6, precision)));
+
+  if (precision <= 0) return whole.toString();
+  return `${whole.toString()}.${clippedFraction.padEnd(precision, '0')}`;
+}
+
 /**
  * Parse a balance value (string, number, or BigInt) into a finite number.
  *
@@ -79,8 +150,17 @@ export function formatBalance(microStx, options = {}) {
     fallback = '--',
   } = options;
 
-  const stx = microToStx(microStx);
-  if (stx === null) return fallback;
+  const stxDecimal = microToStxDecimalString(microStx, maxDecimals);
+  if (stxDecimal === null) return fallback;
+
+  const stx = Number(stxDecimal);
+  if (!Number.isFinite(stx)) {
+    // Fallback for very large balances that exceed Number range.
+    const plain = maxDecimals > 0
+      ? stxDecimal.replace(/\.0+$/, '')
+      : stxDecimal;
+    return suffix ? `${plain} STX` : plain;
+  }
 
   const formatted = stx.toLocaleString(undefined, {
     minimumFractionDigits: minDecimals,

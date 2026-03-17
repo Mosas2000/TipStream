@@ -62,6 +62,72 @@ describe('useBalance', () => {
         expect(typeof result.current.balance).toBe('string');
     });
 
+    it('rejects decimal balance strings from API payload', async () => {
+        vi.useFakeTimers();
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '12.34' }),
+        });
+
+        const { result } = renderHook(() =>
+            useBalance('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T'),
+        );
+
+        for (let i = 0; i < 3; i++) {
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(1600);
+            });
+        }
+
+        expect(result.current.balance).toBeNull();
+        expect(result.current.error).toBe('Unexpected balance format in API response');
+        vi.useRealTimers();
+    });
+
+    it('rejects scientific notation balance strings from API payload', async () => {
+        vi.useFakeTimers();
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1e6' }),
+        });
+
+        const { result } = renderHook(() =>
+            useBalance('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T'),
+        );
+
+        for (let i = 0; i < 3; i++) {
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(1600);
+            });
+        }
+
+        expect(result.current.balance).toBeNull();
+        expect(result.current.error).toBe('Unexpected balance format in API response');
+        vi.useRealTimers();
+    });
+
+    it('rejects negative numeric balances from API payload', async () => {
+        vi.useFakeTimers();
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: -10 }),
+        });
+
+        const { result } = renderHook(() =>
+            useBalance('SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T'),
+        );
+
+        for (let i = 0; i < 3; i++) {
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(1600);
+            });
+        }
+
+        expect(result.current.balance).toBeNull();
+        expect(result.current.error).toBe('Unexpected balance format in API response');
+        vi.useRealTimers();
+    });
+
     it('computes balanceStx correctly from a micro-STX string', async () => {
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,

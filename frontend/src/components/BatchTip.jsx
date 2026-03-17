@@ -12,7 +12,7 @@ import {
 import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX, formatSTX, formatAddress } from '../lib/utils';
-import { formatBalance } from '../lib/balance-utils';
+import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { analytics } from '../lib/analytics';
 import { summarizeBatchTipResult, buildBatchTipOutcomeMessage } from '../lib/batchTipResults';
 import { useBalance } from '../hooks/useBalance';
@@ -47,6 +47,20 @@ export default function BatchTip({ addToast }) {
             return sum + (isNaN(parsed) ? 0 : parsed);
         }, 0);
     }, [recipients]);
+
+    const totalAmountMicro = useMemo(() => {
+        return recipients.reduce((sum, r) => {
+            if (!r.amount) return sum;
+            const parsed = parseFloat(r.amount);
+            if (isNaN(parsed) || parsed <= 0) return sum;
+            return sum + toMicroSTX(r.amount);
+        }, 0);
+    }, [recipients]);
+
+    const isBatchTotalInsufficient = useMemo(() => {
+        if (balanceSTX === null) return false;
+        return !hasSufficientMicroStx(balance, totalAmountMicro);
+    }, [balance, balanceSTX, totalAmountMicro]);
 
     const isValidStacksAddress = (address) => {
         if (!address) return false;
@@ -142,7 +156,7 @@ export default function BatchTip({ addToast }) {
             if (addr) seen.add(addr);
         });
 
-        if (valid && balanceSTX !== null && totalAmount > balanceSTX) {
+        if (valid && balanceSTX !== null && !hasSufficientMicroStx(balance, totalAmountMicro)) {
             addToast?.('Insufficient balance for this batch', 'warning');
             return false;
         }
@@ -260,7 +274,7 @@ export default function BatchTip({ addToast }) {
                         {totalAmount > 0 && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Batch Total</p>
-                                <p className={`text-lg font-bold ${balanceSTX !== null && totalAmount > balanceSTX ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`}>
+                                <p className={`text-lg font-bold ${isBatchTotalInsufficient ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`}>
                                     {totalAmount.toFixed(6)} STX
                                 </p>
                             </div>
