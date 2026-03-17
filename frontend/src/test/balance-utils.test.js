@@ -78,6 +78,33 @@ describe('parseBalance', () => {
 });
 
 // ---------------------------------------------------------------------------
+// toMicroStxBigInt
+// ---------------------------------------------------------------------------
+describe('toMicroStxBigInt', () => {
+  it('normalizes a digit string to bigint', () => {
+    expect(toMicroStxBigInt('1500000')).toBe(1500000n);
+  });
+
+  it('normalizes a non-negative integer number to bigint', () => {
+    expect(toMicroStxBigInt(42)).toBe(42n);
+  });
+
+  it('returns null for decimal strings', () => {
+    expect(toMicroStxBigInt('1.5')).toBeNull();
+  });
+
+  it('returns null for negative values', () => {
+    expect(toMicroStxBigInt('-5')).toBeNull();
+    expect(toMicroStxBigInt(-5)).toBeNull();
+    expect(toMicroStxBigInt(-5n)).toBeNull();
+  });
+
+  it('returns null for scientific notation strings', () => {
+    expect(toMicroStxBigInt('1e6')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // microToStx
 // ---------------------------------------------------------------------------
 describe('microToStx', () => {
