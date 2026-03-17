@@ -57,6 +57,11 @@ export default function BatchTip({ addToast }) {
         }, 0);
     }, [recipients]);
 
+    const isBatchTotalInsufficient = useMemo(() => {
+        if (balanceSTX === null) return false;
+        return !hasSufficientMicroStx(balance, totalAmountMicro);
+    }, [balance, balanceSTX, totalAmountMicro]);
+
     const isValidStacksAddress = (address) => {
         if (!address) return false;
         const trimmed = address.trim();
