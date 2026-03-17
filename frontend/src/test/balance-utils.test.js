@@ -127,6 +127,29 @@ describe('hasSufficientMicroStx', () => {
 });
 
 // ---------------------------------------------------------------------------
+// microToStxDecimalString
+// ---------------------------------------------------------------------------
+describe('microToStxDecimalString', () => {
+  it('converts a whole STX value exactly', () => {
+    expect(microToStxDecimalString('1000000')).toBe('1.000000');
+  });
+
+  it('converts a fractional STX value exactly', () => {
+    expect(microToStxDecimalString('1500000')).toBe('1.500000');
+  });
+
+  it('supports custom precision', () => {
+    expect(microToStxDecimalString('1500000', 2)).toBe('1.50');
+    expect(microToStxDecimalString('1500000', 0)).toBe('1');
+  });
+
+  it('returns null for invalid inputs', () => {
+    expect(microToStxDecimalString('1.5')).toBeNull();
+    expect(microToStxDecimalString(null)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // microToStx
 // ---------------------------------------------------------------------------
 describe('microToStx', () => {
