@@ -96,7 +96,7 @@ Both configurations:
 - Apply security headers (X-Frame-Options, CSP, etc.).
 - Route all paths to `index.html` for client-side routing.
 
-## Data Flow
+### Data Flow
 
 1. **Send tip** — the frontend builds a `contract-call` transaction
    with post conditions, the wallet signs it, and the signed
@@ -105,6 +105,46 @@ Both configurations:
    read-only contract calls (tip data, stats, profiles).
 3. **Events** — the Hiro API `/extended/v1/contract/events` endpoint
    provides the tip event feed.
+
+### Event Feed Pipeline (Issue #291)
+
+The event feed implements a scalable, multi-layer pagination architecture:
+
+```
+API Events (Hiro)
+    |
+    v
+contractEvents.js (fetchEventPage)
+    |  [single-page fetch + parse]
+    v
+eventPageCache (2-min TTL)
+    |  [cached pages + invalidation]
+    v
+usePaginatedEvents Hook
+    |  [page management + cursor generation]
+    v
+useFilteredAndPaginatedEvents Hook
+    |  [filter, sort, paginate]
+    v
+Visible Paginated Tips (10 per page)
+    |  [only visible 10]
+    v
+useSelectiveMessageEnrichment
+    |  [fetch messages for visible only]
+    v
+enrichedTips (displayed to user)
+```
+
+**Key Benefits:**
+
+- **90% API reduction**: Messages fetched only for visible tips, not all 500+
+- **Stable cursors**: Transaction-based cursors enable deduplication across pages
+- **Cache invalidation**: TTL and boundary-aware invalidation prevent stale data
+- **Memory efficient**: Bounded cache size regardless of event volume
+
+See `docs/PERFORMANCE_PROFILING.md` for measurement techniques.
+
+## Data Flow
 
 ## Security Boundaries
 

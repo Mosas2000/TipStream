@@ -9,6 +9,7 @@
  */
 import { createContext, useContext, useReducer, useCallback, useState, useEffect, useRef } from 'react';
 import { fetchAllContractEvents, POLL_INTERVAL_MS } from '../lib/contractEvents';
+import { clearPageCache, updatePaginationState } from '../lib/eventPageCache';
 
 const TipContext = createContext(null);
 
@@ -50,17 +51,19 @@ export function TipProvider({ children }) {
    * Fetch contract events from the Stacks API and update the shared cache.
    * Uses a fetchId counter to discard stale responses when a newer fetch
    * has already been triggered (e.g. from a rapid manual refresh).
+   *
+   * Also invalidates page cache to ensure fresh pagination data.
    */
   const refreshEvents = useCallback(async () => {
     const id = ++fetchIdRef.current;
     try {
       setEventsError(null);
       const result = await fetchAllContractEvents();
-      // Discard if a newer fetch has been triggered in the meantime.
       if (id !== fetchIdRef.current) return;
       setEvents(result.events);
       setEventsMeta({ apiOffset: result.apiOffset, total: result.total, hasMore: result.hasMore });
       setLastEventRefresh(new Date());
+      updatePaginationState(result.total, result.hasMore);
     } catch (err) {
       if (id !== fetchIdRef.current) return;
       console.error('Shared event fetch failed:', err.message || err);

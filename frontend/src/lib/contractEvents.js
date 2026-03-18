@@ -72,6 +72,25 @@ export function parseRawEvents(results) {
 }
 
 /**
+ * Fetch a single page of events with parsing and metadata.
+ *
+ * @param {number} offset - API offset to fetch from.
+ * @returns {Promise<{events: Array, offset: number, total: number, hasMore: boolean}>}
+ */
+export async function fetchEventPage(offset = 0) {
+    const data = await fetchEventsPage(offset);
+    const events = parseRawEvents(data.results);
+    const nextOffset = offset + data.results.length;
+
+    return {
+        events,
+        offset: nextOffset,
+        total: data.total,
+        hasMore: nextOffset < data.total,
+    };
+}
+
+/**
  * Fetch contract events from the Stacks API with auto-pagination.
  *
  * Returns all parsed events and metadata about the total available and
