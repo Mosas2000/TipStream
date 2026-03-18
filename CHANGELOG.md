@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Added last-known-good caching for read-heavy surfaces (Issue #290):
+  - Persistent cache stores successful API responses with configurable TTL
+  - Automatic fallback to cached data when live APIs are unavailable or slow
+  - Visual freshness indicators show users whether they are viewing live or cached data
+  - Transaction operations locked when live data unavailable to prevent incorrect actions
+  - Strategic cache invalidation on state changes (tip-sent, profile-update)
+
 - Event feed pipeline refactored for scale and performance (Issue #291):
   - Implemented selective message enrichment: messages are now fetched only
     for visible/paginated tips instead of all tips, reducing API calls by ~90%
@@ -18,6 +25,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     to enable reliable multi-page traversal as events are added on-chain.
   - RecentTips component refactored to use new `useFilteredAndPaginatedEvents`
     hook, centralizing filter/sort/paginate logic and improving composability.
+
+### Added (Issue #290)
+
+- `frontend/src/lib/persistentCache.js`: localStorage-backed cache with TTL support,
+  metadata tracking, and statistics collection.
+- `frontend/src/hooks/useCachedData.js`: Generic hook for fetch with automatic
+  fallback to persistent cache on error or timeout.
+- `frontend/src/hooks/useCachedStats.js`: Platform stats-specific hook with
+  appropriate TTL and timeout settings.
+- `frontend/src/hooks/useCachedLeaderboard.js`: Leaderboard-specific hook with
+  extended cache TTL for aggregated data.
+- `frontend/src/lib/cachedApiClient.js`: Transparent fetch wrapper with automatic
+  response caching, timeout handling, and per-endpoint TTL configuration.
+- `frontend/src/lib/cacheInvalidationManager.js`: Utilities for pattern-based and
+  event-based cache invalidation to prevent stale data cascades.
+- `frontend/src/hooks/useTransactionLockout.js`: Hook for controlling transaction
+  availability based on data source (live/cache/none).
+- `frontend/src/context/ResilienceContext.jsx`: Global context for coordinating
+  cache invalidation and connection status monitoring across the app.
+- `frontend/src/components/FreshnessIndicator.jsx`: Visual component showing cache
+  status, data age, and retry button for manual refresh.
+- `docs/LAST_KNOWN_GOOD_CACHING.md`: Comprehensive guide covering architecture,
+  components, usage patterns, TTL guidelines, and troubleshooting.
+- `docs/MIGRATION_GUIDE_290.md`: Step-by-step integration guide for adding caching
+  to existing components with before/after examples.
+- Unit tests for persistent cache, cached data hook, cache invalidation, and
+  transaction lockout with edge case and integration coverage.
 
 ### Added (Issue #291)
 
