@@ -144,9 +144,48 @@ enrichedTips (displayed to user)
 
 See `docs/PERFORMANCE_PROFILING.md` for measurement techniques.
 
-## Data Flow
+### API Resilience & Caching (Issue #290)
 
-## Security Boundaries
+Read-heavy views implement last-known-good caching to survive API outages:
+
+```
+Live API Request
+    |
+    v
+Fetch with timeout (10s)
+    ├─ Success?
+    │  ├─ Yes: Store in persistent cache → Return live data
+    │  │
+    │  └─ No: Timeout/error occurred
+    │         Check persistent cache
+    │         ├─ Cache found → Return cached data
+    │         └─ No cache → Return error
+    |
+    v
+User sees: live data OR cached data OR error
+UI shows:  freshness metadata + retry button (if cached)
+```
+
+**Features:**
+
+- **Persistent cache**: localStorage-backed, survives browser reload
+- **TTL management**: 2-5 minute caches per endpoint type
+- **Automatic fallback**: No code changes needed, transparent
+- **Freshness indicators**: Users shown data source and age
+- **Transaction lockout**: Risky actions disabled on stale data
+- **Pattern invalidation**: Related caches cleared on state change
+
+**Layers:**
+
+1. `persistentCache.js` - Low-level storage with TTL
+2. `useCachedData` - Generic hook for any fetch
+3. `cachedApiClient.js` - Transparent HTTP wrapper
+4. `FreshnessIndicator.jsx` - Visual feedback component
+5. `ResilienceContext.jsx` - Global coordination
+
+See `docs/LAST_KNOWN_GOOD_CACHING.md` for architecture and patterns.
+
+## Data Flow
 
 | Boundary | Trust Model |
 |---|---|
