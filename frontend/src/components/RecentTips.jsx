@@ -1,30 +1,19 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { openContractCall } from '@stacks/connect';
 import { uintCV, stringUtf8CV } from '@stacks/transactions';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_TIP_A_TIP } from '../config/contracts';
-import { formatSTX, toMicroSTX, formatAddress } from '../lib/utils';
+import { formatSTX, formatAddress } from '../lib/utils';
 import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
 import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
 import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackValidation';
 import { useTipContext } from '../context/TipContext';
+import { useFilteredAndPaginatedEvents } from '../hooks/useFilteredAndPaginatedEvents';
 import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
 const PAGE_SIZE = 10;
 
-/**
- * RecentTips -- displays a live feed of on-chain tip events with search,
- * filtering, pagination, and a tip-back modal for reciprocating tips.
- *
- * Reads parsed contract events from the shared TipContext event cache
- * instead of polling the Stacks API independently.  Message enrichment
- * (fetching on-chain tip messages) is still performed locally because
- * it is specific to this component's display needs.
- *
- * @param {Object}   props
- * @param {Function} props.addToast - Callback to display a toast notification.
- */
 export default function RecentTips({ addToast }) {
     const {
         events,
@@ -35,65 +24,42 @@ export default function RecentTips({ addToast }) {
         refreshEvents,
         loadMoreEvents: contextLoadMore,
     } = useTipContext();
-    const [messagesLoading, setMessagesLoading] = useState(false);
+
+    const {
+        enrichedTips: allEnrichedTips,
+        messagesLoading,
+        currentPage,
+        totalPages,
+        searchQuery,
+        minAmount,
+        maxAmount,
+        sortBy,
+        hasActiveFilters,
+        setSearchQuery,
+        setMinAmount,
+        setMaxAmount,
+        setSortBy,
+        prevPage,
+        nextPage,
+        clearFilters,
+        paginatedTips,
+        filteredTips,
+    } = useFilteredAndPaginatedEvents(events);
+
     const [tipBackTarget, setTipBackTarget] = useState(null);
     const [tipBackAmount, setTipBackAmount] = useState('0.5');
     const [tipBackMessage, setTipBackMessage] = useState('');
     const [tipBackError, setTipBackError] = useState('');
     const [sending, setSending] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [minAmount, setMinAmount] = useState('');
-    const [maxAmount, setMaxAmount] = useState('');
-    const [sortBy, setSortBy] = useState('newest');
     const [showFilters, setShowFilters] = useState(false);
-    const [offset, setOffset] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const tipBackModalRef = useRef(null);
     const previousFocusRef = useRef(null);
 
-    // Manual refresh only: invalidate local tip-detail cache, then ask
-    // TipContext to refresh shared events. Keep this out of auto effects.
     const handleRefresh = useCallback(() => {
         clearTipCache();
         refreshEvents();
     }, [refreshEvents]);
-
-    // Derive tip-sent events from the shared cache.
-    const tips = useMemo(
-        () => events.filter(t => t.event === 'tip-sent' && t.sender && t.recipient),
-        [events],
-    );
-    const tipIds = useMemo(
-        () => [...new Set(tips.map(t => t.tipId).filter(id => id && id !== '0'))],
-        [tips],
-    );
-
-    // Enrich tips with on-chain messages whenever the tip list changes.
-    const [tipMessages, setTipMessages] = useState({});
-    useEffect(() => {
-        if (tipIds.length === 0) return;
-        let cancelled = false;
-        setMessagesLoading(true);
-        fetchTipMessages(tipIds)
-            .then(messageMap => {
-                if (cancelled) return;
-                const obj = {};
-                messageMap.forEach((v, k) => { obj[k] = v; });
-                setTipMessages(obj);
-            })
-            .catch(err => { if (!cancelled) console.warn('Failed to fetch tip messages:', err.message || err); })
-            .finally(() => { if (!cancelled) setMessagesLoading(false); });
-        return () => { cancelled = true; };
-    }, [tipIds]);
-
-    // Merge messages into the tip objects for display.
-    const enrichedTips = useMemo(
-        () => tips.map(t => {
-            const msg = tipMessages[String(t.tipId)];
-            return msg ? { ...t, message: msg } : t;
-        }),
-        [tips, tipMessages],
-    );
 
     const handleLoadMore = async () => {
         setLoadingMore(true);
@@ -283,7 +249,7 @@ export default function RecentTips({ addToast }) {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
                         <label htmlFor="feed-search" className="sr-only">Search tips</label>
-                        <input id="feed-search" type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setOffset(0); }}
+                        <input id="feed-search" type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Search by address or message..." />
                     </div>
@@ -301,17 +267,17 @@ export default function RecentTips({ addToast }) {
                     <div id="feed-filters" className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center gap-2">
                             <label htmlFor="feed-filter-min" className="text-xs font-medium text-gray-500 dark:text-gray-400">Min STX</label>
-                            <input id="feed-filter-min" type="number" value={minAmount} onChange={(e) => { setMinAmount(e.target.value); setOffset(0); }}
+                            <input id="feed-filter-min" type="number" value={minAmount} onChange={(e) => setMinAmount(e.target.value)}
                                 className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder="0" step="0.001" min="0" />
                         </div>
                         <div className="flex items-center gap-2">
                             <label htmlFor="feed-filter-max" className="text-xs font-medium text-gray-500 dark:text-gray-400">Max STX</label>
-                            <input id="feed-filter-max" type="number" value={maxAmount} onChange={(e) => { setMaxAmount(e.target.value); setOffset(0); }}
+                            <input id="feed-filter-max" type="number" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)}
                                 className="w-24 px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" placeholder="any" step="0.001" min="0" />
                         </div>
                         <div className="flex items-center gap-2">
                             <label htmlFor="feed-sort" className="text-xs font-medium text-gray-500 dark:text-gray-400">Sort</label>
-                            <select id="feed-sort" value={sortBy} onChange={(e) => { setSortBy(e.target.value); setOffset(0); }}
+                            <select id="feed-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                                 className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500">
                                 <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
                                 <option value="amount-high">Highest amount</option><option value="amount-low">Lowest amount</option>
@@ -319,8 +285,8 @@ export default function RecentTips({ addToast }) {
                         </div>
                     </div>
                 )}
-                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {enrichedTips.length} tips{eventsMeta.total > enrichedTips.length ? ` (${eventsMeta.total} total on-chain)` : ''}</p>}
-                {!hasActiveFilters && eventsMeta.total > 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Loaded {enrichedTips.length} of {eventsMeta.total} on-chain events</p>}
+                {hasActiveFilters && <p className="text-xs text-gray-500 dark:text-gray-400">Showing {filteredTips.length} of {allEnrichedTips.length} tips{eventsMeta.total > allEnrichedTips.length ? ` (${eventsMeta.total} total on-chain)` : ''}</p>}
+                {!hasActiveFilters && eventsMeta.total > 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Loaded {allEnrichedTips.length} of {eventsMeta.total} on-chain events</p>}
             </div>
 
             {/* Tip cards */}
@@ -331,7 +297,7 @@ export default function RecentTips({ addToast }) {
                     </div>
                 ) : (
                     <div className="space-y-2" aria-live="polite" aria-relevant="additions text">
-                        {paginatedTips.map((tip, i) => (
+                        {allEnrichedTips.map((tip, i) => (
                             <div key={tip.tipId || i} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
                                     <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shrink-0">
@@ -368,12 +334,12 @@ export default function RecentTips({ addToast }) {
             </div>
 
             {/* Pagination */}
-            {filteredTips.length > PAGE_SIZE && (
+            {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4 pt-4">
-                    <button onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} disabled={offset === 0}
+                    <button onClick={prevPage} disabled={currentPage === 1}
                         className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors disabled:opacity-40">Previous</button>
                     <span className="text-xs text-gray-500 dark:text-gray-400">Page {currentPage} of {totalPages}</span>
-                    <button onClick={() => setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE))} disabled={currentPage >= totalPages}
+                    <button onClick={nextPage} disabled={currentPage >= totalPages}
                         className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors disabled:opacity-40">Next</button>
                 </div>
             )}
