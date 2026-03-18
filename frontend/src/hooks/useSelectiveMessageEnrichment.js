@@ -13,6 +13,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { fetchTipMessages } from '../lib/fetchTipDetails';
+import { createEnrichmentMarker } from '../lib/enrichmentMetrics';
 
 /**
  * Selective message enrichment hook.
@@ -56,12 +57,15 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     setLoading(true);
     setError(null);
 
+    const marker = createEnrichmentMarker();
+
     fetchTipMessages(visibleTipIds)
       .then(messageMap => {
         if (cancelled || cancelledRef.current) return;
         const obj = {};
         messageMap.forEach((v, k) => { obj[k] = v; });
         setTipMessages(prev => ({ ...prev, ...obj }));
+        marker.stop(visibleTipIds.length, messageMap.size);
       })
       .catch(err => {
         if (!cancelled && !cancelledRef.current) {
