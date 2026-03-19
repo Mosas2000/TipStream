@@ -17,7 +17,9 @@ Content creators and community contributors lack a simple, transparent way to re
 - **Platform Analytics** - Real-time stats: total tips, volume, and fees
 - **Activity History** - Per-user sent/received tip history with filtering
 - **Admin Dashboard** - Pause/resume, fee configuration, ownership transfer
-- **Auto-Refresh** - 60-second polling with manual refresh across all views
+- **Event Feed Pagination** - Cursor-based pagination with selective message enrichment (Issue #291)
+- **API Resilience Caching** - Last-known-good cache fallback during outages (Issue #290)
+- **Auto-Refresh** - 30-second polling with manual refresh across all views
 - **Cross-Component State** - Shared context so sending a tip refreshes all views
 
 ## Deployment
@@ -175,7 +177,7 @@ constants instead of hard-coding path strings.
 npm test
 ```
 
-Runs 23 contract tests on Clarinet simnet covering:
+Comprehensive test suite with 88 contract tests and 40+ frontend unit tests covering:
 
 - Tip sending and fee calculation
 - Self-tip rejection and minimum amount enforcement
@@ -185,6 +187,9 @@ Runs 23 contract tests on Clarinet simnet covering:
 - Admin controls (pause, fee updates)
 - Two-step ownership transfer
 - Multi-user stats queries
+- Frontend hooks, components, and utilities
+- Event pagination and message enrichment
+- Cache invalidation and resilience
 
 ## Project Structure
 
