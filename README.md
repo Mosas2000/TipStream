@@ -2,6 +2,15 @@
 
 A decentralized micro-tipping platform on the Stacks blockchain, secured by Bitcoin. Send STX tips to any Stacks address with full on-chain transparency, fee tracking, and community features.
 
+## Project Status
+
+**Phase:** 1 - Core Platform (Stable)
+**Live Features:** 14 (all functional on mainnet)
+**Test Coverage:** 128 tests (88 contract + 40 frontend)
+**Recent Work:** Event pagination optimization (Issue #291), API resilience caching (Issue #290)
+
+See [ROADMAP.md](ROADMAP.md) for upcoming phases and timelines.
+
 ## Problem
 
 Content creators and community contributors lack a simple, transparent way to receive micropayments. Existing solutions rely on centralized intermediaries that take large fees and can freeze funds. TipStream solves this by putting tipping directly on-chain where every transaction is verifiable, fees are minimal (0.5%), and no one can censor payments.
@@ -17,7 +26,9 @@ Content creators and community contributors lack a simple, transparent way to re
 - **Platform Analytics** - Real-time stats: total tips, volume, and fees
 - **Activity History** - Per-user sent/received tip history with filtering
 - **Admin Dashboard** - Pause/resume, fee configuration, ownership transfer
-- **Auto-Refresh** - 60-second polling with manual refresh across all views
+- **Event Feed Pagination** - Cursor-based pagination with selective message enrichment (Issue #291)
+- **API Resilience Caching** - Last-known-good cache fallback during outages (Issue #290)
+- **Auto-Refresh** - 30-second polling with manual refresh across all views
 - **Cross-Component State** - Shared context so sending a tip refreshes all views
 
 ## Deployment
@@ -84,20 +95,20 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 
 ### Frontend Routes
 
-| Path | Page | Description |
-|---|---|---|
-| `/` | (redirect) | Redirects authenticated users to `/send` |
-| `/send` | Send Tip | Send a single STX tip |
-| `/batch` | Batch Tip | Tip up to 50 recipients at once |
-| `/token-tip` | Token Tip | Send a SIP-010 token tip |
-| `/feed` | Live Feed | Real-time feed of recent tips |
-| `/leaderboard` | Leaderboard | Top senders and receivers |
-| `/activity` | My Activity | Personal tip history |
-| `/profile` | Profile | Manage display name, bio, avatar |
-| `/block` | Block Manager | Block/unblock addresses |
-| `/stats` | Platform Stats | Aggregate platform metrics |
-| `/admin` | Admin Dashboard | Owner-only pause/fee controls |
-| `*` | 404 | Shows the attempted path and a link home |
+| Path | Page | Description | Status |
+|---|---|---|---|
+| `/` | Landing / Redirect | Shows landing page for unauthenticated; redirects authenticated users to `/send` | Stable |
+| `/send` | Send Tip | Send a single STX tip | Stable |
+| `/batch` | Batch Tip | Tip up to 50 recipients at once | Stable |
+| `/token-tip` | Token Tip | Send a SIP-010 token tip (beta) | Beta |
+| `/feed` | Live Feed | Real-time feed of recent tips with pagination | Stable |
+| `/leaderboard` | Leaderboard | Top senders and receivers | Stable |
+| `/activity` | My Activity | Personal tip history | Stable |
+| `/profile` | Profile | Manage display name, bio, avatar | Stable |
+| `/block` | Block Manager | Block/unblock addresses | Stable |
+| `/stats` | Platform Stats | Aggregate platform metrics with cache fallback | Stable |
+| `/admin` | Admin Dashboard | Owner-only pause/fee controls | Stable |
+| `*` | 404 | Shows the attempted path and a link home | Stable |
 
 Route paths are centralised in `frontend/src/config/routes.js`. Import the
 constants instead of hard-coding path strings.
@@ -106,23 +117,23 @@ constants instead of hard-coding path strings.
 
 **Public (state-changing):**
 
-| Function | Description |
-|---|---|
-| `send-tip` | Send STX tip with message, deducts 0.5% fee |
-| `send-batch-tips` | Tip up to 50 recipients (partial - skips failures) |
-| `send-batch-tips-strict` | Tip up to 50 recipients (atomic - all or nothing) |
-| `tip-a-tip` | Recursive tip referencing a previous tip ID |
-| `update-profile` | Set display name, bio, avatar URL |
-| `toggle-block-user` | Block or unblock a principal |
-| `set-fee-basis-points` | Admin: update fee basis points (direct, bypasses timelock) |
-| `set-paused` | Admin: pause/resume contract (direct, bypasses timelock) |
-| `propose-fee-change` | Admin: propose timelocked fee change (144-block delay) |
-| `execute-fee-change` | Admin: execute pending fee change after timelock |
-| `cancel-fee-change` | Admin: cancel a pending fee proposal |
-| `propose-pause-change` | Admin: propose timelocked pause change (144-block delay) |
-| `execute-pause-change` | Admin: execute pending pause change after timelock |
-| `propose-new-owner` | Admin: initiate two-step ownership transfer |
-| `accept-ownership` | Accept pending ownership transfer |
+| Function | Description | Restriction |
+|---|---|---|
+| `send-tip` | Send STX tip with message, deducts 0.5% fee | None |
+| `send-batch-tips` | Tip up to 50 recipients (partial - skips failures) | None |
+| `send-batch-tips-strict` | Tip up to 50 recipients (atomic - all or nothing) | None |
+| `tip-a-tip` | Recursive tip referencing a previous tip ID | None |
+| `update-profile` | Set display name, bio, avatar URL | None |
+| `toggle-block-user` | Block or unblock a principal | None |
+| `set-fee-basis-points` | Admin: update fee basis points (direct, bypasses timelock) | Owner only |
+| `set-paused` | Admin: pause/resume contract (direct, bypasses timelock) | Owner only |
+| `propose-fee-change` | Admin: propose timelocked fee change (144-block delay) | Owner only |
+| `execute-fee-change` | Admin: execute pending fee change after timelock | Owner only |
+| `cancel-fee-change` | Admin: cancel a pending fee proposal | Owner only |
+| `propose-pause-change` | Admin: propose timelocked pause change (144-block delay) | Owner only |
+| `execute-pause-change` | Admin: execute pending pause change after timelock | Owner only |
+| `propose-new-owner` | Admin: initiate two-step ownership transfer | Owner only |
+| `accept-ownership` | Accept pending ownership transfer | Designated owner only |
 
 **Read-only:**
 
@@ -175,7 +186,7 @@ constants instead of hard-coding path strings.
 npm test
 ```
 
-Runs 23 contract tests on Clarinet simnet covering:
+Comprehensive test suite with 88 contract tests and 40+ frontend unit tests covering:
 
 - Tip sending and fee calculation
 - Self-tip rejection and minimum amount enforcement
@@ -185,6 +196,9 @@ Runs 23 contract tests on Clarinet simnet covering:
 - Admin controls (pause, fee updates)
 - Two-step ownership transfer
 - Multi-user stats queries
+- Frontend hooks, components, and utilities
+- Event pagination and message enrichment
+- Cache invalidation and resilience
 
 ## Project Structure
 
@@ -223,18 +237,21 @@ settings/
 
 - **PostConditionMode.Deny** enforced on every user-facing transaction, preventing
   the contract from transferring more STX than explicitly permitted
-- Shared post-condition modules (`lib/post-conditions.js`, `scripts/lib/post-conditions.cjs`)
-  centralize fee-aware ceiling calculations
-- ESLint rules and CI pipeline block `PostConditionMode.Allow` from entering the codebase
-- Fee calculation enforces a minimum of 1 microSTX to prevent zero-fee abuse
-- Minimum tip amount of 1000 microSTX (0.001 STX)
-- Self-tipping is rejected at the contract level
-- Blocked users cannot receive tips from the blocker
-- Admin functions are owner-only with on-chain assertions
-- Two-step ownership transfer prevents accidental loss
-- Post conditions on all transactions restrict STX movement
+- **Post-condition ceilings**: Shared modules calculate fee-aware ceilings to ensure
+  the contract cannot deduct more than (amount + 0.5% fee)
+- **Centralized post-condition logic**: `lib/post-conditions.js` and
+  `scripts/lib/post-conditions.cjs` ensure consistency across frontend and CLI tools
+- **CI enforcement**: ESLint rules and GitHub Actions block `PostConditionMode.Allow`
+  from entering the codebase via `.eslintrc` and `.gitleaks.toml`
+- **Frontend enforcement**: AdminDashboard never calls direct bypass functions,
+  always using timelocked propose-wait-execute paths
+- **Fee calculation enforces a minimum of 1 microSTX to prevent zero-fee abuse
+- **Minimum tip amount of 1000 microSTX (0.001 STX)**
+- **Self-tipping is rejected at the contract level**
+- **Blocked users cannot receive tips from the blocker**
+- **Admin functions are owner-only with on-chain assertions**
+- **Two-step ownership transfer prevents accidental loss**
 - **Timelocked admin changes**: Fee and pause changes use a 144-block (~24 hour) propose-wait-execute cycle
-- **Frontend enforces timelocked paths**: The AdminDashboard never calls direct bypass functions
 - **Multisig governance**: Optional multi-signature approval layer for admin actions
 
 ### Credential Handling

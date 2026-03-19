@@ -26,14 +26,28 @@ responsibly:
 The following assets are in scope:
 
 - Smart contracts deployed under `SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T`.
-- The TipStream frontend hosted at `https://tipstream-silk.vercel.app`.
+- The TipStream frontend hosted at `https://tipstream.xyz` and on Vercel.
 - Deployment scripts and configuration in this repository.
+- Smart contract upgrade strategy and migration procedures.
+- Frontend post-condition enforcement logic.
 
 Out of scope:
 
-- Third-party services (Hiro API, wallet extensions).
+- Third-party services (Hiro API, wallet extensions, Vercel infrastructure).
 - Social engineering attacks.
 - Denial-of-service attacks against public infrastructure.
+- Private mnemonics or keys (report via secure channels, not as issues).
+
+## Security Audit Status
+
+| Area | Status | Last Review | Notes |
+|---|---|---|---|
+| Smart Contract | Undergone review | Deployment | Timelock bypass documented |
+| Post-Conditions | Audited | Current | CI enforces deny mode |
+| Frontend Validation | Reviewed | Current | Client-side checks + contract validation |
+| Credential Management | Secure | Current | gitleaks + .gitignore + hooks |
+| Dependencies | Audited | Monthly | npm audit in CI |
+| Documentation | Current | March 2026 | Audit complete, drift signals resolved |
 
 ## Known Security Considerations
 
