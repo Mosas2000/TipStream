@@ -1,11 +1,19 @@
 // Central contract configuration
 // All components should import from here instead of hardcoding addresses.
 
+import { 
+  validateNetwork, 
+  validateAppUrl, 
+  validateContractAddress, 
+  validateContractName,
+  validateStacksApiUrl 
+} from './validation.js';
+
 export const CONTRACT_ADDRESS = 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T';
 export const CONTRACT_NAME = 'tipstream';
 
 const NETWORK = import.meta.env.VITE_NETWORK || 'mainnet';
-export const NETWORK_NAME = NETWORK;
+export const NETWORK_NAME = validateNetwork(NETWORK);
 export const STACKS_API_BASE = NETWORK === 'mainnet'
     ? 'https://api.hiro.so'
     : NETWORK === 'testnet'
