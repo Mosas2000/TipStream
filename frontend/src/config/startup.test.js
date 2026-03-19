@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validateConfigAtStartup, reportValidationErrors } from '../startup.js';
+import { validateConfigAtStartup, reportValidationErrors } from './startup.js';
 
-vi.mock('../contracts.js', () => ({
+vi.mock('./contracts.js', () => ({
   CONTRACT_ADDRESS: 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T',
   CONTRACT_NAME: 'tipstream',
   STACKS_API_BASE: 'https://api.hiro.so',

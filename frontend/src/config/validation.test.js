@@ -6,7 +6,7 @@ import {
   validateContractAddress,
   validateContractName,
   validateStacksApiUrl
-} from '../validation.js';
+} from './validation.js';
 
 describe('ConfigValidationError', () => {
   it('should create error with field and value', () => {
