@@ -28,3 +28,35 @@ export function validateNetwork(network) {
 
   return network;
 }
+
+export function validateAppUrl(url) {
+  if (!url) {
+    throw new ConfigValidationError(
+      'VITE_APP_URL is not defined. Set it to your application URL.',
+      'VITE_APP_URL',
+      url
+    );
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (!parsed.protocol.match(/^https?:$/)) {
+      throw new ConfigValidationError(
+        `VITE_APP_URL must use http or https protocol. Got: ${parsed.protocol}`,
+        'VITE_APP_URL',
+        url
+      );
+    }
+  } catch (err) {
+    if (err instanceof ConfigValidationError) {
+      throw err;
+    }
+    throw new ConfigValidationError(
+      `VITE_APP_URL is not a valid URL: "${url}"`,
+      'VITE_APP_URL',
+      url
+    );
+  }
+
+  return url;
+}
