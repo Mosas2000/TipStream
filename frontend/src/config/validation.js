@@ -158,3 +158,28 @@ export function validateStacksApiUrl(url, network) {
 
   return url;
 }
+
+export function validateEnvironmentConfig() {
+  const errors = [];
+  const warnings = [];
+
+  try {
+    const network = import.meta.env.VITE_NETWORK || 'mainnet';
+    validateNetwork(network);
+  } catch (err) {
+    errors.push(err);
+  }
+
+  try {
+    const appUrl = import.meta.env.VITE_APP_URL;
+    if (appUrl) {
+      validateAppUrl(appUrl);
+    } else {
+      warnings.push('VITE_APP_URL is not set. Canonical URLs and social sharing may not work correctly.');
+    }
+  } catch (err) {
+    errors.push(err);
+  }
+
+  return { errors, warnings };
+}
