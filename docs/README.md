@@ -19,43 +19,43 @@ Comprehensive documentation for TipStream development, operations, and evaluatio
 
 | Document | Purpose |
 |---|---|
-| [../CONTRIBUTING.md](../CONTRIBUTING.md) | Code style, PR guidelines, testing |
-| [DOCS_MAINTENANCE.md](DOCS_MAINTENANCE.md) | Documentation audit checklist and process |
-| [CONTRACT-UPGRADE-STRATEGY.md](CONTRACT-UPGRADE-STRATEGY.md) | Handling breaking changes |
-| [TIMELOCK-BYPASS-AUDIT.md](TIMELOCK-BYPASS-AUDIT.md) | Admin function security analysis |
-| [ADMIN-OPERATIONS.md](ADMIN-OPERATIONS.md) | Emergency procedures and manual operations |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guidelines for contributing to documentation |
+| [DOCS_MAINTENANCE.md](DOCS_MAINTENANCE.md) | Documentation audit checklist and quarterly process |
+| [FEATURE_STATUS.md](FEATURE_STATUS.md) | Feature maturity matrix and status tracking |
+| [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) | Decision records (ADRs) documenting major architectural choices |
+
+## For Operations & Administration
+
+| Document | Purpose |
+|---|---|
+| [ADMIN_OPERATIONS.md](ADMIN_OPERATIONS.md) | Runbook for contract management and emergency procedures |
+| [SMART_CONTRACT_UPGRADE.md](SMART_CONTRACT_UPGRADE.md) | Upgrade procedures, versioning, and rollback strategies |
+| [MONITORING.md](MONITORING.md) | Monitoring procedures and observability setup |
+| [DEPLOYMENT_VERIFICATION.md](DEPLOYMENT_VERIFICATION.md) | Pre/post-deployment verification checklist |
 
 ## For Performance & Optimization
 
 | Document | Purpose |
 |---|---|
-| [PERFORMANCE_PROFILING.md](PERFORMANCE_PROFILING.md) | Measuring event feed optimization (Issue #291) |
-| [MIGRATION_GUIDE_291.md](MIGRATION_GUIDE_291.md) | Adopting new pagination features |
+| [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) | Performance targets, baselines, and optimization opportunities |
+| [API_RESILIENCE_TROUBLESHOOTING.md](API_RESILIENCE_TROUBLESHOOTING.md) | Troubleshooting guide for API and cache failures |
 
-## For API Resilience & Caching
-
-| Document | Purpose |
-|---|---|
-| [LAST_KNOWN_GOOD_CACHING.md](LAST_KNOWN_GOOD_CACHING.md) | Cache architecture during outages (Issue #290) |
-| [MIGRATION_GUIDE_290.md](MIGRATION_GUIDE_290.md) | Integrating resilience caching |
-
-## For Post-Condition Enforcement
+## For Configuration & Deployment
 
 | Document | Purpose |
 |---|---|
-| [POST-CONDITION-GUIDE.md](POST-CONDITION-GUIDE.md) | PostConditionMode.Deny strategy |
+| [CONFIGURATION_REFERENCE.md](CONFIGURATION_REFERENCE.md) | Environment variables, feature flags, and tuning options |
 
 ## Root-Level Documentation
 
 | Document | Purpose |
 |---|---|
-| [../README.md](../README.md) | Project summary, features, quick start |
-| [../ARCHITECTURE.md](../ARCHITECTURE.md) | Full system design and layers |
-| [../SECURITY.md](../SECURITY.md) | Security model and vulnerability reporting |
-| [../CONTRIBUTING.md](../CONTRIBUTING.md) | Contributor guide and standards |
-| [../CHANGELOG.md](../CHANGELOG.md) | Release history and changes |
-| [../ROADMAP.md](../ROADMAP.md) | Feature planning and phases |
-| [../DOCS_AUDIT_REPORT.md](../DOCS_AUDIT_REPORT.md) | Documentation consistency audit |
+| [../README.md](../README.md) | Project overview, features, and quick start |
+| [../ARCHITECTURE.md](../ARCHITECTURE.md) | Complete system design, layers, and extension contracts |
+| [../SECURITY.md](../SECURITY.md) | Security model, audit status, and vulnerability reporting |
+| [../CONTRIBUTING.md](../CONTRIBUTING.md) (root) | Contribution guidelines for code |
+| [../CHANGELOG.md](../CHANGELOG.md) | Release history and version changes |
+| [../ROADMAP.md](../ROADMAP.md) | Feature phases and timeline |
 
 ---
 
