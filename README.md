@@ -2,6 +2,15 @@
 
 A decentralized micro-tipping platform on the Stacks blockchain, secured by Bitcoin. Send STX tips to any Stacks address with full on-chain transparency, fee tracking, and community features.
 
+## Project Status
+
+**Phase:** 1 - Core Platform (Stable)
+**Live Features:** 14 (all functional on mainnet)
+**Test Coverage:** 128 tests (88 contract + 40 frontend)
+**Recent Work:** Event pagination optimization (Issue #291), API resilience caching (Issue #290)
+
+See [ROADMAP.md](ROADMAP.md) for upcoming phases and timelines.
+
 ## Problem
 
 Content creators and community contributors lack a simple, transparent way to receive micropayments. Existing solutions rely on centralized intermediaries that take large fees and can freeze funds. TipStream solves this by putting tipping directly on-chain where every transaction is verifiable, fees are minimal (0.5%), and no one can censor payments.
@@ -108,23 +117,23 @@ constants instead of hard-coding path strings.
 
 **Public (state-changing):**
 
-| Function | Description |
-|---|---|
-| `send-tip` | Send STX tip with message, deducts 0.5% fee |
-| `send-batch-tips` | Tip up to 50 recipients (partial - skips failures) |
-| `send-batch-tips-strict` | Tip up to 50 recipients (atomic - all or nothing) |
-| `tip-a-tip` | Recursive tip referencing a previous tip ID |
-| `update-profile` | Set display name, bio, avatar URL |
-| `toggle-block-user` | Block or unblock a principal |
-| `set-fee-basis-points` | Admin: update fee basis points (direct, bypasses timelock) |
-| `set-paused` | Admin: pause/resume contract (direct, bypasses timelock) |
-| `propose-fee-change` | Admin: propose timelocked fee change (144-block delay) |
-| `execute-fee-change` | Admin: execute pending fee change after timelock |
-| `cancel-fee-change` | Admin: cancel a pending fee proposal |
-| `propose-pause-change` | Admin: propose timelocked pause change (144-block delay) |
-| `execute-pause-change` | Admin: execute pending pause change after timelock |
-| `propose-new-owner` | Admin: initiate two-step ownership transfer |
-| `accept-ownership` | Accept pending ownership transfer |
+| Function | Description | Restriction |
+|---|---|---|
+| `send-tip` | Send STX tip with message, deducts 0.5% fee | None |
+| `send-batch-tips` | Tip up to 50 recipients (partial - skips failures) | None |
+| `send-batch-tips-strict` | Tip up to 50 recipients (atomic - all or nothing) | None |
+| `tip-a-tip` | Recursive tip referencing a previous tip ID | None |
+| `update-profile` | Set display name, bio, avatar URL | None |
+| `toggle-block-user` | Block or unblock a principal | None |
+| `set-fee-basis-points` | Admin: update fee basis points (direct, bypasses timelock) | Owner only |
+| `set-paused` | Admin: pause/resume contract (direct, bypasses timelock) | Owner only |
+| `propose-fee-change` | Admin: propose timelocked fee change (144-block delay) | Owner only |
+| `execute-fee-change` | Admin: execute pending fee change after timelock | Owner only |
+| `cancel-fee-change` | Admin: cancel a pending fee proposal | Owner only |
+| `propose-pause-change` | Admin: propose timelocked pause change (144-block delay) | Owner only |
+| `execute-pause-change` | Admin: execute pending pause change after timelock | Owner only |
+| `propose-new-owner` | Admin: initiate two-step ownership transfer | Owner only |
+| `accept-ownership` | Accept pending ownership transfer | Designated owner only |
 
 **Read-only:**
 
