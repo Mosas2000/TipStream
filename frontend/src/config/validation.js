@@ -118,3 +118,43 @@ export function validateContractName(name) {
 
   return name;
 }
+
+export function validateStacksApiUrl(url, network) {
+  if (!url) {
+    throw new ConfigValidationError(
+      'STACKS_API_BASE is not defined',
+      'STACKS_API_BASE',
+      url
+    );
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (!parsed.protocol.match(/^https?:$/)) {
+      throw new ConfigValidationError(
+        `STACKS_API_BASE must use http or https protocol. Got: ${parsed.protocol}`,
+        'STACKS_API_BASE',
+        url
+      );
+    }
+  } catch (err) {
+    if (err instanceof ConfigValidationError) {
+      throw err;
+    }
+    throw new ConfigValidationError(
+      `STACKS_API_BASE is not a valid URL: "${url}"`,
+      'STACKS_API_BASE',
+      url
+    );
+  }
+
+  if (network === 'mainnet' && !url.includes('api.hiro.so')) {
+    console.warn(`Warning: STACKS_API_BASE for mainnet is "${url}" but typically should be "https://api.hiro.so"`);
+  }
+
+  if (network === 'testnet' && !url.includes('api.testnet.hiro.so')) {
+    console.warn(`Warning: STACKS_API_BASE for testnet is "${url}" but typically should be "https://api.testnet.hiro.so"`);
+  }
+
+  return url;
+}
