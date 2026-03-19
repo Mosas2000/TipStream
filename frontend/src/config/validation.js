@@ -60,3 +60,32 @@ export function validateAppUrl(url) {
 
   return url;
 }
+
+export function validateContractAddress(address) {
+  if (!address) {
+    throw new ConfigValidationError(
+      'CONTRACT_ADDRESS is not defined in contracts.js',
+      'CONTRACT_ADDRESS',
+      address
+    );
+  }
+
+  if (typeof address !== 'string' || address.length === 0) {
+    throw new ConfigValidationError(
+      'CONTRACT_ADDRESS must be a non-empty string',
+      'CONTRACT_ADDRESS',
+      address
+    );
+  }
+
+  const stacksAddressPattern = /^S[TPMN][0-9A-Z]{38,40}$/;
+  if (!stacksAddressPattern.test(address)) {
+    throw new ConfigValidationError(
+      `CONTRACT_ADDRESS does not match Stacks address format: "${address}"`,
+      'CONTRACT_ADDRESS',
+      address
+    );
+  }
+
+  return address;
+}
