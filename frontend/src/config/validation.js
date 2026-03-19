@@ -89,3 +89,32 @@ export function validateContractAddress(address) {
 
   return address;
 }
+
+export function validateContractName(name) {
+  if (!name) {
+    throw new ConfigValidationError(
+      'CONTRACT_NAME is not defined in contracts.js',
+      'CONTRACT_NAME',
+      name
+    );
+  }
+
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new ConfigValidationError(
+      'CONTRACT_NAME must be a non-empty string',
+      'CONTRACT_NAME',
+      name
+    );
+  }
+
+  const namePattern = /^[a-z][a-z0-9-]*$/;
+  if (!namePattern.test(name)) {
+    throw new ConfigValidationError(
+      `CONTRACT_NAME must start with lowercase letter and contain only lowercase letters, numbers, and hyphens: "${name}"`,
+      'CONTRACT_NAME',
+      name
+    );
+  }
+
+  return name;
+}
