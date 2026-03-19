@@ -95,20 +95,20 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 
 ### Frontend Routes
 
-| Path | Page | Description |
-|---|---|---|
-| `/` | (redirect) | Redirects authenticated users to `/send` |
-| `/send` | Send Tip | Send a single STX tip |
-| `/batch` | Batch Tip | Tip up to 50 recipients at once |
-| `/token-tip` | Token Tip | Send a SIP-010 token tip |
-| `/feed` | Live Feed | Real-time feed of recent tips |
-| `/leaderboard` | Leaderboard | Top senders and receivers |
-| `/activity` | My Activity | Personal tip history |
-| `/profile` | Profile | Manage display name, bio, avatar |
-| `/block` | Block Manager | Block/unblock addresses |
-| `/stats` | Platform Stats | Aggregate platform metrics |
-| `/admin` | Admin Dashboard | Owner-only pause/fee controls |
-| `*` | 404 | Shows the attempted path and a link home |
+| Path | Page | Description | Status |
+|---|---|---|---|
+| `/` | Landing / Redirect | Shows landing page for unauthenticated; redirects authenticated users to `/send` | Stable |
+| `/send` | Send Tip | Send a single STX tip | Stable |
+| `/batch` | Batch Tip | Tip up to 50 recipients at once | Stable |
+| `/token-tip` | Token Tip | Send a SIP-010 token tip (beta) | Beta |
+| `/feed` | Live Feed | Real-time feed of recent tips with pagination | Stable |
+| `/leaderboard` | Leaderboard | Top senders and receivers | Stable |
+| `/activity` | My Activity | Personal tip history | Stable |
+| `/profile` | Profile | Manage display name, bio, avatar | Stable |
+| `/block` | Block Manager | Block/unblock addresses | Stable |
+| `/stats` | Platform Stats | Aggregate platform metrics with cache fallback | Stable |
+| `/admin` | Admin Dashboard | Owner-only pause/fee controls | Stable |
+| `*` | 404 | Shows the attempted path and a link home | Stable |
 
 Route paths are centralised in `frontend/src/config/routes.js`. Import the
 constants instead of hard-coding path strings.
@@ -237,18 +237,21 @@ settings/
 
 - **PostConditionMode.Deny** enforced on every user-facing transaction, preventing
   the contract from transferring more STX than explicitly permitted
-- Shared post-condition modules (`lib/post-conditions.js`, `scripts/lib/post-conditions.cjs`)
-  centralize fee-aware ceiling calculations
-- ESLint rules and CI pipeline block `PostConditionMode.Allow` from entering the codebase
-- Fee calculation enforces a minimum of 1 microSTX to prevent zero-fee abuse
-- Minimum tip amount of 1000 microSTX (0.001 STX)
-- Self-tipping is rejected at the contract level
-- Blocked users cannot receive tips from the blocker
-- Admin functions are owner-only with on-chain assertions
-- Two-step ownership transfer prevents accidental loss
-- Post conditions on all transactions restrict STX movement
+- **Post-condition ceilings**: Shared modules calculate fee-aware ceilings to ensure
+  the contract cannot deduct more than (amount + 0.5% fee)
+- **Centralized post-condition logic**: `lib/post-conditions.js` and
+  `scripts/lib/post-conditions.cjs` ensure consistency across frontend and CLI tools
+- **CI enforcement**: ESLint rules and GitHub Actions block `PostConditionMode.Allow`
+  from entering the codebase via `.eslintrc` and `.gitleaks.toml`
+- **Frontend enforcement**: AdminDashboard never calls direct bypass functions,
+  always using timelocked propose-wait-execute paths
+- **Fee calculation enforces a minimum of 1 microSTX to prevent zero-fee abuse
+- **Minimum tip amount of 1000 microSTX (0.001 STX)**
+- **Self-tipping is rejected at the contract level**
+- **Blocked users cannot receive tips from the blocker**
+- **Admin functions are owner-only with on-chain assertions**
+- **Two-step ownership transfer prevents accidental loss**
 - **Timelocked admin changes**: Fee and pause changes use a 144-block (~24 hour) propose-wait-execute cycle
-- **Frontend enforces timelocked paths**: The AdminDashboard never calls direct bypass functions
 - **Multisig governance**: Optional multi-signature approval layer for admin actions
 
 ### Credential Handling
