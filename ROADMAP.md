@@ -21,9 +21,20 @@ community feedback and funding.
 - [x] Credential management framework (example templates, gitignore, hooks)
 - [x] Secret scanning CI pipeline (gitleaks)
 - [x] SECURITY.md with disclosure process and rotation advisory
-- [ ] Post-condition enforcement audit across all scripts
-- [ ] Contract upgrade strategy documentation
-- [ ] Admin dashboard frontend safeguards
+- [x] Post-condition enforcement audit across all scripts
+- [x] Contract upgrade strategy documentation
+- [x] Admin dashboard frontend safeguards
+
+## Phase 2.5 — Performance & Resilience (in progress)
+
+- [x] Event feed pagination with stable cursors (Issue #291)
+- [x] Selective message enrichment for visible tips only
+- [x] Page caching with TTL and invalidation (Issue #291)
+- [x] Last-known-good caching for read-heavy views (Issue #290)
+- [x] API resilience with graceful fallback to cached data
+- [x] Freshness indicators showing data source and age
+- [x] Transaction lockout during API degradation
+- [ ] Documentation audit and consistency review
 
 ## Phase 3 — Token Economy
 
