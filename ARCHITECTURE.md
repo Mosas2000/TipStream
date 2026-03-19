@@ -41,20 +41,34 @@ SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream
 - **Admin controls**: fee adjustment, pause/unpause with timelock,
   two-step ownership transfer.
 
-### Extension Contracts (planned)
+### Extension Contracts (planned future phases)
 
-| Contract | Purpose |
-|---|---|
-| tipstream-traits | SIP-010 / SIP-009 trait definitions |
-| tipstream-token | TIPS fungible reward token |
-| tipstream-escrow | Time-locked escrow tips |
-| tipstream-subscription | Recurring patronage payments |
-| tipstream-vault | Community treasury |
-| tipstream-referral | Referral tracking and incentives |
-| tipstream-multisig | Multi-signature admin governance |
-| tipstream-rewards | TIPS token reward distribution |
-| tipstream-badges | NFT achievement badges |
-| tipstream-dao | Token-weighted governance proposals |
+**Phase 3 — Token Economy**
+
+| Contract | Purpose | Status | Timeline |
+|---|---|---|---|
+| tipstream-traits | SIP-010 / SIP-009 trait definitions | Planned | Phase 3 |
+| tipstream-token | TIPS fungible reward token | Planned | Phase 3 |
+| tipstream-rewards | TIPS token reward distribution | Planned | Phase 3 |
+| tipstream-badges | NFT achievement badges | Planned | Phase 3 |
+| tipstream-referral | Referral tracking and incentives | Planned | Phase 3 |
+
+**Phase 4 — Governance and Treasury**
+
+| Contract | Purpose | Status | Timeline |
+|---|---|---|---|
+| tipstream-vault | Community treasury | Planned | Phase 4 |
+| tipstream-multisig | Multi-signature admin governance | Planned | Phase 4 |
+| tipstream-dao | Token-weighted governance proposals | Planned | Phase 4 |
+
+**Phase 5 — Advanced Features**
+
+| Contract | Purpose | Status | Timeline |
+|---|---|---|---|
+| tipstream-escrow | Time-locked escrow tips | Planned | Phase 5 |
+| tipstream-subscription | Recurring patronage payments | Planned | Phase 5 |
+
+See [ROADMAP.md](ROADMAP.md) for current phase and timeline.
 
 ## Frontend Layer
 
