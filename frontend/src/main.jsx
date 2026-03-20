@@ -14,8 +14,12 @@ reportValidationErrors(validationResults);
 
 if (!validationResults.success) {
   const errorMessage = document.createElement('div');
-  errorMessage.style.cssText = 'padding: 20px; background: #fee; border: 2px solid #c00; margin: 20px; font-family: monospace;';
-  errorMessage.innerHTML = '<h2>Configuration Error</h2><p>Application cannot start due to invalid configuration. Check the console for details.</p>';
+  errorMessage.style.cssText = 'padding: 20px; background: #fee; border: 2px solid #c00; margin: 20px; font-family: monospace; border-radius: 4px;';
+  errorMessage.innerHTML = `
+    <h2 style="margin-top: 0; color: #c00;">Configuration Error</h2>
+    <p>Application cannot start due to invalid configuration.</p>
+    <p style="margin-bottom: 0;"><strong>Check the browser console for details.</strong></p>
+  `;
   document.body.appendChild(errorMessage);
   throw new Error('Configuration validation failed. Check console for details.');
 }
