@@ -70,10 +70,12 @@ Administrative changes use a 144-block (~24 hour) delay:
 The frontend AdminDashboard exclusively uses the timelocked functions. Direct bypass
 functions are reserved for documented emergencies only.
 
-### Missing cancel-pause-change Function
+### Pause Change Cancellation
 
-The contract has `cancel-fee-change` but no corresponding `cancel-pause-change`. If a pause
-proposal is submitted, it can only be superseded by a new proposal or waited out.
+The contract now provides `cancel-pause-change` to explicitly cancel pending pause proposals.
+This mirrors the existing `cancel-fee-change` function and provides operational symmetry.
+When a pause proposal is submitted in error, operators can cancel it explicitly rather than
+wait for the timelock to expire or overwrite it with a new proposal.
 
 ### Post Conditions
 
