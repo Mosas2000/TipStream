@@ -106,6 +106,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate configuration
+        env:
+          VITE_NETWORK: mainnet
+          VITE_APP_URL: https://tipstream-silk.vercel.app
+        run: npm run validate:config
+
       - name: Build
         run: npm run build
 

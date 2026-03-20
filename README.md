@@ -73,11 +73,15 @@ clarinet deployments apply -p deployments/default.mainnet-plan.yaml
 
 ```bash
 cd frontend
+cp .env.example .env.local   # Configure environment variables
 npm install
-npm run dev       # Start dev server at http://localhost:5173
-npm run build     # Production build
-npm run preview   # Preview production build
+npm run validate:config      # Validate configuration
+npm run dev                  # Start dev server at http://localhost:5173
+npm run build                # Production build
+npm run preview              # Preview production build
 ```
+
+See [frontend/CONFIG.md](frontend/CONFIG.md) for detailed configuration requirements.
 
 ## Architecture
 
