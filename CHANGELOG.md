@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Cancel-pause-change functionality for contract pause operations:
+  - New `cancel-pause-change` function allows admins to cancel pending pause proposals
+  - Provides operational symmetry with existing `cancel-fee-change` function
+  - Reduces operational risk when pause proposals submitted in error
+  - Clear state cleanup on cancellation (clears pending-pause and pending-pause-height)
+  - Comprehensive contract tests covering authorization, state cleanup, and edge cases
+  - Admin dashboard component (AdminPauseControl) for pause proposal management
+  - Frontend utilities library for pause state calculations and validation
+  - Extensive test suite (44 state management tests, 50 utility tests, 33 component tests)
+  - Documentation suite:
+    - PAUSE_OPERATIONS.md: Technical implementation details
+    - PAUSE_CONTROL_RUNBOOK.md: Operational procedures for admins
+    - ADMIN_OPERATIONS.md: Updated with cancel-pause task
+    - CANCEL_PAUSE_MIGRATION.md: Deployment and rollback guidance
+  - Authorization checks prevent non-admin operations
+  - Timelock validation prevents execution before expiration
+  - Error messages clearly identify operation failures
+
 - Notification state scoping by wallet address and network:
   - Notification read state now scoped per wallet address and network
   - Each wallet maintains independent unread notification counts
