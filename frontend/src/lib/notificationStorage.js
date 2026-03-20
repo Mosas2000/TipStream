@@ -45,5 +45,10 @@ export function setLastSeenTimestamp(address, network, timestamp) {
     return;
   }
   
+  if (typeof timestamp !== 'number' || timestamp < 0) {
+    console.warn('Invalid timestamp for notification storage:', timestamp);
+    return;
+  }
+  
   localStorage.setItem(key, String(timestamp));
 }
