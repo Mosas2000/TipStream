@@ -397,6 +397,17 @@
     )
 )
 
+(define-public (cancel-pause-change)
+    (begin
+        (asserts! (is-admin) err-owner-only)
+        (asserts! (is-some (var-get pending-pause)) err-no-pending-change)
+        (var-set pending-pause none)
+        (var-set pending-pause-height u0)
+        (print { event: "pause-change-cancelled" })
+        (ok true)
+    )
+)
+
 (define-public (set-multisig (multisig (optional principal)))
     (begin
         (asserts! (is-eq tx-sender (var-get contract-owner)) err-owner-only)
