@@ -32,6 +32,18 @@ export function useNotifications(userAddress) {
     
     const lastSeenRef = useRef(initialLastSeen);
     const [lastSeenTimestamp, setLastSeenTimestamp] = useState(initialLastSeen);
+    
+    useEffect(() => {
+      if (!userAddress || !network) {
+        lastSeenRef.current = 0;
+        setLastSeenTimestamp(0);
+        return;
+      }
+      
+      const timestamp = getLastSeenTimestamp(userAddress, network);
+      lastSeenRef.current = timestamp;
+      setLastSeenTimestamp(timestamp);
+    }, [userAddress, network]);
 
     /** Derive received tips from the shared event cache. */
     const notifications = useMemo(() => {
@@ -61,7 +73,7 @@ export function useNotifications(userAddress) {
         const now = Math.floor(Date.now() / 1000);
         lastSeenRef.current = now;
         setLastSeenTimestamp(now);
-        setLastSeenTimestamp(userAddress, network, now);
+        saveLastSeenTimestamp(userAddress, network, now);
         setUnreadCount(0);
     }, [userAddress, network]);
 
