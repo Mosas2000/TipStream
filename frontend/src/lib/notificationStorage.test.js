@@ -100,60 +100,94 @@ describe('setLastSeenTimestamp', () => {
   });
 });
 
-describe('migrateLegacyNotificationState', () => {
-  const legacyKey = 'tipstream_last_seen_tip_ts';
-
+describe('getAllScopedNotificationKeys', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  afterEach(() => {
+  it('should return all scoped notification keys', () => {
+    setLastSeenTimestamp('SP111...', 'mainnet', 1000);
+    setLastSeenTimestamp('SP222...', 'mainnet', 2000);
+    setLastSeenTimestamp('SP111...', 'testnet', 3000);
+    
+    const keys = getAllScopedNotificationKeys();
+    
+    expect(keys).toHaveLength(3);
+    expect(keys).toContain('tipstream_last_seen_mainnet_SP111...');
+    expect(keys).toContain('tipstream_last_seen_mainnet_SP222...');
+    expect(keys).toContain('tipstream_last_seen_testnet_SP111...');
+  });
+
+  it('should not include legacy key', () => {
+    localStorage.setItem('tipstream_last_seen_tip_ts', '1000');
+    setLastSeenTimestamp('SP111...', 'mainnet', 2000);
+    
+    const keys = getAllScopedNotificationKeys();
+    
+    expect(keys).toHaveLength(1);
+    expect(keys).not.toContain('tipstream_last_seen_tip_ts');
+  });
+
+  it('should return empty array for fresh storage', () => {
+    const keys = getAllScopedNotificationKeys();
+    expect(keys).toHaveLength(0);
+  });
+});
+
+describe('clearAllNotificationState', () => {
+  beforeEach(() => {
     localStorage.clear();
   });
 
-  it('should migrate legacy value to scoped key', () => {
-    localStorage.setItem(legacyKey, '1234567890');
+  it('should clear all scoped notification state', () => {
+    setLastSeenTimestamp('SP111...', 'mainnet', 1000);
+    setLastSeenTimestamp('SP222...', 'mainnet', 2000);
+    setLastSeenTimestamp('SP111...', 'testnet', 3000);
     
-    const migrated = migrateLegacyNotificationState('SP123ABC', 'mainnet');
+    clearAllNotificationState();
     
-    expect(migrated).toBe(1234567890);
-    expect(getLastSeenTimestamp('SP123ABC', 'mainnet')).toBe(1234567890);
+    expect(getLastSeenTimestamp('SP111...', 'mainnet')).toBe(0);
+    expect(getLastSeenTimestamp('SP222...', 'mainnet')).toBe(0);
+    expect(getLastSeenTimestamp('SP111...', 'testnet')).toBe(0);
   });
 
-  it('should not overwrite existing scoped value', () => {
-    localStorage.setItem(legacyKey, '1111111111');
-    setLastSeenTimestamp('SP123ABC', 'mainnet', 2222222222);
+  it('should not clear other storage keys', () => {
+    localStorage.setItem('other_key', 'value');
+    setLastSeenTimestamp('SP111...', 'mainnet', 1000);
     
-    const migrated = migrateLegacyNotificationState('SP123ABC', 'mainnet');
+    clearAllNotificationState();
     
-    expect(migrated).toBeNull();
-    expect(getLastSeenTimestamp('SP123ABC', 'mainnet')).toBe(2222222222);
+    expect(localStorage.getItem('other_key')).toBe('value');
+  });
+});
+
+describe('getNotificationStateForAddress', () => {
+  beforeEach(() => {
+    localStorage.clear();
   });
 
-  it('should return null when no legacy value exists', () => {
-    const migrated = migrateLegacyNotificationState('SP123ABC', 'mainnet');
-    expect(migrated).toBeNull();
-  });
-
-  it('should return null for missing address', () => {
-    localStorage.setItem(legacyKey, '1234567890');
-    const migrated = migrateLegacyNotificationState(null, 'mainnet');
-    expect(migrated).toBeNull();
-  });
-
-  it('should return null for missing network', () => {
-    localStorage.setItem(legacyKey, '1234567890');
-    const migrated = migrateLegacyNotificationState('SP123ABC', null);
-    expect(migrated).toBeNull();
-  });
-
-  it('should migrate once per address-network pair', () => {
-    localStorage.setItem(legacyKey, '1234567890');
+  it('should get all states for an address', () => {
+    setLastSeenTimestamp('SP111...', 'mainnet', 1000);
+    setLastSeenTimestamp('SP111...', 'testnet', 2000);
     
-    const migrated1 = migrateLegacyNotificationState('SP123ABC', 'mainnet');
-    const migrated2 = migrateLegacyNotificationState('SP123ABC', 'mainnet');
+    const states = getNotificationStateForAddress('SP111...');
     
-    expect(migrated1).toBe(1234567890);
-    expect(migrated2).toBeNull();
+    expect(states['tipstream_last_seen_mainnet_SP111...']).toBe(1000);
+    expect(states['tipstream_last_seen_testnet_SP111...']).toBe(2000);
+  });
+
+  it('should not include states for other addresses', () => {
+    setLastSeenTimestamp('SP111...', 'mainnet', 1000);
+    setLastSeenTimestamp('SP222...', 'mainnet', 2000);
+    
+    const states = getNotificationStateForAddress('SP111...');
+    
+    expect(Object.keys(states)).toHaveLength(1);
+    expect(states['tipstream_last_seen_mainnet_SP111...']).toBe(1000);
+  });
+
+  it('should return empty object for address with no state', () => {
+    const states = getNotificationStateForAddress('SP999...');
+    expect(states).toEqual({});
   });
 });
