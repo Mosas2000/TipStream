@@ -2,6 +2,11 @@ export function getNotificationStorageKey(address, network) {
   if (!address || !network) {
     return null;
   }
+  
+  if (typeof address !== 'string' || typeof network !== 'string') {
+    return null;
+  }
+  
   return `tipstream_last_seen_${network}_${address}`;
 }
 
