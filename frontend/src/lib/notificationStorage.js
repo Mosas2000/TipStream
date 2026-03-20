@@ -23,3 +23,22 @@ export function migrateLegacyNotificationState(address, network) {
   
   return null;
 }
+
+export function getLastSeenTimestamp(address, network) {
+  const key = getNotificationStorageKey(address, network);
+  if (!key) {
+    return 0;
+  }
+  
+  const value = localStorage.getItem(key);
+  return value ? parseInt(value, 10) : 0;
+}
+
+export function setLastSeenTimestamp(address, network, timestamp) {
+  const key = getNotificationStorageKey(address, network);
+  if (!key) {
+    return;
+  }
+  
+  localStorage.setItem(key, String(timestamp));
+}
