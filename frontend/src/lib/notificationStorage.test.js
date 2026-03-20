@@ -3,7 +3,10 @@ import {
   getNotificationStorageKey,
   migrateLegacyNotificationState,
   getLastSeenTimestamp,
-  setLastSeenTimestamp
+  setLastSeenTimestamp,
+  getAllScopedNotificationKeys,
+  clearAllNotificationState,
+  getNotificationStateForAddress
 } from './notificationStorage';
 
 describe('getNotificationStorageKey', () => {
