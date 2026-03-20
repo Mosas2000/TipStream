@@ -189,3 +189,7 @@ export function validateEnvironmentConfig() {
 
   return { errors, warnings };
 }
+
+export function getAllowedNetworks() {
+  return [...ALLOWED_NETWORKS];
+}
