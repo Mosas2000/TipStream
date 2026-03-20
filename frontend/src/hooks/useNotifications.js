@@ -3,7 +3,7 @@ import { useTipContext } from '../context/TipContext';
 import { NETWORK_NAME } from '../config/contracts';
 import {
   getLastSeenTimestamp,
-  setLastSeenTimestamp,
+  setLastSeenTimestamp as saveLastSeenTimestamp,
   migrateLegacyNotificationState
 } from '../lib/notificationStorage';
 
