@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTipContext } from '../context/TipContext';
-
-const STORAGE_KEY = 'tipstream_last_seen_tip_ts';
+import { NETWORK_NAME } from '../config/contracts';
+import {
+  getLastSeenTimestamp,
+  setLastSeenTimestamp,
+  migrateLegacyNotificationState
+} from '../lib/notificationStorage';
 
 /**
  * useNotifications -- derives incoming-tip notifications from the shared
@@ -12,7 +16,7 @@ const STORAGE_KEY = 'tipstream_last_seen_tip_ts';
 export function useNotifications(userAddress) {
     const { events, eventsLoading } = useTipContext();
     const [unreadCount, setUnreadCount] = useState(0);
-    const initialLastSeen = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    const network = NETWORK_NAME;
     const lastSeenRef = useRef(initialLastSeen);
     const [lastSeenTimestamp, setLastSeenTimestamp] = useState(initialLastSeen);
 
