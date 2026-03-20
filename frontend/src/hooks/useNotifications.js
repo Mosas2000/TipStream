@@ -56,12 +56,14 @@ export function useNotifications(userAddress) {
     }, [notifications]);
 
     const markAllRead = useCallback(() => {
+        if (!userAddress || !network) return;
+        
         const now = Math.floor(Date.now() / 1000);
         lastSeenRef.current = now;
         setLastSeenTimestamp(now);
-        localStorage.setItem(STORAGE_KEY, String(now));
+        setLastSeenTimestamp(userAddress, network, now);
         setUnreadCount(0);
-    }, []);
+    }, [userAddress, network]);
 
     return { notifications, unreadCount, lastSeenTimestamp, loading: eventsLoading, markAllRead, refetch: () => {} };
 }
