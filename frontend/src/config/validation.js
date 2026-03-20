@@ -87,7 +87,7 @@ export function validateContractAddress(address) {
   const stacksAddressPattern = /^S[TPMN][0-9A-Z]{38,40}$/;
   if (!stacksAddressPattern.test(address)) {
     throw new ConfigValidationError(
-      `CONTRACT_ADDRESS does not match Stacks address format: "${address}"`,
+      `CONTRACT_ADDRESS does not match Stacks address format: "${address}". Expected format: S[TPMN] followed by 38-40 uppercase alphanumeric characters.`,
       'CONTRACT_ADDRESS',
       address
     );
