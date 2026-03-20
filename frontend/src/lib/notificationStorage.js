@@ -28,6 +28,20 @@ export function clearAllNotificationState() {
   });
 }
 
+export function getNotificationStateForAddress(address) {
+  const states = {};
+  const keys = getAllScopedNotificationKeys();
+  
+  keys.forEach(key => {
+    if (key.includes(`_${address}`)) {
+      const value = localStorage.getItem(key);
+      states[key] = value ? parseInt(value, 10) : 0;
+    }
+  });
+  
+  return states;
+}
+
 export function migrateLegacyNotificationState(address, network) {
   const legacyKey = 'tipstream_last_seen_tip_ts';
   const legacyValue = localStorage.getItem(legacyKey);
