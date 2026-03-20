@@ -35,8 +35,18 @@ export function getLastSeenTimestamp(address, network) {
     return 0;
   }
   
-  const value = localStorage.getItem(key);
-  return value ? parseInt(value, 10) : 0;
+  try {
+    const value = localStorage.getItem(key);
+    if (!value) {
+      return 0;
+    }
+    
+    const parsed = parseInt(value, 10);
+    return isNaN(parsed) ? 0 : parsed;
+  } catch (error) {
+    console.error('Error reading notification timestamp:', error);
+    return 0;
+  }
 }
 
 export function setLastSeenTimestamp(address, network, timestamp) {
