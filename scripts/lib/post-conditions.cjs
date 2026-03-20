@@ -8,8 +8,6 @@
  */
 
 const {
-    makeStandardSTXPostCondition,
-    FungibleConditionCode,
     PostConditionMode,
 } = require('@stacks/transactions');
 
@@ -36,17 +34,20 @@ function maxTransferForTip(amount, feeBps = FEE_BASIS_POINTS) {
 /**
  * Build a standard STX post condition for a tip transaction.
  *
+ * Uses the new @stacks/transactions v7.x object-based API.
+ *
  * @param {string} senderAddress  The sender's Stacks principal.
  * @param {number} amount  Tip amount in microSTX.
  * @param {number} [feeBps=50]  Fee in basis points.
  * @returns {object} A Stacks post condition object.
  */
 function tipPostCondition(senderAddress, amount, feeBps = FEE_BASIS_POINTS) {
-    return makeStandardSTXPostCondition(
-        senderAddress,
-        FungibleConditionCode.LessEqual,
-        maxTransferForTip(amount, feeBps)
-    );
+    return {
+        type: 'stx-postcondition',
+        address: senderAddress,
+        condition: 'lte',  // less than or equal
+        amount: maxTransferForTip(amount, feeBps)
+    };
 }
 
 /**

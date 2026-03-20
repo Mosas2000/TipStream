@@ -25,7 +25,7 @@ REQUIRED_ENV_VARS.forEach(varName => {
     console.error(`ERROR: ${varName} is not set`);
     exitCode = 1;
   } else {
-    console. ${varName}=${value}`);log(`
+    console.log(`✓ ${varName}=${value}`);
     
     if (varName === 'VITE_NETWORK' && !ALLOWED_NETWORKS.includes(value)) {
       console.error(`ERROR: ${varName} must be one of: ${ALLOWED_NETWORKS.join(', ')}`);

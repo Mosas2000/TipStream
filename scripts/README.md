@@ -11,6 +11,27 @@ Send a test tip on Stacks mainnet.
 MNEMONIC="..." RECIPIENT="SP..." node scripts/test-contract.cjs
 ```
 
+## batch-tips-to-wallet1.cjs
+
+Send multiple test tips to wallet_1 on devnet or mainnet. All tips go to wallet_1 (ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5).
+
+```bash
+node scripts/batch-tips-to-wallet1.cjs
+```
+
+### Environment Variables
+
+| Variable    | Required | Default              | Description                        |
+|-------------|----------|----------------------|------------------------------------|
+| `NUM_TIPS`  | No       | `5`                  | Number of tips to send             |
+| `AMOUNT`    | No       | `1000`               | Tip amount in microSTX (min 1000)  |
+| `MESSAGE`   | No       | `"Test tip to wallet 1"`| Message attached to each tip    |
+| `DRY_RUN`   | No       | `0`                  | Set to `1` to skip broadcasting    |
+| `NETWORK`   | No       | `devnet`             | Use `devnet` or `mainnet`          |
+
+The script uses devnet wallets (wallet_2 through wallet_8) as senders
+and sends all tips to wallet_1. Self-tipping is automatically prevented.
+
 ### Environment Variables
 
 | Variable    | Required | Default              | Description                        |
