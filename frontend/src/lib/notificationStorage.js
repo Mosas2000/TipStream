@@ -10,6 +10,17 @@ export function getNotificationStorageKey(address, network) {
   return `tipstream_last_seen_${network}_${address}`;
 }
 
+export function getAllScopedNotificationKeys() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('tipstream_last_seen_')) {
+      keys.push(key);
+    }
+  }
+  return keys;
+}
+
 export function migrateLegacyNotificationState(address, network) {
   const legacyKey = 'tipstream_last_seen_tip_ts';
   const legacyValue = localStorage.getItem(legacyKey);
