@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Frontend environment and contract configuration validation (Issue #289):
+  - Startup validation blocks application launch when config is invalid
+  - CI validation script fails fast on misconfigured deployments
+  - Validates network values (mainnet, testnet, devnet)
+  - Validates app URL format and protocol
+  - Validates contract address format
+  - Validates contract name naming conventions
+  - Validates Stacks API URL with network mismatch warnings
+  - Comprehensive error messages identify misconfigured fields
+  - User-facing error banner displays config issues before app loads
+  - Prebuild hook validates config before production builds
+  - Unit tests for all validation functions
+  - Configuration documentation in frontend/CONFIG.md
+
 ### Changed
 
 - Added last-known-good caching for read-heavy surfaces (Issue #290):
