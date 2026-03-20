@@ -17,6 +17,19 @@ export function useNotifications(userAddress) {
     const { events, eventsLoading } = useTipContext();
     const [unreadCount, setUnreadCount] = useState(0);
     const network = NETWORK_NAME;
+    
+    const migratedValue = useMemo(() => {
+      if (!userAddress || !network) return null;
+      return migrateLegacyNotificationState(userAddress, network);
+    }, [userAddress, network]);
+    
+    const initialLastSeen = useMemo(() => {
+      if (!userAddress || !network) return 0;
+      const migrated = migrateLegacyNotificationState(userAddress, network);
+      if (migrated !== null) return migrated;
+      return getLastSeenTimestamp(userAddress, network);
+    }, [userAddress, network]);
+    
     const lastSeenRef = useRef(initialLastSeen);
     const [lastSeenTimestamp, setLastSeenTimestamp] = useState(initialLastSeen);
 
