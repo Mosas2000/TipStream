@@ -16,7 +16,9 @@ const ALLOWED_NETWORKS = ['mainnet', 'testnet', 'devnet'];
 
 let exitCode = 0;
 
-console.log('Validating frontend configuration...\n');
+console.log('──────────────────────────────────────────');
+console.log('Frontend Configuration Validation');
+console.log('──────────────────────────────────────────\n');
 
 REQUIRED_ENV_VARS.forEach(varName => {
   const value = process.env[varName];
