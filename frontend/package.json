@@ -12,7 +12,8 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "validate:config": "node scripts/validate-config.js"
+    "validate:config": "node scripts/validate-config.js",
+    "prebuild": "node scripts/validate-config.js"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
