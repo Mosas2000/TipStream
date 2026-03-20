@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Notification state scoping by wallet address and network:
+  - Notification read state now scoped per wallet address and network
+  - Each wallet maintains independent unread notification counts
+  - Network switching preserves separate read states
+  - Automatic migration from legacy single-key storage
+  - State resets correctly on wallet disconnect/reconnect
+  - Comprehensive tests for multi-account scenarios
+  - Documentation in docs/NOTIFICATION_STATE.md
+
 - Frontend environment and contract configuration validation (Issue #289):
   - Startup validation blocks application launch when config is invalid
   - CI validation script fails fast on misconfigured deployments
