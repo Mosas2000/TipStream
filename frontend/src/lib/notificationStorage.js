@@ -21,6 +21,13 @@ export function getAllScopedNotificationKeys() {
   return keys;
 }
 
+export function clearAllNotificationState() {
+  const keys = getAllScopedNotificationKeys();
+  keys.forEach(key => {
+    localStorage.removeItem(key);
+  });
+}
+
 export function migrateLegacyNotificationState(address, network) {
   const legacyKey = 'tipstream_last_seen_tip_ts';
   const legacyValue = localStorage.getItem(legacyKey);
