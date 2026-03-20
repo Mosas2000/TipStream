@@ -46,18 +46,21 @@ export function validateConfigAtStartup() {
 export function reportValidationErrors(results) {
   if (results.errors.length > 0) {
     console.error('Configuration validation failed:');
+    console.error('─────────────────────────────────────────');
     results.errors.forEach((err) => {
       if (err instanceof ConfigValidationError) {
-        console.error(`  [${err.field}] ${err.message}`);
+        console.error(`  ✗ [${err.field}] ${err.message}`);
       } else {
-        console.error(`  ${err.message}`);
+        console.error(`  ✗ ${err.message}`);
       }
     });
+    console.error('─────────────────────────────────────────');
   }
 
   if (results.warnings.length > 0) {
+    console.warn('Configuration warnings:');
     results.warnings.forEach((warning) => {
-      console.warn(`  ${warning}`);
+      console.warn(`  ⚠ ${warning}`);
     });
   }
 }
