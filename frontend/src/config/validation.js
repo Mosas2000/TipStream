@@ -1,5 +1,11 @@
 const ALLOWED_NETWORKS = ['mainnet', 'testnet', 'devnet'];
 
+export const NETWORK_DOCS = {
+  mainnet: 'Production Stacks network',
+  testnet: 'Testing network for development',
+  devnet: 'Local development network'
+};
+
 export class ConfigValidationError extends Error {
   constructor(message, field, value) {
     super(message);
