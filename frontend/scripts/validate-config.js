@@ -55,7 +55,7 @@ try {
     const address = addressMatch[1];
     const stacksAddressPattern = /^S[TPMN][0-9A-Z]{38,40}$/;
     if (stacksAddressPattern.test(address)) {
-      console. CONTRACT_ADDRESS=${address}`);log(`
+      console.log(`✓ CONTRACT_ADDRESS=${address}`);
     } else {
       console.error(`ERROR: CONTRACT_ADDRESS does not match Stacks address format: ${address}`);
       exitCode = 1;
@@ -70,7 +70,7 @@ try {
     const name = nameMatch[1];
     const namePattern = /^[a-z][a-z0-9-]*$/;
     if (namePattern.test(name)) {
-      console. CONTRACT_NAME=${name}`);log(`
+      console.log(`✓ CONTRACT_NAME=${name}`);
     } else {
       console.error(`ERROR: CONTRACT_NAME must start with lowercase letter: ${name}`);
       exitCode = 1;
