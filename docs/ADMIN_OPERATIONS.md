@@ -8,6 +8,7 @@ Quick reference guide for common administrative tasks on TipStream.
 |---|---|---|---|---|
 | Change Fee | `propose-fee-change` → `execute-fee-change` | 144 blocks (~24h) | Owner | 5 min |
 | Pause Contract | `propose-pause-change` → `execute-pause-change` | 144 blocks (~24h) | Owner | 5 min |
+| Cancel Pause | `cancel-pause-change` | None | Owner | Seconds |
 | Emergency Pause | `set-paused` (direct) | None | Owner | Seconds |
 | Change Owner | `propose-new-owner` → `accept-ownership` | 2-step | Owner → New Owner | 10 min |
 | View Fee Rate | `get-current-fee-basis-points` | None (read) | Anyone | Instant |
@@ -175,7 +176,67 @@ Takes effect immediately (no 144-block delay).
 
 ---
 
-### Task 3: Change Contract Owner (Ownership Transfer)
+### Task 3: Cancel Pause Proposal
+
+**Use Cases**:
+- Mistaken pause proposal submitted
+- Need to revise pause decision while timelock pending
+- Changing plan during maintenance window
+
+#### Steps:
+
+1. **Verify Current Proposal** (Read-only)
+
+   ```
+   Function: get-pending-pause-change()
+   Check: Is pending-pause set to (some value)?
+   If none: No proposal to cancel
+   ```
+
+2. **Submit Cancellation** (Immediately)
+
+   ```
+   Function: cancel-pause-change()
+   Parameters: None
+   ```
+
+   Via Admin Dashboard:
+   - Navigate to `/admin` → Pause Control
+   - Review pending proposal
+   - Click "Cancel Proposal"
+   - Sign transaction in wallet
+   - Wait for confirmation
+
+3. **Verify Cancellation** (Instant)
+
+   ```
+   Function: get-pending-pause-change()
+   Result: pending-pause should be none
+   Contract continues normal operation
+   ```
+
+#### Common Scenarios
+
+**Scenario 1: Wrong pause value proposed**
+- Proposed: pause=true (wanted unpause=false)
+- Action: Cancel immediately, then propose correct value
+- Time loss: Only cancel transaction gas
+
+**Scenario 2: Pause no longer needed**
+- Proposed: pause=true for maintenance
+- Reason: Maintenance cancelled
+- Action: Cancel pause proposal
+- Communication: Notify team maintenance cancelled
+
+**Scenario 3: Need to adjust pause timing**
+- Current: Pause scheduled for block 12500
+- Need: Move to block 12600 instead
+- Action: Cancel current, submit new proposal
+- Note: Timelock restarts from cancellation
+
+---
+
+### Task 4: Change Contract Owner (Ownership Transfer)
 
 **Process**: Two-step to prevent accidents
 
@@ -218,7 +279,7 @@ Result should be: SP1234...ABC
 
 ---
 
-### Task 4: Emergency Downgrade or Rollback
+### Task 5: Emergency Downgrade or Rollback
 
 **Note**: Contracts are immutable; you cannot change deployed code.
 
