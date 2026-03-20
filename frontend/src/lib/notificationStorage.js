@@ -12,9 +12,11 @@ export function getNotificationStorageKey(address, network) {
 
 export function getAllScopedNotificationKeys() {
   const keys = [];
+  const legacyKeyPrefix = 'tipstream_last_seen_tip_ts';
+  
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith('tipstream_last_seen_')) {
+    if (key && key.startsWith('tipstream_last_seen_') && key !== legacyKeyPrefix) {
       keys.push(key);
     }
   }
