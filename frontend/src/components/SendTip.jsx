@@ -10,6 +10,7 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../con
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { isContractPrincipal, isValidStacksPrincipal } from '../lib/stacks-principal';
+import { canProceedWithRecipient, getRecipientValidationMessage } from '../lib/recipient-validation';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
