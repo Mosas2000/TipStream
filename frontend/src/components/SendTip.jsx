@@ -66,6 +66,8 @@ export default function SendTip({ addToast }) {
 
     const { balance, balanceStx: balanceSTX, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
 
+    const isRecipientHighRisk = !canProceedWithRecipient(recipient, blockedWarning);
+
     useEffect(() => {
         return () => {
             if (cooldownRef.current) clearInterval(cooldownRef.current);
@@ -343,8 +345,9 @@ export default function SendTip({ addToast }) {
                     )}
 
                     {/* Submit */}
-                    <button onClick={validateAndConfirm} disabled={loading || cooldown > 0}
-                        aria-disabled={loading || cooldown > 0}
+                    <button onClick={validateAndConfirm} disabled={loading || cooldown > 0 || isRecipientHighRisk}
+                        aria-disabled={loading || cooldown > 0 || isRecipientHighRisk}
+                        title={isRecipientHighRisk ? 'Cannot send tip to this recipient' : undefined}
                         className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
