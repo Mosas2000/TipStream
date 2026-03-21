@@ -130,6 +130,13 @@ export default function SendTip({ addToast }) {
         if (!recipient || !amount) { addToast('Please fill in all required fields', 'warning'); return; }
         if (!isValidStacksPrincipal(recipient)) { addToast('Invalid Stacks principal format', 'warning'); return; }
         if (recipient.trim() === senderAddress) { addToast('You cannot send a tip to yourself', 'warning'); return; }
+
+        if (!canProceedWithRecipient(recipient, blockedWarning)) {
+            const validationMessage = getRecipientValidationMessage(recipient, blockedWarning);
+            addToast(validationMessage || 'Cannot send tip to this recipient', 'error');
+            return;
+        }
+
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) { addToast('Please enter a valid amount', 'warning'); return; }
         if (parsedAmount < MIN_TIP_STX) { addToast(`Minimum tip is ${MIN_TIP_STX} STX`, 'warning'); return; }
