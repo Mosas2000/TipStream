@@ -90,18 +90,15 @@ export default function SendTip({ addToast }) {
         setRecipient(value);
         resetBlockCheck();
         setRecipientWarning('');
+        setRecipientError('');
 
         if (value && !isValidStacksPrincipal(value)) {
             setRecipientError('Enter a valid Stacks principal (SP... or SP....contract-name)');
-        } else {
-            setRecipientError('');
-            if (value && isContractPrincipal(value)) {
-                setRecipientWarning('Warning: This appears to be a contract address. Tips to contracts may be unrecoverable.');
-                return;
-            }
-            if (value) {
-                checkBlocked(value);
-            }
+            return;
+        }
+
+        if (value) {
+            checkBlocked(value);
         }
     };
 
