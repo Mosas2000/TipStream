@@ -10,6 +10,7 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../con
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { isContractPrincipal, isValidStacksPrincipal } from '../lib/stacks-principal';
+import { canProceedWithRecipient, getRecipientValidationMessage } from '../lib/recipient-validation';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useBalance } from '../hooks/useBalance';
@@ -65,6 +66,8 @@ export default function SendTip({ addToast }) {
 
     const { balance, balanceStx: balanceSTX, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
 
+    const isRecipientHighRisk = !canProceedWithRecipient(recipient, blockedWarning);
+
     useEffect(() => {
         return () => {
             if (cooldownRef.current) clearInterval(cooldownRef.current);
@@ -89,18 +92,15 @@ export default function SendTip({ addToast }) {
         setRecipient(value);
         resetBlockCheck();
         setRecipientWarning('');
+        setRecipientError('');
 
         if (value && !isValidStacksPrincipal(value)) {
             setRecipientError('Enter a valid Stacks principal (SP... or SP....contract-name)');
-        } else {
-            setRecipientError('');
-            if (value && isContractPrincipal(value)) {
-                setRecipientWarning('Warning: This appears to be a contract address. Tips to contracts may be unrecoverable.');
-                return;
-            }
-            if (value) {
-                checkBlocked(value);
-            }
+            return;
+        }
+
+        if (value) {
+            checkBlocked(value);
         }
     };
 
@@ -132,6 +132,13 @@ export default function SendTip({ addToast }) {
         if (!recipient || !amount) { addToast('Please fill in all required fields', 'warning'); return; }
         if (!isValidStacksPrincipal(recipient)) { addToast('Invalid Stacks principal format', 'warning'); return; }
         if (recipient.trim() === senderAddress) { addToast('You cannot send a tip to yourself', 'warning'); return; }
+
+        if (!canProceedWithRecipient(recipient, blockedWarning)) {
+            const validationMessage = getRecipientValidationMessage(recipient, blockedWarning);
+            addToast(validationMessage || 'Cannot send tip to this recipient', 'error');
+            return;
+        }
+
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) { addToast('Please enter a valid amount', 'warning'); return; }
         if (parsedAmount < MIN_TIP_STX) { addToast(`Minimum tip is ${MIN_TIP_STX} STX`, 'warning'); return; }
@@ -253,17 +260,20 @@ export default function SendTip({ addToast }) {
                     {/* Recipient */}
                     <div>
                         <label htmlFor="tip-recipient" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Recipient Address</label>
-                        <input id="tip-recipient" type="text" value={recipient} onChange={(e) => handleRecipientChange(e.target.value)}
-                            aria-describedby={recipientError ? "tip-recipient-error" : undefined}
-                            className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
-                            placeholder="SP2..." />
-                        {recipientError && <p id="tip-recipient-error" className="mt-1 text-xs text-red-500" role="alert">{recipientError}</p>}
-                        {recipientWarning && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400" role="status">{recipientWarning}</p>}
-                        {blockedWarning && (
-                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                                This recipient has blocked you. The transaction will likely fail on-chain.
-                            </p>
-                        )}
+                        {(() => {
+                            const isRisky = !canProceedWithRecipient(recipient, blockedWarning);
+                            const validationMsg = getRecipientValidationMessage(recipient, blockedWarning);
+                            return (
+                                <>
+                                    <input id="tip-recipient" type="text" value={recipient} onChange={(e) => handleRecipientChange(e.target.value)}
+                                        aria-describedby={recipientError || validationMsg ? "tip-recipient-error" : undefined}
+                                        className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white ${recipientError || (isRisky && validationMsg) ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
+                                        placeholder="SP2..." />
+                                    {recipientError && <p id="tip-recipient-error" className="mt-1 text-xs text-red-500" role="alert">{recipientError}</p>}
+                                    {validationMsg && <p id="tip-recipient-error" className="mt-1 text-xs text-red-500" role="alert">{validationMsg}</p>}
+                                </>
+                            );
+                        })()}
                     </div>
 
                     {/* Amount */}
@@ -335,8 +345,9 @@ export default function SendTip({ addToast }) {
                     )}
 
                     {/* Submit */}
-                    <button onClick={validateAndConfirm} disabled={loading || cooldown > 0}
-                        aria-disabled={loading || cooldown > 0}
+                    <button onClick={validateAndConfirm} disabled={loading || cooldown > 0 || isRecipientHighRisk}
+                        aria-disabled={loading || cooldown > 0 || isRecipientHighRisk}
+                        title={isRecipientHighRisk ? 'Cannot send tip to this recipient' : undefined}
                         className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">

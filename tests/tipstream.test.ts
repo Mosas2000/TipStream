@@ -1284,6 +1284,143 @@ describe("TipStream Contract Tests", () => {
             );
             expect(tipResult).not.toBeErr();
         });
+
+        it("admin can cancel a pending pause change", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-pause-change",
+                [],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+        });
+
+        it("non-admin cannot cancel a pause change", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-pause-change",
+                [],
+                wallet1
+            );
+            expect(result).toBeErr(Cl.uint(100));
+
+            // Clean up
+            simnet.callPublicFn("tipstream", "cancel-pause-change", [], deployer);
+        });
+
+        it("cancel fails when no pause change is pending", () => {
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "cancel-pause-change",
+                [],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(110));
+        });
+
+        it("clears pending pause state after cancellation", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            simnet.callPublicFn(
+                "tipstream",
+                "cancel-pause-change",
+                [],
+                deployer
+            );
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-pause-change",
+                [],
+                deployer
+            );
+
+            const pending = (result as any).value;
+            expect(pending["pending-pause"]).toEqual(Cl.none());
+        });
+
+        it("prevents execution after cancellation", () => {
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            simnet.callPublicFn(
+                "tipstream",
+                "cancel-pause-change",
+                [],
+                deployer
+            );
+
+            simnet.mineEmptyBlocks(144);
+
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "execute-pause-change",
+                [],
+                deployer
+            );
+            expect(result).toBeErr(Cl.uint(110));
+        });
+
+        it("allows resubmission after cancellation", () => {
+            // Propose pause = true
+            simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(true)],
+                deployer
+            );
+
+            // Cancel
+            simnet.callPublicFn(
+                "tipstream",
+                "cancel-pause-change",
+                [],
+                deployer
+            );
+
+            // Re-propose with different value
+            const { result } = simnet.callPublicFn(
+                "tipstream",
+                "propose-pause-change",
+                [Cl.bool(false)],
+                deployer
+            );
+            expect(result).toBeOk(Cl.bool(true));
+
+            // Verify new proposal is in place
+            const { result: pending } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-pending-pause-change",
+                [],
+                deployer
+            );
+
+            const pendingData = (pending as any).value;
+            expect(pendingData["pending-pause"]).toEqual(Cl.some(Cl.bool(false)));
+        });
     });
 
     describe("Timelocked Fee Changes", () => {
