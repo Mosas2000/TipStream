@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { userSession, authenticate, disconnect, getMainnetAddress, isValidUserData } from './utils/stacks';
 import Header from './components/Header';
-import SendTip from './components/SendTip';
 import SkipNav from './components/SkipNav';
 import RouteSkeleton from './components/RouteSkeleton';
 import RequireAdmin from './components/RequireAdmin';
@@ -24,6 +23,7 @@ import {
 } from './config/routes';
 import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
 
+const SendTip = lazy(() => import('./components/SendTip'));
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
