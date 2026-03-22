@@ -8,9 +8,11 @@ import { TipProvider } from './context/TipContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { reportWebVitals } from './lib/web-vitals.js'
 import { validateConfigAtStartup, reportValidationErrors } from './config/startup.js'
+import { initializeTelemetrySink } from './config/telemetry.js'
 
 const validationResults = validateConfigAtStartup();
 reportValidationErrors(validationResults);
+initializeTelemetrySink();
 
 if (!validationResults.success) {
   const errorMessage = document.createElement('div');
