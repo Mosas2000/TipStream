@@ -6,7 +6,6 @@ import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { TipProvider } from './context/TipContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
-import { reportWebVitals } from './lib/web-vitals.js'
 import { validateConfigAtStartup, reportValidationErrors } from './config/startup.js'
 import { initializeTelemetrySink } from './config/telemetry.js'
 
@@ -40,4 +39,8 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-reportWebVitals()
+if (import.meta.env.PROD) {
+  import('./lib/web-vitals.js').then(({ reportWebVitals }) => {
+    reportWebVitals();
+  });
+}
