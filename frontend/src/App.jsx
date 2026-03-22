@@ -19,10 +19,10 @@ import { usePageTitle } from './hooks/usePageTitle';
 import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
-  ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN,
+  ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY,
   DEFAULT_AUTHENTICATED_ROUTE,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
 
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
@@ -34,6 +34,7 @@ const BatchTip = lazy(() => import('./components/BatchTip'));
 const TokenTip = lazy(() => import('./components/TokenTip'));
 const NotFound = lazy(() => import('./components/NotFound'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const TelemetryDashboard = lazy(() => import('./components/TelemetryDashboard'));
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -111,6 +112,7 @@ function App() {
     ];
     if (isOwner) {
       items.push({ path: ROUTE_ADMIN, label: 'Admin', icon: Shield });
+      items.push({ path: ROUTE_TELEMETRY, label: 'Telemetry', icon: Gauge });
     }
     return items;
   }, [isOwner]);
@@ -190,6 +192,7 @@ function App() {
                   <Route path={ROUTE_BLOCK} element={<BlockManager addToast={addToast} />} />
                   <Route path={ROUTE_STATS} element={<PlatformStats />} />
                   <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userAddress} addToast={addToast} /></RequireAdmin>} />
+                  <Route path={ROUTE_TELEMETRY} element={<RequireAdmin><TelemetryDashboard addToast={addToast} /></RequireAdmin>} />
                   <Route path="/" element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
