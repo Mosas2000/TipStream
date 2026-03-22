@@ -80,6 +80,12 @@ export const ROUTE_STATS = '/stats';
 export const ROUTE_ADMIN = '/admin';
 
 /**
+ * Telemetry dashboard (owner-only, guarded by RequireAdmin).
+ * @type {string}
+ */
+export const ROUTE_TELEMETRY = '/telemetry';
+
+/**
  * The route that "/" redirects to when the user is authenticated.
  * Change this single value to alter the default landing page site-wide.
  * @type {string}
@@ -102,6 +108,7 @@ export const ROUTE_LABELS = {
   [ROUTE_BLOCK]: 'Block',
   [ROUTE_STATS]: 'Stats',
   [ROUTE_ADMIN]: 'Admin',
+  [ROUTE_TELEMETRY]: 'Telemetry',
 };
 
 /**
@@ -123,6 +130,7 @@ export const ROUTE_TITLES = {
   [ROUTE_BLOCK]: 'Block Manager -- TipStream',
   [ROUTE_STATS]: 'Platform Stats -- TipStream',
   [ROUTE_ADMIN]: 'Admin Dashboard -- TipStream',
+  [ROUTE_TELEMETRY]: 'Telemetry -- TipStream',
 };
 
 /**
@@ -189,6 +197,11 @@ export const ROUTE_META = {
   },
   [ROUTE_ADMIN]: {
     description: 'Pause/resume, fee configuration, ownership transfer.',
+    requiresAuth: true,
+    adminOnly: true,
+  },
+  [ROUTE_TELEMETRY]: {
+    description: 'Production telemetry, Web Vitals, conversion metrics, and error tracking.',
     requiresAuth: true,
     adminOnly: true,
   },

@@ -26,6 +26,7 @@ Content creators and community contributors lack a simple, transparent way to re
 - **Platform Analytics** - Real-time stats: total tips, volume, and fees
 - **Activity History** - Per-user sent/received tip history with filtering
 - **Admin Dashboard** - Pause/resume, fee configuration, ownership transfer
+- **Telemetry & Web Vitals** - Production-ready observability with conversion funnels, performance metrics, and error tracking
 - **Event Feed Pagination** - Cursor-based pagination with selective message enrichment (Issue #291)
 - **API Resilience Caching** - Last-known-good cache fallback during outages (Issue #290)
 - **Auto-Refresh** - 30-second polling with manual refresh across all views
@@ -112,6 +113,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | `/block` | Block Manager | Block/unblock addresses | Stable |
 | `/stats` | Platform Stats | Aggregate platform metrics with cache fallback | Stable |
 | `/admin` | Admin Dashboard | Owner-only pause/fee controls | Stable |
+| `/telemetry` | Telemetry Dashboard | Web Vitals, conversion funnels, error tracking (admin-only) | Stable |
 | `*` | 404 | Shows the attempted path and a link home | Stable |
 
 Route paths are centralised in `frontend/src/config/routes.js`. Import the
@@ -169,6 +171,7 @@ constants instead of hard-coding path strings.
 | `ProfileManager` | Create/edit on-chain profile |
 | `BlockManager` | Block/unblock users |
 | `AdminDashboard` | Owner-only controls (pause, fees, stats) |
+| `TelemetryDashboard` | Performance monitoring, Web Vitals, conversion funnels |
 
 ### Data Model
 
