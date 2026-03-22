@@ -8,11 +8,9 @@
  * `{ profile: { stxAddress: { mainnet, testnet } } }`.
  */
 
-import * as StacksConnect from '@stacks/connect';
+import { AppConfig, UserSession } from '@stacks/connect';
 import { STACKS_MAINNET, STACKS_TESTNET, STACKS_DEVNET } from '@stacks/network';
-
-const { AppConfig, UserSession } = StacksConnect;
-const showConnect = StacksConnect.showConnect || StacksConnect.authenticate;
+import { showWalletConnect, disconnectWallet } from './wallet-connect';
 
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -69,7 +67,7 @@ export async function authenticate() {
     }
 
     return new Promise((resolve, reject) => {
-        showConnect({
+        showWalletConnect({
             userSession,
             onFinish: () => {
                 resolve(userSession.loadUserData());
@@ -116,6 +114,6 @@ export function getSenderAddress() {
 /**
  * Disconnect the active wallet session and clear stored credentials.
  */
-export function disconnect() {
-    StacksConnect.disconnect();
+export async function disconnect() {
+    await disconnectWallet();
 }
