@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 
 const TITLE_ROTATION_INTERVAL_MS = 2200;
-const TITLE_SLIDE_OFFSET_PX = 120;
-const SPRING_STIFFNESS = 50;
 
 function AnimatedHero({ onGetStarted, loading }) {
     const [titleNumber, setTitleNumber] = useState(0);
@@ -21,16 +18,11 @@ function AnimatedHero({ onGetStarted, loading }) {
 
     return (
         <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-black grid-bg radial-hero -mx-4 sm:-mx-6 lg:-mx-8 -mt-12 px-4 sm:px-6 lg:px-8">
-            {/* Ambient glow */}
             <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[128px] pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto py-20">
-                {/* Logo */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="mb-8"
+                <div
+                    className="mb-8 animate-fade-in-scale"
                 >
                     <div className="glow-amber rounded-full p-1">
                         <img
@@ -41,69 +33,54 @@ function AnimatedHero({ onGetStarted, loading }) {
                             className="h-24 w-24 object-contain"
                         />
                     </div>
-                </motion.div>
+                </div>
 
-                {/* Badge */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
+                <div
+                    className="animate-fade-in-up"
+                    style={{ animationDelay: '0.2s' }}
                 >
                     <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-amber-400 uppercase tracking-widest mb-8">
                         <span className="h-1.5 w-1.5 rounded-full bg-amber-400 pulse-live" />
                         Built on Stacks &middot; Secured by Bitcoin
                     </span>
-                </motion.div>
+                </div>
 
-                {/* Heading */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35, duration: 0.6 }}
-                    className="mb-6"
+                <div
+                    className="mb-6 animate-fade-in-up"
+                    style={{ animationDelay: '0.35s' }}
                 >
                     <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter text-white leading-[1.05]">
                         Send tips that are
                         <span className="relative flex w-full justify-center overflow-hidden h-[1.2em] mt-1">
                             &nbsp;
                             {titles.map((title, index) => (
-                                <motion.span
+                                <span
                                     key={index}
-                                    className="absolute font-black bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent glow-text"
-                                    initial={{ opacity: 0, y: -TITLE_SLIDE_OFFSET_PX }}
-                                    transition={{ type: "spring", stiffness: SPRING_STIFFNESS }}
-                                    animate={
+                                    className={`absolute font-black bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent glow-text transition-all duration-500 ${
                                         titleNumber === index
-                                            ? { y: 0, opacity: 1 }
-                                            : {
-                                                y: titleNumber > index ? -TITLE_SLIDE_OFFSET_PX : TITLE_SLIDE_OFFSET_PX,
-                                                opacity: 0,
-                                            }
-                                    }
+                                            ? 'translate-y-0 opacity-100'
+                                            : titleNumber > index
+                                            ? '-translate-y-32 opacity-0'
+                                            : 'translate-y-32 opacity-0'
+                                    }`}
                                 >
                                     {title}
-                                </motion.span>
+                                </span>
                             ))}
                         </span>
                     </h1>
-                </motion.div>
+                </div>
 
-                {/* Subtitle */}
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
-                    className="text-base sm:text-lg text-gray-400 max-w-xl leading-relaxed mb-10"
+                <p
+                    className="text-base sm:text-lg text-gray-400 max-w-xl leading-relaxed mb-10 animate-fade-in-up"
+                    style={{ animationDelay: '0.5s' }}
                 >
                     The simplest way to send STX micro-tips to creators, builders, and friends on the Stacks blockchain. Low fees. Full transparency. No middlemen.
-                </motion.p>
+                </p>
 
-                {/* CTA */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.65, duration: 0.5 }}
-                    className="flex flex-col sm:flex-row gap-4"
+                <div
+                    className="flex flex-col sm:flex-row gap-4 animate-fade-in-up"
+                    style={{ animationDelay: '0.65s' }}
                 >
                     <button
                         onClick={onGetStarted}
@@ -127,14 +104,11 @@ function AnimatedHero({ onGetStarted, loading }) {
                     >
                         View Contract
                     </a>
-                </motion.div>
+                </div>
 
-                {/* Stats pills */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.9, duration: 0.6 }}
-                    className="flex flex-wrap justify-center gap-4 mt-16"
+                <div
+                    className="flex flex-wrap justify-center gap-4 mt-16 animate-fade-in"
+                    style={{ animationDelay: '0.9s' }}
                 >
                     {[
                         { label: 'Platform Fee', value: '0.5%' },
@@ -149,7 +123,7 @@ function AnimatedHero({ onGetStarted, loading }) {
                             <span className="text-xs text-white font-bold">{item.value}</span>
                         </div>
                     ))}
-                </motion.div>
+                </div>
             </div>
         </div>
     );

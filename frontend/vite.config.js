@@ -102,7 +102,6 @@ export default defineConfig({
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-stacks': ['@stacks/transactions', '@stacks/network'],
-          'vendor-ui': ['framer-motion', 'lucide-react'],
         },
       },
     },
