@@ -96,8 +96,20 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-stacks': ['@stacks/transactions', '@stacks/network'],
+          'vendor-ui': ['framer-motion', 'lucide-react'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
   optimizeDeps: {
-    include: ['@stacks/connect', '@stacks/network', '@stacks/transactions'],
+    include: ['@stacks/network', '@stacks/transactions'],
   },
   test: {
     environment: 'jsdom',
