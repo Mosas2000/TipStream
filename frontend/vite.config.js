@@ -104,6 +104,10 @@ export default defineConfig({
           'vendor-stacks': ['@stacks/transactions', '@stacks/network'],
         },
       },
+      treeshake: {
+        preset: 'recommended',
+        moduleSideEffects: false,
+      },
     },
     chunkSizeWarningLimit: 600,
     target: 'esnext',
