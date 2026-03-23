@@ -3,6 +3,12 @@ export async function loadWalletConnect() {
     return StacksConnect;
 }
 
+export async function createUserSession() {
+    const { AppConfig, UserSession } = await loadWalletConnect();
+    const appConfig = new AppConfig(['store_write', 'publish_data']);
+    return new UserSession({ appConfig });
+}
+
 export async function showWalletConnect(options) {
     const StacksConnect = await loadWalletConnect();
     const showConnect = StacksConnect.showConnect || StacksConnect.authenticate;
