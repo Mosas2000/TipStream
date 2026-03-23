@@ -106,6 +106,8 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 600,
+    target: 'esnext',
+    minify: 'esbuild',
   },
   optimizeDeps: {
     include: ['@stacks/network', '@stacks/transactions'],
