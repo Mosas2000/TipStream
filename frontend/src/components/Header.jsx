@@ -1,5 +1,5 @@
+import { lazy, Suspense } from 'react';
 import CopyButton from './ui/copy-button';
-import NotificationBell from './NotificationBell';
 import { BANNER_HEIGHT_CLASS } from './OfflineBanner';
 import { useTheme } from '../context/ThemeContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -7,6 +7,8 @@ import { NETWORK_NAME } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { getMainnetAddress } from '../utils/stacks';
 import { Sun, Moon } from 'lucide-react';
+
+const NotificationBell = lazy(() => import('./NotificationBell'));
 
 /**
  * Site header with wallet controls, theme toggle, and notification bell.
@@ -83,13 +85,15 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
 
                         {/* Notifications */}
                         {userData && (
-                            <NotificationBell
-                                notifications={notifications}
-                                unreadCount={unreadCount}
-                                onMarkRead={onMarkNotificationsRead}
-                                loading={notificationsLoading}
-                                lastSeenTimestamp={lastSeenTimestamp}
-                            />
+                            <Suspense fallback={<div className="w-8 h-8" />}>
+                                <NotificationBell
+                                    notifications={notifications}
+                                    unreadCount={unreadCount}
+                                    onMarkRead={onMarkNotificationsRead}
+                                    loading={notificationsLoading}
+                                    lastSeenTimestamp={lastSeenTimestamp}
+                                />
+                            </Suspense>
                         )}
 
                         {/* Wallet address */}

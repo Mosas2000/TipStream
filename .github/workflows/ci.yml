@@ -113,8 +113,18 @@ jobs:
         run: npm run validate:config
 
       - name: Build
+        env:
+          VITE_NETWORK: mainnet
+          VITE_APP_URL: https://tipstream-silk.vercel.app
         run: npm run build
 
+      - name: Check bundle size
+        run: |
+          MAIN_SIZE=$(find dist/assets -name 'index-*.js' -not -name '*-*.js' | head -1 | xargs wc -c | awk '{print $1}')
+          GZIP_SIZE=$(gzip -c dist/assets/index-*.js 2>/dev/null | wc -c || echo "0")
+          echo "Main bundle size: $MAIN_SIZE bytes"
+          echo "Approximate gzipped: $GZIP_SIZE bytes"
+          
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:

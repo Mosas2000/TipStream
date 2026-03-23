@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   calculateBlocksRemaining,
   isTimelockExpired,
@@ -7,7 +7,6 @@ import {
   getPauseErrorMessage,
   canExecutePause,
   canCancelPause,
-  shouldAutoRefreshPauseStatus
 } from '../lib/pauseOperations';
 
 export default function AdminPauseControl({
@@ -23,11 +22,6 @@ export default function AdminPauseControl({
   isLoading
 }) {
   const [localIsLoading, setLocalIsLoading] = useState(false);
-  const [lastRefreshHeight, setLastRefreshHeight] = useState(currentHeight);
-
-  useEffect(() => {
-    setLastRefreshHeight(currentHeight);
-  }, [currentHeight]);
 
   const handlePropose = useCallback(async (shouldPause) => {
     if (!isAdmin) {

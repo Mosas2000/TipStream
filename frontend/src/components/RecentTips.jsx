@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { openContractCall } from '@stacks/connect';
 import { uintCV, stringUtf8CV } from '@stacks/transactions';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_TIP_A_TIP } from '../config/contracts';
-import { formatSTX, formatAddress } from '../lib/utils';
+import { formatSTX, formatAddress, toMicroSTX } from '../lib/utils';
 import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
 import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
 import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
@@ -188,26 +188,6 @@ export default function RecentTips({ addToast }) {
             setSending(false);
         }
     };
-
-    const filteredTips = useMemo(() => {
-        let result = [...enrichedTips];
-        if (searchQuery.trim()) {
-            const q = searchQuery.trim().toLowerCase();
-            result = result.filter(t => [t.sender, t.recipient, t.message || ''].some(s => s.toLowerCase().includes(q)));
-        }
-        if (minAmount) { const m = toMicroSTX(minAmount); result = result.filter(t => parseInt(t.amount) >= m); }
-        if (maxAmount) { const m = toMicroSTX(maxAmount); result = result.filter(t => parseInt(t.amount) <= m); }
-        if (sortBy === 'oldest') result.reverse();
-        else if (sortBy === 'amount-high') result.sort((a, b) => parseInt(b.amount) - parseInt(a.amount));
-        else if (sortBy === 'amount-low') result.sort((a, b) => parseInt(a.amount) - parseInt(b.amount));
-        return result;
-    }, [enrichedTips, searchQuery, minAmount, maxAmount, sortBy]);
-
-    const paginatedTips = useMemo(() => filteredTips.slice(offset, offset + PAGE_SIZE), [filteredTips, offset]);
-    const totalPages = Math.max(1, Math.ceil(filteredTips.length / PAGE_SIZE));
-    const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
-    const hasActiveFilters = searchQuery || minAmount || maxAmount || sortBy !== 'newest';
-    const clearFilters = () => { setSearchQuery(''); setMinAmount(''); setMaxAmount(''); setSortBy('newest'); setOffset(0); };
 
     if (eventsLoading) return (
         <div className="space-y-4 animate-pulse">

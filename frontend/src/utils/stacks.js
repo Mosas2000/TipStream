@@ -8,16 +8,38 @@
  * `{ profile: { stxAddress: { mainnet, testnet } } }`.
  */
 
-import * as StacksConnect from '@stacks/connect';
 import { STACKS_MAINNET, STACKS_TESTNET, STACKS_DEVNET } from '@stacks/network';
+import { showWalletConnect, disconnectWallet, createUserSession } from './wallet-connect';
 
-const { AppConfig, UserSession } = StacksConnect;
-const showConnect = StacksConnect.showConnect || StacksConnect.authenticate;
+let userSessionInstance = null;
 
-const appConfig = new AppConfig(['store_write', 'publish_data']);
+async function ensureUserSession() {
+    if (!userSessionInstance) {
+        userSessionInstance = await createUserSession();
+    }
+    return userSessionInstance;
+}
 
-/** Active user session instance shared across the application. */
-export const userSession = new UserSession({ appConfig });
+export const userSession = {
+    isUserSignedIn: () => {
+        if (!userSessionInstance) {
+            const stored = localStorage.getItem('blockstack-session');
+            return stored ? JSON.parse(stored).userData !== undefined : false;
+        }
+        return userSessionInstance.isUserSignedIn();
+    },
+    loadUserData: () => {
+        if (!userSessionInstance) {
+            const stored = localStorage.getItem('blockstack-session');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                return parsed.userData;
+            }
+            return null;
+        }
+        return userSessionInstance.loadUserData();
+    },
+};
 
 const networks = {
     mainnet: STACKS_MAINNET,
@@ -68,11 +90,13 @@ export async function authenticate() {
         throw new Error('No Stacks wallet found. Please install Leather or Xverse.');
     }
 
+    const session = await ensureUserSession();
+    
     return new Promise((resolve, reject) => {
-        showConnect({
-            userSession,
+        showWalletConnect({
+            userSession: session,
             onFinish: () => {
-                resolve(userSession.loadUserData());
+                resolve(session.loadUserData());
             },
             onCancel: () => {
                 reject(new Error('User cancelled wallet connection.'));
@@ -116,6 +140,6 @@ export function getSenderAddress() {
 /**
  * Disconnect the active wallet session and clear stored credentials.
  */
-export function disconnect() {
-    StacksConnect.disconnect();
+export async function disconnect() {
+    await disconnectWallet();
 }

@@ -2,14 +2,11 @@ import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { userSession, authenticate, disconnect, getMainnetAddress, isValidUserData } from './utils/stacks';
 import Header from './components/Header';
-import SendTip from './components/SendTip';
 import SkipNav from './components/SkipNav';
 import RouteSkeleton from './components/RouteSkeleton';
 import RequireAdmin from './components/RequireAdmin';
 import LazyErrorBoundary from './components/LazyErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
-import MaintenancePage from './components/MaintenancePage';
-import { AnimatedHero } from './components/ui/animated-hero';
 import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
@@ -24,6 +21,9 @@ import {
 } from './config/routes';
 import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
 
+const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
+const MaintenancePage = lazy(() => import('./components/MaintenancePage'));
+const SendTip = lazy(() => import('./components/SendTip'));
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
@@ -119,11 +119,13 @@ function App() {
 
   if (healthy === false) {
     return (
-      <MaintenancePage
-        error={healthError}
-        onRetry={retryHealth}
-        checking={healthChecking}
-      />
+      <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-950" />}>
+        <MaintenancePage
+          error={healthError}
+          onRetry={retryHealth}
+          checking={healthChecking}
+        />
+      </Suspense>
     );
   }
 
@@ -200,7 +202,9 @@ function App() {
             </LazyErrorBoundary>
           </div>
         ) : (
-          <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
+          <Suspense fallback={<div className="min-h-[85vh] bg-black" />}>
+            <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
+          </Suspense>
         )}
       </main>
 
