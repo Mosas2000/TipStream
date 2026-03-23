@@ -8,7 +8,6 @@ import RequireAdmin from './components/RequireAdmin';
 import LazyErrorBoundary from './components/LazyErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
 import MaintenancePage from './components/MaintenancePage';
-import { AnimatedHero } from './components/ui/animated-hero';
 import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
@@ -23,6 +22,7 @@ import {
 } from './config/routes';
 import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
 
+const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
 const SendTip = lazy(() => import('./components/SendTip'));
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
@@ -200,7 +200,9 @@ function App() {
             </LazyErrorBoundary>
           </div>
         ) : (
-          <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
+          <Suspense fallback={<div className="min-h-[85vh] bg-black" />}>
+            <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
+          </Suspense>
         )}
       </main>
 
