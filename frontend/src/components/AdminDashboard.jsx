@@ -4,7 +4,6 @@ import {
     TimelockStatus,
     formatBlockHeight,
     formatBasisPoints,
-    timelockProgress,
     TIMELOCK_BLOCKS,
 } from '../lib/timelock';
 import {
@@ -378,7 +377,7 @@ function TimelockNotice() {
     );
 }
 
-function PendingChangeCard({ label, status, effectiveHeight, blockHeight, onExecute, onCancel, submitting }) {
+function PendingChangeCard({ label, status, effectiveHeight, onExecute, onCancel, submitting }) {
     const isReady = status.status === TimelockStatus.READY;
     const progress = typeof status.blocksLeft === 'number' && typeof effectiveHeight === 'number' && typeof status.blocksTotal === 'number'
         ? 1 - (status.blocksLeft / status.blocksTotal)
