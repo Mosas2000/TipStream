@@ -240,6 +240,29 @@ settings/
   README.md               Credential setup guide
 ```
 
+## Performance
+
+The frontend is optimized for fast loading and excellent user experience:
+
+### Bundle Optimization
+- **Initial bundle**: 73KB gzipped (app shell + core utilities)
+- **Wallet chunk**: 235KB gzipped (loaded only when connecting wallet)
+- **Route splitting**: All components lazy loaded (2-7KB each)
+- **Vendor chunking**: React (17KB) and Stacks libraries (34KB) cached separately
+
+### Loading Strategy
+- **Critical path**: CSS animations instead of JavaScript for hero section
+- **Deferred assets**: Web vitals, wallet modules, and route components
+- **Preconnect hints**: DNS prefetch for Hiro API and CoinGecko
+- **Resource prioritization**: Essential UI loads first, features load on-demand
+
+### Performance Budget
+- **Web Vitals**: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- **Bundle monitoring**: CI checks and visualizer in `dist/stats.html`
+- **Build commands**: `npm run analyze` for interactive bundle analysis
+
+See [frontend/PERFORMANCE_BUDGET.md](frontend/PERFORMANCE_BUDGET.md) for detailed metrics.
+
 ## Security
 
 - **PostConditionMode.Deny** enforced on every user-facing transaction, preventing
