@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:analyze": "vite build && echo 'Bundle analysis available at dist/stats.html'",
+    "analyze": "node scripts/analyze-bundle.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
