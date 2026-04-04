@@ -22,7 +22,7 @@ describe('telemetry-vitals', () => {
     });
 
     it('has correct structure for each threshold', () => {
-      for (const [name, threshold] of Object.entries(VITAL_THRESHOLDS)) {
+      for (const [, threshold] of Object.entries(VITAL_THRESHOLDS)) {
         expect(threshold.good).toBeDefined();
         expect(threshold.needsImprovement).toBeDefined();
         expect(threshold.label).toBeDefined();

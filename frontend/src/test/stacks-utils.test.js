@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 // Mock @stacks/connect before importing the module under test.
 vi.mock('@stacks/connect', () => {
@@ -27,7 +27,7 @@ vi.mock('@stacks/network', () => ({
 }));
 
 // Now import the module under test.
-const { isWalletInstalled, getSenderAddress, appDetails, network } =
+const { isWalletInstalled, appDetails, network } =
     await import('../utils/stacks');
 
 describe('isWalletInstalled', () => {

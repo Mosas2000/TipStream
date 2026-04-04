@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getNotificationStorageKey,
-  migrateLegacyNotificationState,
   getLastSeenTimestamp,
   setLastSeenTimestamp,
   getAllScopedNotificationKeys,

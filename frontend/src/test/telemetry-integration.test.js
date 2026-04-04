@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { analytics } from '../lib/analytics';
 import { saveTelemetryData, loadTelemetryData, clearAllTelemetryData } from '../lib/telemetry-storage';
 import { buildExportPayload } from '../lib/telemetry-export';
-import { computeTipFunnel, computeVitalsSummary } from '../lib/telemetry-funnel';
+import { computeTipFunnel } from '../lib/telemetry-funnel';
 import { resetEnvironmentCache } from '../lib/telemetry-env';
 
 describe('telemetry integration', () => {
@@ -103,7 +103,6 @@ describe('telemetry integration', () => {
     });
 
     it('computes vitals summary from tracked data', () => {
-      const now = Date.now();
       analytics.trackPerformance('LCP', 2000, 'good');
       analytics.trackPerformance('CLS', 50, 'good');
       analytics.trackPerformance('INP', 100, 'good');

@@ -15,7 +15,6 @@ import {
     PostConditionMode,
     uintCV,
     boolCV,
-    makeContractCall,
 } from '@stacks/transactions';
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 import { network, appDetails, userSession } from '../utils/stacks';

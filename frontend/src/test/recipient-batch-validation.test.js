@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   validateRecipientBatch,
   filterValidRecipients,
@@ -10,7 +10,6 @@ import {
 describe('recipient-batch-validation', () => {
   const validRecipient = 'SP2RDS2YKXMFSP4H9Q5D1FXF5K5J91TH1P5KH3HVP';
   const invalidRecipient = 'INVALID_ADDRESS';
-  const contractRecipient = 'SP2RDS2YKXMFSP4H9Q5D1FXF5K5J91TH1P5KH3HVP.contract';
 
   describe('validateRecipientBatch', () => {
     it('validates multiple recipients', async () => {

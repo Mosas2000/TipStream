@@ -20,7 +20,7 @@ import { useMemo, useCallback } from 'react';
 export function useTransactionLockout(sources = {}) {
   const {
     primary = 'live',
-    secondary = 'live',
+    secondary: _secondary = 'live',
   } = sources;
 
   const isLocked = useMemo(() => {

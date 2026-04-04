@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('Pause Control Operations', () => {
   describe('pause state management', () => {
@@ -218,7 +218,6 @@ describe('Pause Control Operations', () => {
     });
 
     it('should show paused state when contract paused', () => {
-      const proposal = null;
       const isPaused = true;
       
       const displayState = isPaused ? 'paused' : 'running';
@@ -413,7 +412,6 @@ describe('Pause Control Operations', () => {
     });
 
     it('should show system paused when paused', () => {
-      const proposal = null;
       const isPaused = true;
       
       const message = isPaused ? 'System Paused' : 'Running';

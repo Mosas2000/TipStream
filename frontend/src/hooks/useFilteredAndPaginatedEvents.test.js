@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
 import { useFilteredAndPaginatedEvents } from './useFilteredAndPaginatedEvents';
 
 describe('useFilteredAndPaginatedEvents Integration', () => {

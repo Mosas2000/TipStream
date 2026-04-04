@@ -17,7 +17,6 @@ export function useFeedConnectionStatus() {
   const [apiHealthy, setApiHealthy] = useState(true);
   const [failureCount, setFailureCount] = useState(0);
   const lastSuccessRef = useRef(Date.now());
-  const timeoutIdRef = useRef(null);
 
   const recordSuccess = useCallback(() => {
     setFailureCount(0);

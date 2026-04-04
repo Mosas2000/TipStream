@@ -20,7 +20,6 @@ vi.mock('@stacks/connect', () => ({
 describe('SendTip - High-Risk Recipient Blocking', () => {
   const mockSenderAddress = 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T';
   const mockRecipient = 'SP2RDS2YKXMFSP4H9Q5D1FXF5K5J91TH1P5KH3HVP';
-  const mockContractRecipient = 'SP2RDS2YKXMFSP4H9Q5D1FXF5K5J91TH1P5KH3HVP.some-contract';
 
   beforeEach(() => {
     vi.clearAllMocks();

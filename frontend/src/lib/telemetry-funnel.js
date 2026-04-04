@@ -163,7 +163,7 @@ export function getFunnelBarWidth(count, maxCount) {
   return Math.max(10, (count / maxCount) * 100);
 }
 
-export function getFunnelStageColor(index, total) {
+export function getFunnelStageColor(index, _total) {
   const colors = [
     'bg-blue-500 dark:bg-blue-600',
     'bg-indigo-500 dark:bg-indigo-600',

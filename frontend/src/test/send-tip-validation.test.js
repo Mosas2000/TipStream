@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 const MIN_TIP_STX = 0.001;
 const MAX_TIP_STX = 10000;
 
-function validateSendTipAmount(value, balanceSTX = null) {
+function validateSendTipAmount(value, _balanceSTX = null) {
     if (!value) return '';
     const parsed = parseFloat(value);
     if (isNaN(parsed) || parsed <= 0) return 'Amount must be a positive number';

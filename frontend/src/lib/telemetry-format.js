@@ -90,7 +90,6 @@ export function groupByKey(items, keyFn) {
 
 export function sumByKey(items, keyFn, valueFn = (x) => x) {
   return items.reduce((sum, item) => {
-    const key = keyFn(item);
     const value = valueFn(item);
     return sum + (typeof value === 'number' ? value : 0);
   }, 0);

@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 describe('useBlockCheckEnhanced', () => {
   describe('caching behavior', () => {
     it('avoids redundant calls for same recipient', () => {
       const mockFetch = vi.fn();
-      const recipient = 'SP2RDS2YKXMFSP4H9Q5D1FXF5K5J91TH1P5KH3HVP';
       
       expect(mockFetch.mock.calls.length).toBeLessThanOrEqual(1);
     });

@@ -93,11 +93,7 @@ export function invalidateAllReadCaches() {
 export function registerInvalidationHandlers(tipContext) {
   if (!tipContext) return () => {};
 
-  const handleTipSent = () => {
-    invalidateOnTipSent();
-  };
-
-  tipContext.notifyTipSent?.();
+  invalidateOnTipSent();
 
   return () => {
     tipContext.triggerRefresh?.();

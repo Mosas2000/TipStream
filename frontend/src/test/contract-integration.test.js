@@ -5,7 +5,6 @@ import {
     principalCV,
     cvToJSON,
     cvToString,
-    serializeCV,
     Cl,
 } from '@stacks/transactions';
 import { toMicroSTX, formatSTX } from '../lib/utils';
