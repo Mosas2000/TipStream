@@ -81,7 +81,7 @@ describe('telemetry-vitals', () => {
     });
 
     it('returns unknown for undefined vital', () => {
-      expect(getVitalRating('UNKNOWN', 100)).toBe('good');
+      expect(getVitalRating('UNKNOWN', 100)).toBe('unknown');
     });
   });
 
