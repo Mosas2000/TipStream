@@ -200,11 +200,11 @@ describe('telemetry-format', () => {
 
   describe('getMetricTrend', () => {
     it('returns up for increase > 10%', () => {
-      expect(getMetricTrend(110, 100)).toBe('up');
+      expect(getMetricTrend(111, 100)).toBe('up');
     });
 
     it('returns down for decrease > 10%', () => {
-      expect(getMetricTrend(80, 100)).toBe('down');
+      expect(getMetricTrend(89, 100)).toBe('down');
     });
 
     it('returns stable for small changes', () => {
