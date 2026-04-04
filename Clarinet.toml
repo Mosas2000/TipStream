@@ -16,6 +16,16 @@ path = "contracts/tipstream-traits.clar"
 clarity_version = 2
 epoch = 3.0
 
+[contracts.tipstream-token]
+path = "contracts/tipstream-token.clar"
+clarity_version = 2
+epoch = 3.0
+
+[contracts.tipstream-multisig]
+path = "contracts/tipstream-multisig.clar"
+clarity_version = 2
+epoch = 3.0
+
 [repl]
 costs_version = 3
 parser_version = 2
