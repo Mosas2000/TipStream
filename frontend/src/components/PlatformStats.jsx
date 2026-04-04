@@ -33,8 +33,13 @@ export default function PlatformStats() {
         }
     }, []);
 
-    useEffect(() => { fetchPlatformStats(); }, [fetchPlatformStats, refreshCounter]);
-    useEffect(() => { const i = setInterval(fetchPlatformStats, 60000); return () => clearInterval(i); }, [fetchPlatformStats]);
+    useEffect(() => { 
+        Promise.resolve().then(() => fetchPlatformStats()); 
+    }, [fetchPlatformStats, refreshCounter]);
+    useEffect(() => { 
+        const i = setInterval(() => void fetchPlatformStats(), 60000); 
+        return () => clearInterval(i); 
+    }, [fetchPlatformStats]);
 
     const STAT_CARDS = [
         { key: 'total-tips', label: 'Total Tips', format: (v) => Number(v).toLocaleString(), color: 'text-gray-900 dark:text-white' },

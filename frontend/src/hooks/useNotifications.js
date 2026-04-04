@@ -17,28 +17,23 @@ export function useNotifications(userAddress) {
     const { events, eventsLoading } = useTipContext();
     const [unreadCount, setUnreadCount] = useState(0);
     const network = NETWORK_NAME;
+    const [now] = useState(() => Date.now() / 1000);
     
-    const initialLastSeen = useMemo(() => {
+    const [lastSeenOverride, setLastSeenOverride] = useState(null);
+    
+    const lastSeenTimestamp = useMemo(() => {
+      if (lastSeenOverride !== null) return lastSeenOverride;
       if (!userAddress || !network) return 0;
       const migrated = migrateLegacyNotificationState(userAddress, network);
       if (migrated !== null) return migrated;
       return getLastSeenTimestamp(userAddress, network);
-    }, [userAddress, network]);
+    }, [userAddress, network, lastSeenOverride]);
     
-    const lastSeenRef = useRef(initialLastSeen);
-    const [lastSeenTimestamp, setLastSeenTimestamp] = useState(initialLastSeen);
+    const lastSeenRef = useRef(lastSeenTimestamp);
     
     useEffect(() => {
-      if (!userAddress || !network) {
-        lastSeenRef.current = 0;
-        setLastSeenTimestamp(0);
-        return;
-      }
-      
-      const timestamp = getLastSeenTimestamp(userAddress, network);
-      lastSeenRef.current = timestamp;
-      setLastSeenTimestamp(timestamp);
-    }, [userAddress, network]);
+      lastSeenRef.current = lastSeenTimestamp;
+    }, [lastSeenTimestamp]);
 
     /** Derive received tips from the shared event cache. */
     const notifications = useMemo(() => {
@@ -50,9 +45,9 @@ export function useNotifications(userAddress) {
                 // Preserve the timestamp enrichment from contractEvents; use a
                 // synthetic fallback so ordering remains stable when block_time
                 // is unavailable.
-                timestamp: t.timestamp || Date.now() / 1000 - idx,
+                timestamp: t.timestamp || now - idx,
             }));
-    }, [events, userAddress]);
+    }, [events, userAddress, now]);
 
     // Recompute unread count whenever notifications change.
     useEffect(() => {
@@ -67,7 +62,7 @@ export function useNotifications(userAddress) {
         
         const now = Math.floor(Date.now() / 1000);
         lastSeenRef.current = now;
-        setLastSeenTimestamp(now);
+        setLastSeenOverride(now);
         saveLastSeenTimestamp(userAddress, network, now);
         setUnreadCount(0);
     }, [userAddress, network]);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { openContractCall } from '@stacks/connect';
 import {
     fetchCallReadOnlyFunction,
@@ -38,16 +38,8 @@ export default function ProfileManager({ addToast }) {
 
     const senderAddress = useMemo(() => getSenderAddress(), []);
 
-    useEffect(() => {
-        if (!senderAddress) {
-            setLoading(false);
-            return;
-        }
-        fetchProfile();
-    }, [senderAddress]);
-
     /** Fetch the existing on-chain profile for the connected wallet. */
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         try {
             setLoading(true);
             const result = await fetchCallReadOnlyFunction({
@@ -72,7 +64,15 @@ export default function ProfileManager({ addToast }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [senderAddress]);
+
+    useEffect(() => {
+        if (!senderAddress) {
+            setLoading(false);
+            return;
+        }
+        void fetchProfile();
+    }, [senderAddress, fetchProfile]);
 
     /** Validate all form fields before submission. */
     const validateForm = () => {

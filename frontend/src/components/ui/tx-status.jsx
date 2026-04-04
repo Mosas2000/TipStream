@@ -94,7 +94,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   }, [status, pollCount, checkStatus]);
 
   useEffect(() => {
-    checkStatus();
+    Promise.resolve().then(() => checkStatus());
   }, [checkStatus]);
 
   const config = STATUS_CONFIG[status];

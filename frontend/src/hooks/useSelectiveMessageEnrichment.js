@@ -26,7 +26,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const cancelledRef = useRef(false);
-  const previousIdsRef = useRef([]);
+  const [previousIds, setPreviousIds] = useState([]);
 
   const visibleTipIds = useMemo(
     () => visibleTips
@@ -37,14 +37,13 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   );
 
   const hasNewIds = useMemo(
-    () => visibleTipIds.length !== previousIdsRef.current.length ||
-           visibleTipIds.some((id, i) => id !== previousIdsRef.current[i]),
-    [visibleTipIds]
+    () => visibleTipIds.length !== previousIds.length ||
+           visibleTipIds.some((id, i) => id !== previousIds[i]),
+    [visibleTipIds, previousIds]
   );
 
   useEffect(() => {
     if (visibleTipIds.length === 0) {
-      setTipMessages({});
       return;
     }
 
@@ -54,8 +53,13 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
 
     let cancelled = false;
     cancelledRef.current = false;
-    setLoading(true);
-    setError(null);
+    
+    Promise.resolve().then(() => {
+      if (cancelled || cancelledRef.current) return;
+      setLoading(true);
+      setError(null);
+      setPreviousIds(visibleTipIds);
+    });
 
     const marker = createEnrichmentMarker();
 
@@ -78,8 +82,6 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
           setLoading(false);
         }
       });
-
-    previousIdsRef.current = visibleTipIds;
 
     return () => {
       cancelled = true;

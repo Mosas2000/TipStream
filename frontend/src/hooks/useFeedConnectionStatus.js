@@ -7,7 +7,7 @@
  * reliability and enable graceful fallback behaviors.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const CONNECTION_TIMEOUT_MS = 5000;
 const DEGRADATION_THRESHOLD = 3;
@@ -16,12 +16,12 @@ export function useFeedConnectionStatus() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [apiHealthy, setApiHealthy] = useState(true);
   const [failureCount, setFailureCount] = useState(0);
-  const lastSuccessRef = useRef(Date.now());
+  const [lastSuccess, setLastSuccess] = useState(() => Date.now());
 
   const recordSuccess = useCallback(() => {
     setFailureCount(0);
     setApiHealthy(true);
-    lastSuccessRef.current = Date.now();
+    setLastSuccess(Date.now());
   }, []);
 
   const recordFailure = useCallback(() => {
@@ -66,7 +66,7 @@ export function useFeedConnectionStatus() {
     isOnline,
     apiHealthy,
     failureCount,
-    lastSuccess: lastSuccessRef.current,
+    lastSuccess,
     status: getStatus(),
     recordSuccess,
     recordFailure,
