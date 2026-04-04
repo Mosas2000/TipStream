@@ -2,11 +2,7 @@
 // All components should import from here instead of hardcoding addresses.
 
 import { 
-  validateNetwork, 
-  validateAppUrl, 
-  validateContractAddress, 
-  validateContractName,
-  validateStacksApiUrl 
+  validateNetwork
 } from './validation.js';
 
 export const CONTRACT_ADDRESS = 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T';

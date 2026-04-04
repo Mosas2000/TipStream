@@ -11,7 +11,7 @@
  * fetches as the visible set changes.
  */
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { fetchTipMessages } from '../lib/fetchTipDetails';
 import { createEnrichmentMarker } from '../lib/enrichmentMetrics';
 

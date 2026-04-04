@@ -23,7 +23,12 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { 
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^[A-Z_]',
+        destructuredArrayIgnorePattern: '^[A-Z_]',
+        ignoreRestSiblings: true 
+      }],
       // Ban PostConditionMode.Allow — always use Deny with explicit conditions
       'no-restricted-properties': ['error', {
         object: 'PostConditionMode',
@@ -46,6 +51,45 @@ export default defineConfig([
           message: 'Direct set-fee-basis-points bypasses the timelock. Use propose-fee-change and execute-fee-change instead.',
         },
       ],
+    },
+  },
+  // Test files configuration
+  {
+    files: ['**/*.test.{js,jsx}', '**/test/**/*.{js,jsx}', 'src/test/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+        global: 'readonly',
+      },
+    },
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  // Node.js scripts configuration
+  {
+    files: ['scripts/**/*.{js,cjs}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
+    },
+    rules: {
+      'react-refresh/only-export-components': 'off',
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
 ])

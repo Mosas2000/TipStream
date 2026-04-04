@@ -12,7 +12,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { toMicroSTX } from '../lib/utils';
 import { useSelectiveMessageEnrichment } from './useSelectiveMessageEnrichment';
-import { useTipContext } from '../context/TipContext';
 
 const PAGE_SIZE = 10;
 

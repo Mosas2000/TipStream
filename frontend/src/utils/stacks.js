@@ -10,6 +10,7 @@
 
 import { STACKS_MAINNET, STACKS_TESTNET, STACKS_DEVNET } from '@stacks/network';
 import { showWalletConnect, disconnectWallet, createUserSession } from './wallet-connect';
+import { getMainnetAddress } from './user-data';
 
 let userSessionInstance = null;
 

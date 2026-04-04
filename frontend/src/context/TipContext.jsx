@@ -9,7 +9,7 @@
  */
 import { createContext, useContext, useReducer, useCallback, useState, useEffect, useRef } from 'react';
 import { fetchAllContractEvents, POLL_INTERVAL_MS } from '../lib/contractEvents';
-import { clearPageCache, updatePaginationState } from '../lib/eventPageCache';
+import { updatePaginationState } from '../lib/eventPageCache';
 
 const TipContext = createContext(null);
 

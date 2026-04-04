@@ -99,7 +99,7 @@ export function getDiagnosticReport() {
         usagePercent: ((cacheStats.totalSize / (5 * 1024 * 1024)) * 100).toFixed(1),
         warning: cacheStats.totalSize > (4 * 1024 * 1024),
       },
-      entries: cacheStats.entries,
+      cacheEntries: cacheStats.entries,
     },
     navigator: typeof navigator !== 'undefined' ? {
       onLine: navigator.onLine,

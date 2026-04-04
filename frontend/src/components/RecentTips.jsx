@@ -5,7 +5,7 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_TIP_A_TIP } from '../config/contrac
 import { formatSTX, formatAddress, toMicroSTX } from '../lib/utils';
 import { tipPostCondition, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
 import { network, appDetails, userSession, getSenderAddress } from '../utils/stacks';
-import { fetchTipMessages, clearTipCache } from '../lib/fetchTipDetails';
+import { clearTipCache } from '../lib/fetchTipDetails';
 import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackValidation';
 import { useTipContext } from '../context/TipContext';
 import { useFilteredAndPaginatedEvents } from '../hooks/useFilteredAndPaginatedEvents';

@@ -48,7 +48,7 @@ export function decodeCursor(cursor) {
     if (decoded && typeof decoded === 'object') {
       return decoded;
     }
-  } catch (err) {
+  } catch {
     // Silent fail for invalid cursor format
   }
 

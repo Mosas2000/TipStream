@@ -9,7 +9,7 @@ import { network, appDetails, getSenderAddress } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
-import { isContractPrincipal, isValidStacksPrincipal } from '../lib/stacks-principal';
+import { isValidStacksPrincipal } from '../lib/stacks-principal';
 import { canProceedWithRecipient, getRecipientValidationMessage } from '../lib/recipient-validation';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
@@ -57,7 +57,6 @@ export default function SendTip({ addToast }) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [pendingTx, setPendingTx] = useState(null);
     const [recipientError, setRecipientError] = useState('');
-    const [recipientWarning, setRecipientWarning] = useState('');
     const [amountError, setAmountError] = useState('');
     const [cooldown, setCooldown] = useState(0);
     const cooldownRef = useRef(null);
@@ -91,7 +90,6 @@ export default function SendTip({ addToast }) {
     const handleRecipientChange = (value) => {
         setRecipient(value);
         resetBlockCheck();
-        setRecipientWarning('');
         setRecipientError('');
 
         if (value && !isValidStacksPrincipal(value)) {

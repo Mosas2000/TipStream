@@ -41,7 +41,7 @@ REQUIRED_ENV_VARS.forEach(varName => {
           console.error(`ERROR: ${varName} must use http or https protocol`);
           exitCode = 1;
         }
-      } catch (err) {
+      } catch {
         console.error(`ERROR: ${varName} is not a valid URL`);
         exitCode = 1;
       }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
 import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS, STACKS_API_BASE } from '../config/contracts';
