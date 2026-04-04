@@ -68,7 +68,7 @@ describe('Resilience Monitoring Utilities', () => {
 
   describe('Event logging', () => {
     it('logs resilience events when debug enabled', () => {
-      const consoleSpy = vi.spyOn(console, 'log');
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
       setDebugMode(true);
 
       logResilienceEvent('cache', 'info', 'Test message', { data: 'test' });

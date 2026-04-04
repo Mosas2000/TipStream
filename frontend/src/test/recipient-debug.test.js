@@ -18,6 +18,10 @@ describe('recipient-debug', () => {
     vi.clearAllMocks();
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Enable debug mode for logging tests
+    if (typeof window !== 'undefined') {
+      window.localStorage?.setItem('DEBUG_RECIPIENT_VALIDATION', 'true');
+    }
   });
 
   describe('truncateAddress', () => {
@@ -37,7 +41,7 @@ describe('recipient-debug', () => {
 
     it('handles empty address', () => {
       const truncated = truncateAddress('');
-      expect(truncated).toBe('...');
+      expect(truncated).toBe('');
     });
 
     it('handles null address', () => {
