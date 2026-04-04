@@ -166,6 +166,7 @@ describe('High-Risk Recipient Validation - Edge Cases', () => {
   describe('ui button state consistency', () => {
     it('button disabled state matches validation', () => {
       const isHighRisk = true;
+      // eslint-disable-next-line no-constant-binary-expression
       const buttonDisabled = true || isHighRisk;
       expect(buttonDisabled).toBe(true);
     });

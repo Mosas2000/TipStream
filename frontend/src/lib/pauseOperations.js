@@ -116,9 +116,10 @@ export const getPauseDisplayMessage = (proposal, isPaused, currentHeight) => {
         return `${action.charAt(0).toUpperCase() + action.slice(1)} proposal pending (${blocksRemaining} blocks remaining)`;
       }
       return 'Proposal pending';
-    case 'ready-to-execute':
+    case 'ready-to-execute': {
       const executeAction = proposal.value ? 'pause' : 'unpause';
       return `Ready to execute ${executeAction}`;
+    }
     default:
       return 'Status unknown';
   }

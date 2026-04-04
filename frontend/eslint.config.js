@@ -92,4 +92,11 @@ export default defineConfig([
       'react-hooks/rules-of-hooks': 'off',
     },
   },
+  // Context files configuration - allow exporting both context and hooks
+  {
+    files: ['src/context/**/*.{js,jsx}', 'src/components/ui/toast.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

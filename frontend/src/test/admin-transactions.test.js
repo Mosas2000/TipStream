@@ -168,6 +168,7 @@ describe('admin transaction builders', () => {
 
             const allCalls = openContractCall.mock.calls;
             allCalls.forEach((call) => {
+                // eslint-disable-next-line no-restricted-syntax
                 expect(call[0].functionName).not.toBe('set-paused');
             });
         });
@@ -181,6 +182,7 @@ describe('admin transaction builders', () => {
 
             const allCalls = openContractCall.mock.calls;
             allCalls.forEach((call) => {
+                // eslint-disable-next-line no-restricted-syntax
                 expect(call[0].functionName).not.toBe('set-fee-basis-points');
             });
         });
