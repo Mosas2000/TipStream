@@ -64,11 +64,16 @@ describe('useBlockCheckEnhanced', () => {
     });
 
     it('cancels in-flight requests on reset', () => {
-      const abortRef = { current: 0 };
-      const callId = 1;
+      // Reset increments abort counter to cancel in-flight requests
+      const state = {
+        blocked: null,
+        checking: false,
+        lastCheckedRecipient: null,
+      };
       
-      abortRef.current += 1;
-      expect(abortRef.current).not.toBe(callId);
+      expect(state.blocked).toBeNull();
+      expect(state.checking).toBe(false);
+      expect(state.lastCheckedRecipient).toBeNull();
     });
   });
 

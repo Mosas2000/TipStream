@@ -1,13 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-const STORAGE_KEY = 'tipstream_last_seen_tip_ts';
+const TEST_NETWORK = 'mainnet';
+const getStorageKey = (address, network = TEST_NETWORK) => `tipstream_last_seen_${network}_${address}`;
 
 vi.mock('../context/TipContext', () => ({
     useTipContext: vi.fn(() => ({
         events: [],
         eventsLoading: false,
     })),
+}));
+
+vi.mock('../config/contracts', () => ({
+    NETWORK_NAME: 'mainnet',
 }));
 
 import { useNotifications } from '../hooks/useNotifications';
@@ -61,7 +66,7 @@ describe('useNotifications', () => {
 
     it('counts unread based on lastSeen timestamp', () => {
         const now = Math.floor(Date.now() / 1000);
-        localStorage.setItem(STORAGE_KEY, String(now - 60));
+        localStorage.setItem(getStorageKey(USER_ADDRESS), String(now - 60));
 
         useTipContext.mockReturnValue({
             events: [
@@ -76,7 +81,7 @@ describe('useNotifications', () => {
     });
 
     it('exposes lastSeenTimestamp from localStorage', () => {
-        localStorage.setItem(STORAGE_KEY, '1700000000');
+        localStorage.setItem(getStorageKey(USER_ADDRESS), '1700000000');
         useTipContext.mockReturnValue({ events: [], eventsLoading: false });
 
         const { result } = renderHook(() => useNotifications(USER_ADDRESS));
@@ -112,7 +117,8 @@ describe('useNotifications', () => {
             result.current.markAllRead();
         });
 
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const storageKey = getStorageKey(USER_ADDRESS);
+        const stored = localStorage.getItem(storageKey);
         expect(stored).toBeTruthy();
         expect(Number(stored)).toBe(result.current.lastSeenTimestamp);
     });
@@ -285,7 +291,7 @@ describe('useNotifications', () => {
             eventsLoading: false,
         });
 
-        localStorage.setItem(STORAGE_KEY, String(now));
+        localStorage.setItem(getStorageKey(USER_ADDRESS), String(now));
         const { result } = renderHook(() => useNotifications(USER_ADDRESS));
         expect(result.current.notifications.length).toBe(4);
         expect(result.current.unreadCount).toBe(2);
