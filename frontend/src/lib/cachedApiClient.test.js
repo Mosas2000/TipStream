@@ -148,9 +148,11 @@ describe('Cached API Client', () => {
 
   describe('Error handling', () => {
     it('handles timeout gracefully', async () => {
-      global.fetch = vi.fn(
-        () => new Promise(resolve => setTimeout(resolve, 30000))
-      );
+      // Mock AbortController to simulate timeout
+      const abortError = new Error('Aborted');
+      abortError.name = 'AbortError';
+      
+      global.fetch = vi.fn().mockRejectedValue(abortError);
 
       await expect(
         cachedFetch('/endpoint', { timeout: 100 })
