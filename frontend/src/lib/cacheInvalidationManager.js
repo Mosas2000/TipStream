@@ -31,13 +31,16 @@ const INVALIDATION_PATTERNS = {
  * @param {string} pattern - Cache key pattern (prefix match)
  */
 export function invalidateByPattern(pattern) {
+  // Collect keys first to avoid iteration issues when removing
+  const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.includes(pattern)) {
-      const cacheKey = key.replace('tipstream_cache_', '');
-      clearCacheEntry(cacheKey);
+      keysToRemove.push(key.replace('tipstream_cache_', ''));
     }
   }
+  
+  keysToRemove.forEach(cacheKey => clearCacheEntry(cacheKey));
 }
 
 /**
