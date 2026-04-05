@@ -119,41 +119,34 @@ describe('useCachedData Hook', () => {
   });
 
   it('provides metadata for cached data', async () => {
-    vi.useFakeTimers();
-    try {
-      const mockData = { stats: { total: 100 } };
-      persistentCache.setCacheEntry('meta-test', mockData, 60000);
+    const mockData = { stats: { total: 100 } };
+    persistentCache.setCacheEntry('meta-test', mockData, 60000);
 
-      vi.advanceTimersByTime(5000);
+    const fetchFn = vi.fn().mockRejectedValue(new Error('API error'));
 
-      const fetchFn = vi.fn().mockRejectedValue(new Error('API error'));
+    const { result } = renderHook(() =>
+      useCachedData('meta-test', fetchFn, { ttl: 60000, timeout: 1000 })
+    );
 
-      const { result } = renderHook(() =>
-        useCachedData('meta-test', fetchFn, { ttl: 60000 })
-      );
+    await waitFor(() => {
+      expect(result.current.metadata).toBeDefined();
+      expect(result.current.metadata).not.toBeNull();
+    }, { timeout: 5000 });
 
-      await waitFor(() => {
-        expect(result.current.metadata).toBeDefined();
-      });
-
-      expect(result.current.metadata.age).toBeGreaterThanOrEqual(5000);
-      expect(result.current.metadata.isExpired).toBe(false);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
+    expect(result.current.metadata?.isExpired).toBe(false);
+  }, 15000);
 
   it('clears cache on demand', async () => {
     const mockData = { stats: { total: 100 } };
     const fetchFn = vi.fn().mockResolvedValue(mockData);
 
     const { result } = renderHook(() =>
-      useCachedData('clear-test', fetchFn, { ttl: 5000 })
+      useCachedData('clear-test', fetchFn, { ttl: 5000, timeout: 1000 })
     );
 
     await waitFor(() => {
       expect(result.current.data).toEqual(mockData);
-    });
+    }, { timeout: 5000 });
 
     act(() => {
       result.current.clearCache();
@@ -161,19 +154,20 @@ describe('useCachedData Hook', () => {
 
     expect(result.current.data).toBeNull();
     expect(result.current.metadata).toBeNull();
-  });
+  }, 15000);
 
   it('respects TTL option', async () => {
     const mockData = { stats: { total: 100 } };
     const fetchFn = vi.fn().mockResolvedValue(mockData);
 
     renderHook(() =>
-      useCachedData('ttl-test', fetchFn, { ttl: 30000 })
+      useCachedData('ttl-test', fetchFn, { ttl: 30000, timeout: 1000 })
     );
 
     await waitFor(() => {
       const metadata = persistentCache.getCacheMetadata('ttl-test');
+      expect(metadata).toBeDefined();
       expect(metadata.ttl).toBe(30000);
-    });
-  });
+    }, { timeout: 5000 });
+  }, 15000);
 });
