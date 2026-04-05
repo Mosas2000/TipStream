@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SendTip from '../components/SendTip';
+import { TipProvider } from '../context/TipContext';
 import * as useBlockCheckModule from '../hooks/useBlockCheck';
 import * as useBalanceModule from '../hooks/useBalance';
 import * as useStxPriceModule from '../hooks/useStxPrice';
@@ -15,6 +16,14 @@ vi.mock('../utils/stacks');
 vi.mock('../lib/analytics');
 vi.mock('@stacks/connect', () => ({
   openContractCall: vi.fn(),
+}));
+
+// Mock contractEvents to prevent network calls in TipProvider
+vi.mock('../lib/contractEvents', () => ({
+  contractEvents: {
+    fetchAll: vi.fn().mockResolvedValue([]),
+    subscribe: vi.fn(),
+  },
 }));
 
 describe('SendTip - High-Risk Recipient Blocking', () => {
@@ -56,7 +65,11 @@ describe('SendTip - High-Risk Recipient Blocking', () => {
         refetch: vi.fn(),
       });
 
-      render(<SendTip addToast={mockAddToast} />);
+      render(
+        <TipProvider>
+          <SendTip addToast={mockAddToast} />
+        </TipProvider>
+      );
 
       const recipientInput = screen.getByPlaceholderText('SP2...');
       await user.type(recipientInput, mockRecipient);
@@ -89,7 +102,11 @@ describe('SendTip - High-Risk Recipient Blocking', () => {
         refetch: vi.fn(),
       });
 
-      render(<SendTip addToast={mockAddToast} />);
+      render(
+        <TipProvider>
+          <SendTip addToast={mockAddToast} />
+        </TipProvider>
+      );
 
       const recipientInput = screen.getByPlaceholderText('SP2...');
       await user.type(recipientInput, mockRecipient);
@@ -116,7 +133,11 @@ describe('SendTip - High-Risk Recipient Blocking', () => {
         refetch: vi.fn(),
       });
 
-      const { container } = render(<SendTip addToast={mockAddToast} />);
+      const { container } = render(
+        <TipProvider>
+          <SendTip addToast={mockAddToast} />
+        </TipProvider>
+      );
       const recipientInput = container.querySelector('#tip-recipient');
       fireEvent.change(recipientInput, { target: { value: mockRecipient } });
 
@@ -147,7 +168,11 @@ describe('SendTip - High-Risk Recipient Blocking', () => {
         refetch: vi.fn(),
       });
 
-      render(<SendTip addToast={mockAddToast} />);
+      render(
+        <TipProvider>
+          <SendTip addToast={mockAddToast} />
+        </TipProvider>
+      );
 
       const sendButton = screen.getByRole('button', { name: /send tip/i });
       expect(sendButton.classList.contains('disabled')).toBeFalsy();

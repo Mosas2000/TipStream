@@ -75,7 +75,7 @@ export function useFilteredAndPaginatedEvents(baseEvents = []) {
 
   const totalPages = Math.max(1, Math.ceil(filteredTips.length / PAGE_SIZE));
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
-  const hasActiveFilters = searchQuery || minAmount || maxAmount || sortBy !== 'newest';
+  const hasActiveFilters = !!(searchQuery || minAmount || maxAmount || sortBy !== 'newest');
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
