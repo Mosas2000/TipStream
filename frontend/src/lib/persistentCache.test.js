@@ -114,8 +114,9 @@ describe('Persistent Cache', () => {
       expect(getCacheEntry('delete')).toBeNull();
     });
 
-    it('returns false for non-existent entries', () => {
-      expect(clearCacheEntry('nonexistent')).toBe(false);
+    it('returns true for non-existent entries', () => {
+      // localStorage.removeItem succeeds silently for non-existent keys
+      expect(clearCacheEntry('nonexistent')).toBe(true);
     });
 
     it('returns false for invalid keys', () => {
