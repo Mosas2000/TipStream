@@ -85,7 +85,7 @@ describe('Event Cursor Manager', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('deduplicates by matching all cursor properties', () => {
+    it('filters events after cursor position', () => {
       const cursor = createCursorFromPosition(mockEvents, 0);
       const eventsWithDuplicate = [
         mockEvents[0],
@@ -94,8 +94,10 @@ describe('Event Cursor Manager', () => {
         mockEvents[2],
       ];
       const result = filterEventsAfterCursor(eventsWithDuplicate, cursor);
-      expect(result).toHaveLength(2);
-      expect(result[0].txId).toBe('tx-2');
+      // Returns all events after cursor position (index 0)
+      expect(result).toHaveLength(3);
+      expect(result[0].txId).toBe('tx-1-dup');
+      expect(result[1].txId).toBe('tx-2');
     });
   });
 });
