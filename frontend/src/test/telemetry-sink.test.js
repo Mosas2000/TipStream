@@ -94,9 +94,10 @@ describe('telemetry-sink', () => {
       queueEvent('event2', {});
       queueEvent('event3', {});
 
-      await vi.runAllTimersAsync();
-
-      expect(getQueueLength()).toBe(0);
+      // Wait for the flush to complete
+      await vi.waitFor(() => {
+        expect(getQueueLength()).toBe(0);
+      });
     });
   });
 
@@ -167,7 +168,12 @@ describe('telemetry-sink', () => {
       });
       queueEvent('test', {});
 
-      const result = await flush();
+      const flushPromise = flush();
+      
+      // Advance timers to allow retry
+      await vi.advanceTimersByTimeAsync(100);
+      
+      const result = await flushPromise;
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(result.success).toBe(true);
@@ -184,7 +190,12 @@ describe('telemetry-sink', () => {
       });
       queueEvent('test', {});
 
-      const result = await flush();
+      const flushPromise = flush();
+      
+      // Advance timers to allow all retries (10ms * 1 + 10ms * 2 = 30ms total)
+      await vi.advanceTimersByTimeAsync(30);
+      
+      const result = await flushPromise;
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Network error');
