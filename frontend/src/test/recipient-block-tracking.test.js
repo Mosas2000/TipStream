@@ -28,7 +28,7 @@ describe('recipient-block-tracking', () => {
       const event = trackBlockedRecipientDetected(mockRecipient);
       
       expect(event.event).toBe('blocked_recipient_detected');
-      expect(event.recipient).toContain('SP2R...');
+      expect(event.recipient).toBe('SP2RDS2Y...3HVP');
       expect(event.timestamp).toBeDefined();
     });
 

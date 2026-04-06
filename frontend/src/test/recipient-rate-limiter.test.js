@@ -160,15 +160,13 @@ describe('recipient-rate-limiter', () => {
       }, 150);
     });
 
-    it('waits appropriate time before reset', (done) => {
+    it('waits appropriate time before reset', () => {
       const limiter = new RateLimiter(1, 100);
       limiter.recordRequest();
 
       const waitTime = limiter.getWaitTime();
       expect(waitTime).toBeGreaterThan(0);
       expect(waitTime).toBeLessThanOrEqual(100);
-
-      done();
     });
   });
 });

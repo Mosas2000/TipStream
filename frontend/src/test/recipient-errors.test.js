@@ -91,8 +91,8 @@ describe('recipient-errors', () => {
       expect(getRecipientErrorSeverity('INVALID_FORMAT')).toBe('warning');
     });
 
-    it('returns null for unknown error code', () => {
-      expect(getRecipientErrorSeverity('UNKNOWN')).toBeNull();
+    it('returns warning for unknown error code', () => {
+      expect(getRecipientErrorSeverity('UNKNOWN')).toBe('warning');
     });
   });
 
