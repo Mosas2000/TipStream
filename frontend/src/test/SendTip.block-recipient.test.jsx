@@ -24,6 +24,7 @@ vi.mock('../lib/contractEvents', () => ({
     fetchAll: vi.fn().mockResolvedValue([]),
     subscribe: vi.fn(),
   },
+  POLL_INTERVAL_MS: 30000,
 }));
 
 describe('SendTip - High-Risk Recipient Blocking', () => {
