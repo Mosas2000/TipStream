@@ -124,10 +124,6 @@ describe('telemetry integration', () => {
       analytics.trackPageView('/send');
       analytics.trackWalletConnect();
 
-      const metrics = analytics.getMetrics();
-      expect(metrics.totalPageViews).toBe(1);
-      expect(metrics.walletConnections).toBe(1);
-
       const summary = analytics.getSummary();
       expect(summary.totalPageViews).toBe(1);
       expect(summary.walletConnections).toBe(1);

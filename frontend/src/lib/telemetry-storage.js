@@ -132,7 +132,7 @@ export function clearAllTelemetryData() {
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(STORAGE_PREFIX)) {
+      if (key && (key.startsWith(STORAGE_PREFIX) || key === 'tipstream_analytics')) {
         keysToRemove.push(key);
       }
     }

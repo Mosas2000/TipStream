@@ -11,6 +11,7 @@ import {
   ROUTE_BLOCK,
   ROUTE_STATS,
   ROUTE_ADMIN,
+  ROUTE_TELEMETRY,
   DEFAULT_AUTHENTICATED_ROUTE,
   ROUTE_LABELS,
   ROUTE_META,
@@ -167,9 +168,9 @@ describe('ROUTE_META', () => {
     }
   });
 
-  it('only the admin route is marked adminOnly', () => {
+  it('only admin and telemetry routes are marked adminOnly', () => {
     for (const [path, meta] of Object.entries(ROUTE_META)) {
-      if (path === ROUTE_ADMIN) {
+      if (path === ROUTE_ADMIN || path === ROUTE_TELEMETRY) {
         expect(meta.adminOnly).toBe(true);
       } else {
         expect(meta.adminOnly).toBe(false);
