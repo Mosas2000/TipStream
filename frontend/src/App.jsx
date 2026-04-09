@@ -14,6 +14,7 @@ import { useNotifications } from './hooks/useNotifications';
 import { useContractHealth } from './hooks/useContractHealth';
 import { useAdmin } from './hooks/useAdmin';
 import { usePageTitle } from './hooks/usePageTitle';
+import { useSessionSync } from './hooks/useSessionSync';
 import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
@@ -50,6 +51,7 @@ function App() {
 
   usePageTitle();
 
+  // Restore initial session on mount
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
       const data = userSession.loadUserData();
@@ -62,6 +64,19 @@ function App() {
     }
     analytics.trackSession();
   }, []);
+
+  // Synchronize session state across tabs and provider account changes
+  useSessionSync((sessionState) => {
+    const { isSignedIn, userData } = sessionState;
+    if (isSignedIn && isValidUserData(userData)) {
+      setUserData(userData);
+      // Reset auth loading state in case this was triggered by async operation
+      setAuthLoading(false);
+    } else if (!isSignedIn) {
+      setUserData(null);
+      setAuthLoading(false);
+    }
+  });
 
   useEffect(() => {
     analytics.trackPageView(location.pathname);
