@@ -178,8 +178,16 @@ describe('ROUTE_META', () => {
     }
   });
 
-  it('all navigable routes require authentication', () => {
-    for (const route of NAVIGABLE_ROUTES) {
+  it('public routes do not require authentication', () => {
+    const publicRoutes = [ROUTE_FEED, ROUTE_LEADERBOARD, ROUTE_STATS];
+    for (const route of publicRoutes) {
+      expect(ROUTE_META[route].requiresAuth).toBe(false);
+    }
+  });
+
+  it('authenticated routes require authentication', () => {
+    const authRequiredRoutes = [ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_BLOCK];
+    for (const route of authRequiredRoutes) {
       expect(ROUTE_META[route].requiresAuth).toBe(true);
     }
   });

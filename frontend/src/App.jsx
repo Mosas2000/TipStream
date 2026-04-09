@@ -5,6 +5,7 @@ import Header from './components/Header';
 import SkipNav from './components/SkipNav';
 import RouteSkeleton from './components/RouteSkeleton';
 import RequireAdmin from './components/RequireAdmin';
+import RequireAuth from './components/RequireAuth';
 import LazyErrorBoundary from './components/LazyErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
 import { ToastContainer, useToast } from './components/ui/toast';
@@ -17,7 +18,7 @@ import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
   ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY,
-  DEFAULT_AUTHENTICATED_ROUTE,
+  DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
 import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
 
@@ -99,7 +100,7 @@ function App() {
   };
 
   const navItems = useMemo(() => {
-    const items = [
+    const allItems = [
       { path: ROUTE_SEND, label: 'Send Tip', icon: Zap },
       { path: ROUTE_BATCH, label: 'Batch', icon: Users },
       { path: ROUTE_TOKEN_TIP, label: 'Token Tip', icon: Coins },
@@ -110,12 +111,23 @@ function App() {
       { path: ROUTE_BLOCK, label: 'Block', icon: ShieldBan },
       { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
     ];
+    
+    // Filter items based on auth and admin status
+    const items = allItems.filter((item) => {
+      const meta = ROUTE_META[item.path];
+      // Show authenticated routes only if user is authenticated
+      if (meta.requiresAuth && !userData) return false;
+      // Show admin routes only if user is owner
+      if (meta.adminOnly && !isOwner) return false;
+      return true;
+    });
+    
     if (isOwner) {
       items.push({ path: ROUTE_ADMIN, label: 'Admin', icon: Shield });
       items.push({ path: ROUTE_TELEMETRY, label: 'Telemetry', icon: Gauge });
     }
     return items;
-  }, [isOwner]);
+  }, [userData, isOwner]);
 
   if (healthy === false) {
     return (
@@ -148,63 +160,141 @@ function App() {
       />
 
       <main id="main-content" tabIndex={-1} className="flex-1">
-        {userData ? (
+        {/* Show landing hero only if user has not connected AND is on home route */}
+        {!userData && location.pathname === '/' ? (
+          <Suspense fallback={<div className="min-h-[85vh] bg-black" />}>
+            <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
+          </Suspense>
+        ) : (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
-            {/* Navigation */}
-            <nav className="mb-10 -mx-4 sm:mx-0">
-              <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
-                <div className="flex justify-start sm:justify-center min-w-max sm:min-w-0">
-                  <div
-                    className="inline-flex p-1 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800"
-                    role="navigation"
-                    aria-label="Main navigation"
-                  >
-                    {navItems.map((item) => (
-                      <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) =>
-                          `flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all min-h-[40px] ${
-                            isActive
-                              ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black shadow-sm'
-                              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
-                          }`
-                        }
-                      >
-                        <item.icon className="w-4 h-4" aria-hidden="true" />
-                        <span className={location.pathname === item.path ? 'block' : 'hidden sm:block'}>{item.label}</span>
-                      </NavLink>
-                    ))}
+            {/* Navigation - only show if there are navigable items */}
+            {navItems.length > 0 && (
+              <nav className="mb-10 -mx-4 sm:mx-0">
+                <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
+                  <div className="flex justify-start sm:justify-center min-w-max sm:min-w-0">
+                    <div
+                      className="inline-flex p-1 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800"
+                      role="navigation"
+                      aria-label="Main navigation"
+                    >
+                      {navItems.map((item) => (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          className={({ isActive }) =>
+                            `flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all min-h-[40px] ${
+                              isActive
+                                ? 'bg-gray-900 dark:bg-amber-500 text-white dark:text-black shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`
+                          }
+                        >
+                          <item.icon className="w-4 h-4" aria-hidden="true" />
+                          <span className={location.pathname === item.path ? 'block' : 'hidden sm:block'}>{item.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </nav>
+              </nav>
+            )}
 
             {/* Page content */}
             <LazyErrorBoundary>
               <Suspense fallback={<RouteSkeleton />}>
                 <Routes>
-                  <Route path={ROUTE_SEND} element={<SendTip addToast={addToast} />} />
-                  <Route path={ROUTE_BATCH} element={<BatchTip addToast={addToast} />} />
-                  <Route path={ROUTE_TOKEN_TIP} element={<TokenTip addToast={addToast} />} />
+                  {/* Authenticated-only routes */}
+                  <Route 
+                    path={ROUTE_SEND} 
+                    element={
+                      userData ? (
+                        <SendTip addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_SEND}>
+                          <SendTip addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  <Route 
+                    path={ROUTE_BATCH} 
+                    element={
+                      userData ? (
+                        <BatchTip addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_BATCH}>
+                          <BatchTip addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  <Route 
+                    path={ROUTE_TOKEN_TIP} 
+                    element={
+                      userData ? (
+                        <TokenTip addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_TOKEN_TIP}>
+                          <TokenTip addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  
+                  {/* Public routes - accessible to all */}
                   <Route path={ROUTE_FEED} element={<RecentTips addToast={addToast} />} />
                   <Route path={ROUTE_LEADERBOARD} element={<Leaderboard />} />
-                  <Route path={ROUTE_ACTIVITY} element={<TipHistory userAddress={userAddress} />} />
-                  <Route path={ROUTE_PROFILE} element={<ProfileManager addToast={addToast} />} />
-                  <Route path={ROUTE_BLOCK} element={<BlockManager addToast={addToast} />} />
                   <Route path={ROUTE_STATS} element={<PlatformStats />} />
+                  
+                  {/* User-specific routes */}
+                  <Route 
+                    path={ROUTE_ACTIVITY} 
+                    element={
+                      userData ? (
+                        <TipHistory userAddress={userAddress} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_ACTIVITY}>
+                          <TipHistory userAddress={userAddress} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  <Route 
+                    path={ROUTE_PROFILE} 
+                    element={
+                      userData ? (
+                        <ProfileManager addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_PROFILE}>
+                          <ProfileManager addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  <Route 
+                    path={ROUTE_BLOCK} 
+                    element={
+                      userData ? (
+                        <BlockManager addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_BLOCK}>
+                          <BlockManager addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  
+                  {/* Admin-only routes */}
                   <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userAddress} addToast={addToast} /></RequireAdmin>} />
                   <Route path={ROUTE_TELEMETRY} element={<RequireAdmin><TelemetryDashboard addToast={addToast} /></RequireAdmin>} />
-                  <Route path="/" element={<Navigate to={DEFAULT_AUTHENTICATED_ROUTE} replace />} />
+                  
+                  {/* Root and fallback */}
+                  <Route path="/" element={<Navigate to={userData ? DEFAULT_AUTHENTICATED_ROUTE : ROUTE_FEED} replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
             </LazyErrorBoundary>
           </div>
-        ) : (
-          <Suspense fallback={<div className="min-h-[85vh] bg-black" />}>
-            <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
-          </Suspense>
         )}
       </main>
 
