@@ -123,7 +123,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.js',
-    exclude: ['e2e/**', '**/node_modules/**', '**/dist/**'],
+    include: ['src/**/*.test.{js,jsx}'],
+    exclude: ['e2e/**', '**/*.spec.{js,jsx}', '**/node_modules/**', '**/dist/**'],
     testTimeout: 10000,
   }
 })
