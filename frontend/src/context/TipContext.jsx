@@ -10,6 +10,7 @@
 import { createContext, useContext, useReducer, useCallback, useState, useEffect, useRef } from 'react';
 import { fetchAllContractEvents, POLL_INTERVAL_MS } from '../lib/contractEvents';
 import { updatePaginationState } from '../lib/eventPageCache';
+import { mergeAndDeduplicateEvents, sortEventsStably } from '../lib/eventDeduplication.js';
 
 const TipContext = createContext(null);
 
@@ -81,12 +82,15 @@ export function TipProvider({ children }) {
   const loadMoreEvents = useCallback(async () => {
     try {
       const result = await fetchAllContractEvents({ startOffset: eventsMeta.apiOffset });
-      setEvents(prev => [...prev, ...result.events]);
+      // Merge and deduplicate to prevent duplicates from pagination overlap
+      const merged = mergeAndDeduplicateEvents(events, result.events);
+      const sorted = sortEventsStably(merged);
+      setEvents(sorted);
       setEventsMeta({ apiOffset: result.apiOffset, total: result.total, hasMore: result.hasMore });
     } catch (err) {
       console.error('Failed to load more events:', err.message || err);
     }
-  }, [eventsMeta.apiOffset]);
+  }, [eventsMeta.apiOffset, events]);
 
   const notifyTipSent = useCallback(() => {
     dispatch({ type: 'TIP_SENT' });
