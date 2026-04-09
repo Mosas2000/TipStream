@@ -167,12 +167,12 @@ export const ROUTE_META = {
   },
   [ROUTE_FEED]: {
     description: 'Real-time feed of tips across the platform.',
-    requiresAuth: true,
+    requiresAuth: false,
     adminOnly: false,
   },
   [ROUTE_LEADERBOARD]: {
     description: 'Top tippers and recipients ranked by volume.',
-    requiresAuth: true,
+    requiresAuth: false,
     adminOnly: false,
   },
   [ROUTE_ACTIVITY]: {
@@ -192,7 +192,7 @@ export const ROUTE_META = {
   },
   [ROUTE_STATS]: {
     description: 'Platform-wide aggregate statistics.',
-    requiresAuth: true,
+    requiresAuth: false,
     adminOnly: false,
   },
   [ROUTE_ADMIN]: {
