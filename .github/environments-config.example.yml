@@ -1,0 +1,62 @@
+# GitHub Actions Environments Configuration Example
+# Copy and apply these settings to your repository
+
+environments:
+  preview:
+    name: "Preview"
+    description: "Automatic preview deployments on pull requests"
+    auto_trigger_required: false
+    approval_required: false
+    reviewers: []
+    deployment_branches:
+      - pull_requests
+    secrets:
+      VERCEL_TOKEN: "vercel_token_value"
+      VERCEL_ORG_ID: "org_id_value"
+      VERCEL_PROJECT_ID: "project_id_value"
+
+  production:
+    name: "Production"
+    description: "Production deployment to main domain"
+    auto_trigger_required: true
+    approval_required: true
+    reviewers:
+      - maintainers
+    deployment_branches:
+      - main
+    secrets:
+      VERCEL_TOKEN: "vercel_token_value"
+      VERCEL_ORG_ID: "org_id_value"
+      VERCEL_PROJECT_ID: "project_id_value"
+
+branch_protection:
+  main:
+    require_status_checks: true
+    require_code_review: true
+    review_count: 1
+    dismiss_stale_reviews: true
+    require_latest_review: true
+    restrict_who_can_push: true
+    allow_users: ["maintainers"]
+    allow_teams: ["maintainers"]
+    status_checks:
+      - "deploy"
+
+secrets:
+  VERCEL_TOKEN:
+    description: "Vercel Personal Access Token"
+    required_for: ["preview", "production"]
+    scope: "Full Access"
+    rotation_days: 90
+  
+  VERCEL_ORG_ID:
+    description: "Vercel Organization/Team ID"
+    required_for: ["preview", "production"]
+    format: "UUID or alphanumeric"
+    rotation_days: null
+  
+  VERCEL_PROJECT_ID:
+    description: "Vercel Project ID"
+    required_for: ["preview", "production"]
+    format: "UUID or alphanumeric"
+    rotation_days: null
