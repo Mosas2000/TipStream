@@ -1,0 +1,129 @@
+name: Production Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Validate configuration
+        working-directory: frontend
+        env:
+          VITE_NETWORK: mainnet
+          VITE_APP_URL: https://tipstream-silk.vercel.app
+        run: npm run validate:config
+
+      - name: Build production
+        working-directory: frontend
+        env:
+          VITE_NETWORK: mainnet
+          VITE_APP_URL: https://tipstream-silk.vercel.app
+        run: npm run build
+
+      - name: Verify build artifacts
+        run: |
+          if [ ! -f "frontend/dist/index.html" ]; then
+            echo "Build failed: index.html not found"
+            exit 1
+          fi
+          if [ ! -d "frontend/dist/assets" ]; then
+            echo "Build failed: assets directory not found"
+            exit 1
+          fi
+          echo "Build verification passed"
+
+      - name: Upload production artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-dist
+          path: frontend/dist
+          retention-days: 7
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+      url: https://tipstream-silk.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: production-dist
+          path: frontend/dist
+
+      - name: Deploy to Vercel Production
+        id: vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: frontend
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+          prod: true
+
+      - name: Smoke test production
+        run: |
+          echo "Testing production URL: https://tipstream-silk.vercel.app"
+          curl -f -s https://tipstream-silk.vercel.app | grep -q "TipStream" && echo "Production healthy" || exit 1
+
+      - name: Verify deployment
+        run: |
+          echo "Deployment successful"
+          echo "Production URL: https://tipstream-silk.vercel.app"
+
+      - name: Create deployment summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'production',
+              description: 'Production deployment from main',
+              auto_merge: false,
+              required_contexts: [],
+              production_environment: true
+            });
+
+  notify-deployment:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: success()
+    steps:
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: deploy-${{ github.run_id }}
+          release_name: Deployment ${{ github.run_id }}
+          body: Production deployment from commit ${{ github.sha }}
+          draft: false
+          prerelease: false
