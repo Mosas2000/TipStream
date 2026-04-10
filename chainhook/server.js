@@ -2,16 +2,26 @@ import http from "node:http";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-// Timelock bypass detection utilities
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
-// Input validation utilities
 import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
+import { generateEventKey, deduplicateEvents } from "./deduplication.js";
+import { metrics } from "./metrics.js";
+import { validateBearerToken } from "./auth.js";
+import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
+import { RateLimiter, getClientIp } from "./rate-limit.js";
+import { logger } from "./logging.js";
+import { setupGracefulShutdown } from "./graceful-shutdown.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3100; // default webhook listener port
-const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || ""; // optional bearer token
-const DATA_DIR = join(__dirname, "data"); // persistent storage directory
-const DB_FILE = join(DATA_DIR, "events.json"); // JSON event store
+const PORT = process.env.PORT || 3100;
+const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
+const DATA_DIR = join(__dirname, "data");
+const DB_FILE = join(DATA_DIR, "events.json");
+
+const CORS_ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
+const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10);
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
+const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
 
 if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
@@ -167,13 +177,13 @@ export { parseBody, extractEvents, parseTipEvent, sendJson, withEventLock, loadE
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = url.pathname;
+  const origin = req.headers.origin || "";
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Max-Age", "86400");
+  const corsHeaders = getCorsHeaders(origin, CORS_ALLOWED_ORIGINS);
+  for (const [key, value] of Object.entries(corsHeaders)) {
+    res.setHeader(key, value);
+  }
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     return res.end();
@@ -181,16 +191,29 @@ const server = http.createServer(async (req, res) => {
 
   // POST /api/chainhook/events -- ingest webhook payloads
   if (req.method === "POST" && path === "/api/chainhook/events") {
-    // Early rejection based on Content-Length header
+    const clientIp = getClientIp(req);
+    const startTime = Date.now();
+
+    if (!rateLimiter.isAllowed(clientIp)) {
+      metrics.recordRequest(false);
+      const remaining = rateLimiter.getRemaining(clientIp);
+      res.writeHead(429, { "Content-Type": "application/json", "Retry-After": "60" });
+      logger.warn("Rate limit exceeded", { ip: clientIp, remaining });
+      return res.end(JSON.stringify({ error: "rate limit exceeded" }));
+    }
+
     const contentLength = parseInt(req.headers["content-length"], 10);
     if (contentLength > MAX_BODY_SIZE) {
+      metrics.recordRequest(false);
+      logger.warn("Payload too large", { ip: clientIp, size: contentLength });
       return sendJson(res, 413, { error: "payload too large" });
     }
 
-    // Verify bearer token when AUTH_TOKEN is configured
     if (AUTH_TOKEN) {
-      const auth = req.headers.authorization || "";
-      if (auth !== `Bearer ${AUTH_TOKEN}`) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        metrics.recordRequest(false);
+        logger.warn("Unauthorized request", { ip: clientIp });
         return sendJson(res, 401, { error: "unauthorized" });
       }
     }
@@ -198,29 +221,49 @@ const server = http.createServer(async (req, res) => {
     try {
       const payload = await parseBody(req);
       const newEvents = extractEvents(payload);
+      
       if (newEvents.length > 0) {
         await withEventLock(() => {
           const stored = loadEvents();
-
-          for (const evt of newEvents) {
+          const { deduplicated, duplicateCount } = deduplicateEvents(newEvents, stored);
+          
+          for (const evt of deduplicated) {
             const detection = detectBypass(evt, stored.slice(-50));
             if (detection.isBypass) {
-              console.warn(formatBypassAlert(detection, evt));
+              logger.warn("Bypass detected", { detection, txId: evt.txId });
             }
             const adminEvt = parseAdminEvent(evt);
             if (adminEvt) {
-              console.log(`Admin event: ${adminEvt.eventType} at block ${adminEvt.blockHeight}`);
+              logger.info("Admin event indexed", {
+                event_type: adminEvt.eventType,
+                block_height: adminEvt.blockHeight,
+              });
             }
           }
 
-          stored.push(...newEvents);
+          stored.push(...deduplicated);
           saveEvents(stored);
-          console.log(`Indexed ${newEvents.length} events (total: ${stored.length})`);
+          
+          const processingMs = Date.now() - startTime;
+          metrics.recordEventIndex(deduplicated.length, duplicateCount, processingMs);
+          logger.info("Events indexed", {
+            indexed: deduplicated.length,
+            duplicates: duplicateCount,
+            total: stored.length,
+            processing_ms: processingMs,
+          });
         });
       }
+      
+      metrics.recordRequest(true);
+      const processingMs = Date.now() - startTime;
+      logger.logResponse(req, 200, processingMs, { indexed: newEvents.length });
       return sendJson(res, 200, { ok: true, indexed: newEvents.length });
     } catch (err) {
-      console.error("Failed to process chainhook payload:", err.message);
+      metrics.recordRequest(false);
+      const processingMs = Date.now() - startTime;
+      logger.error("Failed to process chainhook payload", err, { ip: clientIp, processing_ms: processingMs });
+      
       if (err.message === "Request body too large") {
         return sendJson(res, 413, { error: "payload too large" });
       }
@@ -318,19 +361,45 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { bypasses, total: bypasses.length });
   }
 
+  // GET /health -- health check endpoint
+  if (req.method === "GET" && path === "/health") {
+    return sendJson(res, 200, {
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime_seconds: Math.round((Date.now() - metrics.startTime) / 1000),
+    });
+  }
+
+  // GET /metrics -- service metrics for monitoring
+  if (req.method === "GET" && path === "/metrics") {
+    return sendJson(res, 200, metrics.toJSON());
+  }
+
   sendJson(res, 404, { error: "not found", path: path });
 });
 
 export { server };
 
-// Only start listening when executed directly (not imported by tests).
 const isMain =
   process.argv[1] &&
   import.meta.url === `file://${process.argv[1]}`;
 
 if (isMain) {
+  const cleanupInterval = setInterval(() => {
+    rateLimiter.cleanup();
+  }, 60000);
+
+  setupGracefulShutdown(server, async () => {
+    clearInterval(cleanupInterval);
+    logger.info("Shutdown initiated");
+  });
+
   server.listen(PORT, () => {
-    console.log(`Chainhook callback server running on port ${PORT}`);
-    console.log(`Auth: ${AUTH_TOKEN ? "enabled" : "disabled"}`);
+    logger.info("Chainhook service started", {
+      port: PORT,
+      auth_enabled: !!AUTH_TOKEN,
+      cors_origins: CORS_ALLOWED_ORIGINS.join(", "),
+      rate_limit: `${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_WINDOW_MS}ms`,
+    });
   });
 }
