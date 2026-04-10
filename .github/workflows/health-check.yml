@@ -1,0 +1,77 @@
+name: Scheduled Health Check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Check Production Health
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check service availability
+        id: availability
+        run: |
+          RETRIES=3
+          DELAY=5
+          attempt=0
+          
+          while [ $attempt -lt $RETRIES ]; do
+            if curl -sf https://tipstream-silk.vercel.app -o /dev/null; then
+              echo "status=available" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+            if [ $attempt -lt $RETRIES ]; then
+              sleep $DELAY
+            fi
+          done
+          
+          echo "status=unavailable" >> $GITHUB_OUTPUT
+          exit 1
+
+      - name: Check content integrity
+        if: steps.availability.outputs.status == 'available'
+        run: |
+          curl -s https://tipstream-silk.vercel.app | grep -q "TipStream" || exit 1
+          echo "Content integrity verified"
+
+      - name: Check response time
+        if: steps.availability.outputs.status == 'available'
+        run: |
+          START=$(date +%s%N | cut -b1-13)
+          curl -sf https://tipstream-silk.vercel.app -o /dev/null
+          END=$(date +%s%N | cut -b1-13)
+          DURATION=$((END - START))
+          
+          echo "Response time: ${DURATION}ms"
+          
+          if [ $DURATION -gt 5000 ]; then
+            echo "Warning: Response time exceeds 5 seconds"
+            exit 1
+          fi
+
+      - name: Check DNS resolution
+        run: |
+          nslookup tipstream-silk.vercel.app || exit 1
+          echo "DNS resolution verified"
+
+      - name: Create health status issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Production health check failed',
+              body: 'Scheduled health check detected production issues. Review logs for details.',
+              labels: ['health-check', 'production', 'urgent']
+            });
+
+      - name: Report success
+        if: success()
+        run: echo "Health check passed at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
