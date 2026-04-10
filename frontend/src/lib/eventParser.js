@@ -65,6 +65,42 @@ function parseReprObject(repr) {
   return result;
 }
 
+function parseReprObjectLenient(repr) {
+  const eventMatch = repr.match(/event\s+u?"([^"]+)"/);
+  if (!eventMatch) return null;
+
+  const eventType = eventMatch[1];
+  const result = { event: eventType };
+
+  if (isValidEventType(eventType)) {
+    const schema = getEventSchema(eventType);
+
+    for (const fieldName of schema.required) {
+      const value = extractClarityValue(repr, fieldName);
+      if (value !== null) {
+        result[fieldName] = value;
+      }
+    }
+
+    for (const fieldName of schema.optional) {
+      const value = extractClarityValue(repr, fieldName);
+      if (value !== null) {
+        result[fieldName] = value;
+      }
+    }
+
+    if (schema.defaults) {
+      for (const [fieldName, defaultValue] of Object.entries(schema.defaults)) {
+        if (!(fieldName in result)) {
+          result[fieldName] = defaultValue;
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export function parseContractEvent(repr) {
   if (!repr || typeof repr !== 'string') {
     return null;
@@ -77,21 +113,14 @@ export function parseContractEvent(repr) {
   }
 }
 
-export function parseTipEvent(repr) {
-  const parsed = parseContractEvent(repr);
-  
-  if (!parsed || parsed.event !== 'tip-sent') {
+export function parseContractEventLenient(repr) {
+  if (!repr || typeof repr !== 'string') {
     return null;
   }
 
-  return {
-    event: parsed.event,
-    sender: parsed.sender || '',
-    recipient: parsed.recipient || '',
-    amount: parsed.amount || '0',
-    fee: parsed.fee || '0',
-    message: parsed.message || '',
-    tipId: parsed['tip-id'] || '0',
-    category: parsed.category || null,
-  };
+  try {
+    return parseReprObjectLenient(repr);
+  } catch {
+    return null;
+  }
 }

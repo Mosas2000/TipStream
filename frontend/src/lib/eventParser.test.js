@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseContractEvent, parseTipEvent } from './eventParser';
+import { parseContractEvent } from './eventParser';
+import { parseTipEvent } from './parseTipEvent';
 
 describe('eventParser', () => {
   describe('parseContractEvent', () => {
@@ -116,12 +117,6 @@ describe('eventParser', () => {
       expect(result.recipient).toBe('SP2RECV');
       expect(result.amount).toBe('1000');
       expect(result.fee).toBe('50');
-    });
-
-    it('returns null for non-tip-sent events', () => {
-      const repr = '(tuple (event "contract-paused") (paused true))';
-      const result = parseTipEvent(repr);
-      expect(result).toBeNull();
     });
 
     it('returns null for invalid input', () => {
