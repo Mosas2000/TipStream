@@ -8,6 +8,7 @@ import RequireAdmin from './components/RequireAdmin';
 import RequireAuth from './components/RequireAuth';
 import LazyErrorBoundary from './components/LazyErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
+import DemoIndicator from './components/DemoIndicator';
 import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
@@ -326,6 +327,7 @@ function App() {
       </footer>
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <DemoIndicator />
     </div>
   );
 }
