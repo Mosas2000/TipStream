@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { generateEventKey } from './deduplication.js';
+import { StorageUnavailableError } from './errors.js';
 
 export function parseRetentionDays(value, fallback = 30) {
   const parsed = Number.parseInt(value, 10);
@@ -129,7 +130,7 @@ class MemoryEventStore {
 class PostgresEventStore {
   constructor({ databaseUrl, retentionDays = 30, ssl = false } = {}) {
     if (!databaseUrl) {
-      throw new Error('DATABASE_URL is required for postgres storage');
+      throw new StorageUnavailableError('DATABASE_URL is required for postgres storage');
     }
 
     this.retentionDays = retentionDays;

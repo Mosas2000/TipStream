@@ -8,7 +8,7 @@ const { server } = await import('./server.js');
 
 function request({ method, path, body, headers = {} }) {
   return new Promise((resolve, reject) => {
-    const payload = body ? JSON.stringify(body) : '';
+    const payload = typeof body === 'string' ? body : body ? JSON.stringify(body) : '';
     const req = http.request(
       {
         hostname: '127.0.0.1',
@@ -96,6 +96,7 @@ describe('chainhook server integration', () => {
     assert.strictEqual(ingest.body.ok, true);
     assert.strictEqual(ingest.body.indexed, 1);
     assert.strictEqual(ingest.body.duplicates, 0);
+    assert.ok(ingest.headers['x-request-id']);
 
     const tips = await request({
       method: 'GET',
@@ -125,6 +126,20 @@ describe('chainhook server integration', () => {
     assert.strictEqual(metrics.status, 200);
     assert.strictEqual(metrics.body.storage.storage_mode, 'memory');
     assert.ok(metrics.body.events_indexed >= 1);
+  });
+
+  it('returns structured errors for malformed payloads', async () => {
+    const invalid = await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: '{not-json',
+    });
+
+    assert.strictEqual(invalid.status, 400);
+    assert.strictEqual(invalid.body.error, 'bad_request');
+    assert.strictEqual(invalid.body.message, 'invalid payload');
+    assert.ok(invalid.body.request_id);
+    assert.ok(invalid.headers['x-request-id']);
   });
 
   it('returns health with storage details', async () => {

@@ -59,6 +59,26 @@ export function classifyError(error) {
     return new BadRequestError('invalid payload', { reason: error.message });
   }
 
+  const lowerMessage = String(error?.message || error || '').toLowerCase();
+  if (lowerMessage.includes('request body too large')) {
+    return new PayloadTooLargeError('payload too large', { reason: error?.message || String(error) });
+  }
+
+  const code = error?.code;
+  const message = lowerMessage;
+  if (
+    ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENOTFOUND', '57P03', '53300'].includes(code) ||
+    message.includes('postgres') ||
+    message.includes('database') ||
+    message.includes('connection refused') ||
+    message.includes('cannot connect')
+  ) {
+    return new StorageUnavailableError(error?.message || 'storage unavailable', {
+      reason: error?.message || String(error),
+      code,
+    });
+  }
+
   return new ChainhookError(error?.message || 'internal error', {
     code: DEFAULT_ERROR_CODE,
     statusCode: 500,

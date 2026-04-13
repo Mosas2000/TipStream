@@ -1,4 +1,5 @@
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
 import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
 import { deduplicateEvents } from "./deduplication.js";
@@ -9,6 +10,7 @@ import { RateLimiter, getClientIp } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown } from "./graceful-shutdown.js";
 import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
+import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, classifyError, toErrorResponse } from "./errors.js";
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
@@ -108,9 +110,32 @@ function extractEvents(payload) {
  * @param {number} statusCode
  * @param {object} data
  */
-function sendJson(res, statusCode, data) {
-  res.writeHead(statusCode, { "Content-Type": "application/json" });
+function sendJson(res, statusCode, data, headers = {}) {
+  res.writeHead(statusCode, { "Content-Type": "application/json", ...headers });
   res.end(JSON.stringify(data));
+}
+
+function sendError(res, error, requestId, context = {}) {
+  const { statusCode, body, classified } = toErrorResponse(error, requestId);
+  const headers = { 'X-Request-Id': requestId };
+  if (statusCode === 429) {
+    headers['Retry-After'] = String(classified.details?.retryAfter || 60);
+  }
+  const logContext = {
+    request_id: requestId,
+    error_code: classified.code,
+    error_category: classified.category,
+    error_message: classified.message,
+    ...context,
+  };
+
+  if (statusCode >= 500) {
+    logger.error('Request failed', classified, logContext);
+  } else {
+    logger.warn('Request rejected', logContext);
+  }
+
+  return sendJson(res, statusCode, body, headers);
 }
 
 /**
@@ -139,6 +164,8 @@ function parseTipEvent(event) {
 export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore };
 
 const server = http.createServer(async (req, res) => {
+  const requestId = randomUUID();
+  res.setHeader("X-Request-Id", requestId);
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = url.pathname;
   const origin = req.headers.origin || "";
@@ -147,6 +174,8 @@ const server = http.createServer(async (req, res) => {
   for (const [key, value] of Object.entries(corsHeaders)) {
     res.setHeader(key, value);
   }
+
+  logger.logRequest(req, { request_id: requestId });
 
   if (req.method === "OPTIONS") {
     res.writeHead(204);
@@ -161,24 +190,35 @@ const server = http.createServer(async (req, res) => {
     if (!rateLimiter.isAllowed(clientIp)) {
       metrics.recordRequest(false);
       const remaining = rateLimiter.getRemaining(clientIp);
-      res.writeHead(429, { "Content-Type": "application/json", "Retry-After": "60" });
-      logger.warn("Rate limit exceeded", { ip: clientIp, remaining });
-      return res.end(JSON.stringify({ error: "rate limit exceeded" }));
+      return sendError(
+        res,
+        new RateLimitError("rate limit exceeded", { remaining, ip: clientIp }),
+        requestId,
+        { ip: clientIp, remaining },
+      );
     }
 
     const contentLength = parseInt(req.headers["content-length"], 10);
     if (contentLength > MAX_BODY_SIZE) {
       metrics.recordRequest(false);
-      logger.warn("Payload too large", { ip: clientIp, size: contentLength });
-      return sendJson(res, 413, { error: "payload too large" });
+      return sendError(
+        res,
+        new PayloadTooLargeError("payload too large", { ip: clientIp, size: contentLength }),
+        requestId,
+        { ip: clientIp, size: contentLength },
+      );
     }
 
     if (AUTH_TOKEN) {
       const authHeader = req.headers.authorization || "";
       if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
         metrics.recordRequest(false);
-        logger.warn("Unauthorized request", { ip: clientIp });
-        return sendJson(res, 401, { error: "unauthorized" });
+        return sendError(
+          res,
+          new UnauthorizedError("unauthorized", { ip: clientIp }),
+          requestId,
+          { ip: clientIp },
+        );
       }
     }
 
@@ -196,13 +236,14 @@ const server = http.createServer(async (req, res) => {
         for (const evt of deduplicated) {
           const detection = detectBypass(evt, existingEvents.slice(-50));
           if (detection.isBypass) {
-            logger.warn("Bypass detected", { detection, txId: evt.txId });
+            logger.warn("Bypass detected", { detection, txId: evt.txId, request_id: requestId });
           }
           const adminEvt = parseAdminEvent(evt);
           if (adminEvt) {
             logger.info("Admin event indexed", {
               event_type: adminEvt.eventType,
               block_height: adminEvt.blockHeight,
+              request_id: requestId,
             });
           }
         }
@@ -221,6 +262,7 @@ const server = http.createServer(async (req, res) => {
           total: result.totalCount,
           processing_ms: processingMs,
           storage_mode: STORAGE_MODE,
+          request_id: requestId,
         });
       }
       
@@ -230,6 +272,7 @@ const server = http.createServer(async (req, res) => {
         indexed: insertedCount,
         duplicates: duplicateCount,
         storage_mode: STORAGE_MODE,
+        request_id: requestId,
       });
       return sendJson(res, 200, {
         ok: true,
@@ -240,12 +283,11 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       metrics.recordRequest(false);
       const processingMs = Date.now() - startTime;
-      logger.error("Failed to process chainhook payload", err, { ip: clientIp, processing_ms: processingMs });
-      
-      if (err.message === "Request body too large") {
-        return sendJson(res, 413, { error: "payload too large" });
-      }
-      return sendJson(res, 400, { error: "invalid payload" });
+      const classified = classifyError(err);
+      return sendError(res, classified, requestId, {
+        ip: clientIp,
+        processing_ms: processingMs,
+      });
     }
   }
 
@@ -256,10 +298,16 @@ const server = http.createServer(async (req, res) => {
     const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
 
     if (isNaN(limit)) {
-      return sendJson(res, 400, { error: "limit must be between 1 and 100" });
+      return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {
+        path,
+        query: "limit",
+      });
     }
     if (isNaN(offset)) {
-      return sendJson(res, 400, { error: "offset must be a non-negative integer" });
+      return sendError(res, new BadRequestError("offset must be a non-negative integer"), requestId, {
+        path,
+        query: "offset",
+      });
     }
 
     const allEvents = await store.listEvents();
@@ -276,7 +324,10 @@ const server = http.createServer(async (req, res) => {
     const store = await getEventStore();
     const address = path.split("/api/tips/user/")[1];
     if (!isValidStacksAddress(address)) {
-      return sendJson(res, 400, { error: "invalid address format" });
+      return sendError(res, new BadRequestError("invalid address format"), requestId, {
+        path,
+        address,
+      });
     }
     const allEvents = await store.listEvents();
     const tips = allEvents
@@ -291,7 +342,10 @@ const server = http.createServer(async (req, res) => {
     const store = await getEventStore();
     const tipId = parseInt(path.split("/api/tips/")[1], 10);
     if (isNaN(tipId) || tipId < 0) {
-      return sendJson(res, 400, { error: "invalid tip ID" });
+      return sendError(res, new BadRequestError("invalid tip ID"), requestId, {
+        path,
+        tip_id: path.split("/api/tips/")[1],
+      });
     }
     const allEvents = await store.listEvents();
     const tip = allEvents.map(parseTipEvent).find((t) => t && t.tipId === tipId);
