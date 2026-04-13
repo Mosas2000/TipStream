@@ -1,66 +1,90 @@
 /**
  * Structured logging for the chainhook service.
- * 
+ *
  * Provides context-aware logging with severity levels and JSON formatting
  * for better observability and debugging in production.
  */
 
 const LOG_LEVELS = {
-  DEBUG: 'DEBUG',
-  INFO: 'INFO',
-  WARN: 'WARN',
-  ERROR: 'ERROR',
+  DEBUG: 10,
+  INFO: 20,
+  WARN: 30,
+  ERROR: 40,
 };
+
+function normalizeLevel(level) {
+  if (!level || typeof level !== 'string') {
+    return 'INFO';
+  }
+
+  const upper = level.toUpperCase();
+  return LOG_LEVELS[upper] ? upper : 'INFO';
+}
+
+function levelValue(level) {
+  return LOG_LEVELS[normalizeLevel(level)] || LOG_LEVELS.INFO;
+}
+
+function sanitizeContext(context = {}) {
+  return Object.fromEntries(
+    Object.entries(context).filter(([, value]) => value !== undefined),
+  );
+}
 
 class Logger {
   constructor(serviceName = 'chainhook') {
     this.serviceName = serviceName;
-    this.minLevel = process.env.LOG_LEVEL || 'INFO';
+    this.minLevel = normalizeLevel(process.env.LOG_LEVEL || 'INFO');
   }
 
-  /**
-   * Log a message with context and severity level.
-   * Outputs JSON for easy parsing by log aggregation systems.
-   * 
-   * @param {string} level - Log level (DEBUG, INFO, WARN, ERROR)
-   * @param {string} message - Log message
-   * @param {object} context - Additional context data
-   */
+  shouldLog(level) {
+    return levelValue(level) >= levelValue(this.minLevel);
+  }
+
+  setLevel(level) {
+    this.minLevel = normalizeLevel(level);
+  }
+
   log(level, message, context = {}) {
+    const normalizedLevel = normalizeLevel(level);
+    if (!this.shouldLog(normalizedLevel)) {
+      return;
+    }
+
     const timestamp = new Date().toISOString();
     const entry = {
       timestamp,
-      level,
+      level: normalizedLevel,
       service: this.serviceName,
       message,
-      ...context,
+      ...sanitizeContext(context),
     };
 
     process.stdout.write(JSON.stringify(entry) + '\n');
   }
 
   debug(message, context) {
-    this.log(LOG_LEVELS.DEBUG, message, context);
+    this.log('DEBUG', message, context);
   }
 
   info(message, context) {
-    this.log(LOG_LEVELS.INFO, message, context);
+    this.log('INFO', message, context);
   }
 
   warn(message, context) {
-    this.log(LOG_LEVELS.WARN, message, context);
+    this.log('WARN', message, context);
   }
 
   error(message, error, context = {}) {
     const errorContext = {
-      ...context,
+      ...sanitizeContext(context),
       error: {
         name: error?.name || 'Error',
         message: error?.message || String(error),
         stack: error?.stack,
       },
     };
-    this.log(LOG_LEVELS.ERROR, message, errorContext);
+    this.log('ERROR', message, errorContext);
   }
 
   /**
@@ -89,4 +113,5 @@ class Logger {
   }
 }
 
+export { Logger, LOG_LEVELS, normalizeLevel, sanitizeContext };
 export const logger = new Logger('chainhook');
