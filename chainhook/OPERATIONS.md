@@ -21,6 +21,8 @@ With custom configuration:
 ```bash
 PORT=3100 \
 CHAINHOOK_AUTH_TOKEN="secret" \
+CHAINHOOK_STORAGE=postgres \
+DATABASE_URL="postgres://user:pass@host:5432/tipstream" \
 CORS_ALLOWED_ORIGINS="https://api.example.com" \
 node server.js
 ```
@@ -34,7 +36,7 @@ systemctl stop tipstream-chainhook
 
 The service automatically:
 - Stops accepting new requests
-- Flushes pending writes to disk
+- Flushes pending writes to the datastore
 - Closes HTTP connections
 - Exits cleanly within 30 seconds
 
@@ -81,11 +83,15 @@ curl -s -X POST http://localhost:3100/api/chainhook/events \
   -H "Content-Type: application/json" \
   -d '{"apply":[]}' | jq -e '.ok' > /dev/null && echo "OK" || echo "FAILED"
 
-echo -n "Data file integrity: "
-jq empty data/events.json 2>/dev/null && echo "OK" || echo "FAILED"
+echo -n "Datastore configured: "
+if [ -n "$DATABASE_URL" ]; then
+  echo "OK"
+else
+  echo "FAILED"
+fi
 
 echo -n "Disk space: "
-USAGE=$(df data/ | awk 'NR==2 {print $5}' | sed 's/%//')
+USAGE=$(df /var/lib/postgresql | awk 'NR==2 {print $5}' | sed 's/%//')
 if [ "$USAGE" -lt 80 ]; then
   echo "OK ($USAGE%)"
 else
@@ -178,42 +184,24 @@ If processing is slow:
 
 ### Event Data Inspection
 
-Count total events:
+Use the HTTP API for routine inspection:
 ```bash
-jq '. | length' data/events.json
-```
-
-Find events by transaction:
-```bash
-jq '.[] | select(.txId == "0x...")' data/events.json
-```
-
-Find events by address:
-```bash
-jq '.[] | select(.event.sender == "SP1..." or .event.recipient == "SP1...")' data/events.json
+curl http://localhost:3100/api/tips?limit=10 | jq '.tips'
+curl "http://localhost:3100/api/tips/user/SP1234567890ABCDEF" | jq '.tips'
+curl http://localhost:3100/api/stats | jq '.'
 ```
 
 ### Data Compaction
 
-Archive events older than 30 days:
-```bash
-jq --arg cutoff $(date -d '30 days ago' +%s000) \
-   '[.[] | select(.timestamp | tonumber > ($cutoff | tonumber))]' \
-   data/events.json > data/events.new.json && \
-   mv data/events.new.json data/events.json
-```
+Retention is controlled by `CHAINHOOK_RETENTION_DAYS` and the background
+cleanup job. To force a manual prune, restart the service after lowering the
+retention window or run a database cleanup against the PostgreSQL store.
 
 ### Backup Verification
 
-Verify backup integrity:
-```bash
-jq empty backup/events.json.bak && echo "Backup valid"
-```
-
-Compare backup and current:
-```bash
-diff -u <(jq -S . backup/events.json.bak) <(jq -S . data/events.json)
-```
+Verify database backups and snapshots with your database tooling, then restore
+the `DATABASE_URL` target from the recovered snapshot before bringing the
+service back online.
 
 ## Network Configuration
 
