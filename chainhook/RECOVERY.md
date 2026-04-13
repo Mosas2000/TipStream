@@ -6,12 +6,12 @@ This guide covers procedures for recovering the chainhook service from various f
 
 ## Failure Scenarios
 
-### Scenario 1: Data File Corruption
+### Scenario 1: Datastore Corruption or Connection Failure
 
 **Symptoms:**
-- Service fails to parse events.json
-- Error messages about invalid JSON
-- Increased 400 responses from API endpoints
+- Service cannot connect to the configured database
+- Health check reports datastore unavailable
+- Ingest requests start failing with 500 responses
 
 **Recovery Steps:**
 
@@ -20,32 +20,16 @@ This guide covers procedures for recovering the chainhook service from various f
 systemctl stop tipstream-chainhook
 ```
 
-2. Backup corrupted file:
-```bash
-cp data/events.json data/events.json.corrupted.$(date +%s)
-```
+2. Capture the error from the logs and confirm `DATABASE_URL` is correct.
 
-3. Attempt JSON recovery (if partial):
-```bash
-jq . data/events.json.corrupted.* | jq -s '.' > data/events.json.recovered
-```
+3. Restore the latest known-good database snapshot or backup.
 
-4. Verify integrity:
-```bash
-jq . data/events.json.recovered > /dev/null && echo "Valid JSON"
-```
-
-5. Restore recovered data:
-```bash
-mv data/events.json.recovered data/events.json
-```
-
-6. Restart service:
+4. Restart the service:
 ```bash
 systemctl start tipstream-chainhook
 ```
 
-7. Verify via health check:
+5. Verify via health check:
 ```bash
 curl http://localhost:3100/health
 ```
@@ -61,28 +45,15 @@ curl http://localhost:3100/health
 
 1. Check disk usage:
 ```bash
-du -sh data/
+du -sh /var/lib/postgresql
 df -h
 ```
 
-2. Archive old events:
-```bash
-# Create archive of events older than 30 days
-jq '[.[] | select(.timestamp < now - (30 * 86400000))]' data/events.json > data/events.old.json
-jq '[.[] | select(.timestamp >= now - (30 * 86400000))]' data/events.json > data/events.new.json
-```
+2. Reduce the retention window temporarily or scale the database storage.
 
-3. Move old events to external storage:
-```bash
-aws s3 cp data/events.old.json s3://backup-bucket/chainhook/$(date +%Y-%m-%d)/
-```
+3. Run a manual prune against the datastore if required.
 
-4. Replace with pruned dataset:
-```bash
-mv data/events.new.json data/events.json
-```
-
-5. Restart service:
+4. Restart service:
 ```bash
 systemctl restart tipstream-chainhook
 ```
@@ -106,23 +77,14 @@ lsof -i :3100
 journalctl -u tipstream-chainhook -n 50 -r
 ```
 
-3. Verify file permissions:
-```bash
-ls -la data/
-chmod 755 data/
-```
+3. Verify the database connection and credentials.
 
-4. Verify data file integrity:
-```bash
-jq empty data/events.json
-```
-
-5. Attempt manual start with verbose logging:
+4. Attempt manual start with verbose logging:
 ```bash
 LOG_LEVEL=DEBUG node server.js
 ```
 
-6. If successful, restart via systemd:
+5. If successful, restart via systemd:
 ```bash
 systemctl restart tipstream-chainhook
 ```
@@ -208,10 +170,10 @@ Create daily backups:
 ```bash
 #!/bin/bash
 BACKUP_DIR=/backups/chainhook
-mkdir -p $BACKUP_DIR
-cp /var/lib/tipstream-chainhook/data/events.json $BACKUP_DIR/events.$(date +%Y-%m-%d).json
-aws s3 sync $BACKUP_DIR s3://backup-bucket/chainhook/
-find $BACKUP_DIR -mtime +30 -delete
+mkdir -p "$BACKUP_DIR"
+pg_dump "$DATABASE_URL" > "$BACKUP_DIR/chainhook.$(date +%Y-%m-%d).sql"
+aws s3 sync "$BACKUP_DIR" s3://backup-bucket/chainhook/
+find "$BACKUP_DIR" -mtime +30 -delete
 ```
 
 Schedule as cron job:
@@ -230,14 +192,15 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 apt-get install -y nodejs
 ```
 
-2. Create service directory:
+2. Install PostgreSQL client tools:
 ```bash
-mkdir -p /var/lib/tipstream-chainhook/data
+apt-get install -y postgresql-client
 ```
 
 3. Restore data:
 ```bash
-aws s3 cp s3://backup-bucket/chainhook/events.YYYY-MM-DD.json /var/lib/tipstream-chainhook/data/events.json
+aws s3 cp s3://backup-bucket/chainhook/chainhook.YYYY-MM-DD.sql /tmp/chainhook.sql
+psql "$DATABASE_URL" < /tmp/chainhook.sql
 ```
 
 4. Install and start service:
@@ -301,9 +264,9 @@ groups:
 ### Simulated Data Corruption
 
 ```bash
-# Create invalid JSON to test recovery
-echo "{ invalid json" > data/events.json
-# Service should gracefully handle
+# Stop the service and temporarily point DATABASE_URL at an invalid host
+export DATABASE_URL="postgres://invalid-host/tipstream"
+# Service should fail fast and report the connection issue
 curl http://localhost:3100/api/tips
 # Should return error appropriately
 ```
@@ -334,7 +297,7 @@ ab -n 1000 -c 10 \
 ## Escalation Path
 
 1. **Level 1**: Check health endpoint and logs
-2. **Level 2**: Verify disk space and file permissions
-3. **Level 3**: Inspect and potentially repair data file
-4. **Level 4**: Restore from backup
+2. **Level 2**: Verify disk space and database connectivity
+3. **Level 3**: Inspect and repair the database snapshot or schema
+4. **Level 4**: Restore from backup or snapshot
 5. **Level 5**: Full service migration to new host
