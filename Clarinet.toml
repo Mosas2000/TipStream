@@ -11,6 +11,11 @@ path = "contracts/tipstream.clar"
 clarity_version = 2
 epoch = 3.0
 
+[contracts.tipstream-v2]
+path = "contracts/tipstream-v2.clar"
+clarity_version = 2
+epoch = 3.0
+
 [contracts.tipstream-traits]
 path = "contracts/tipstream-traits.clar"
 clarity_version = 2

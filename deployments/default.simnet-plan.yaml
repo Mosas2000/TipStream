@@ -83,4 +83,9 @@ plan:
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/tipstream-token.clar
             clarity-version: 2
+        - emulated-contract-publish:
+            contract-name: tipstream-v2
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/tipstream-v2.clar
+            clarity-version: 2
       epoch: "3.0"
