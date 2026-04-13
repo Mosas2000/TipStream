@@ -150,10 +150,10 @@ describe('parseTipEvent', () => {
         expect(result.category).toBe('99');
     });
 
-    it('stops at non-alphanumeric characters in sender address', () => {
+    it('preserves principal suffixes', () => {
         const repr = '(tuple (event "tip-sent") (sender \'SP1SENDER.tipstream))';
         const result = parseTipEvent(repr);
-        expect(result.sender).toBe('SP1SENDER');
+        expect(result.sender).toBe('SP1SENDER.tipstream');
     });
 
     it('parses boolean-like event names', () => {

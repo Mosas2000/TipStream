@@ -105,6 +105,12 @@ describe('eventParser', () => {
       expect(result.event).toBe('ownership-transferred');
       expect(result['new-owner']).toBe('SPNEWOWNER');
     });
+
+    it('preserves contract principals in parsed fields', () => {
+      const repr = '(tuple (event "token-tip-sent") (token-tip-id u99) (sender \'SP1SENDER) (recipient \'SP2RECV) (token-contract \'SPTOKEN123.tipstream) (amount u5000))';
+      const result = parseContractEvent(repr);
+      expect(result['token-contract']).toBe('SPTOKEN123.tipstream');
+    });
   });
 
   describe('parseTipEvent', () => {
