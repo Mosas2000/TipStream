@@ -1,72 +1,40 @@
 import http from "node:http";
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
 import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
-import { generateEventKey, deduplicateEvents } from "./deduplication.js";
+import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
 import { RateLimiter, getClientIp } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown } from "./graceful-shutdown.js";
+import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
-const DATA_DIR = join(__dirname, "data");
-const DB_FILE = join(DATA_DIR, "events.json");
+const STORAGE_MODE = process.env.CHAINHOOK_STORAGE || (process.env.NODE_ENV === "test" ? "memory" : "postgres");
+const RETENTION_DAYS = parseRetentionDays(process.env.CHAINHOOK_RETENTION_DAYS, 30);
+const DATABASE_URL = process.env.DATABASE_URL || "";
 
 const CORS_ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
 const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10);
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
+let eventStorePromise = null;
 
-if (!existsSync(DATA_DIR)) {
-  mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Serialized write queue. Node.js is single-threaded but async handlers
-// can interleave between await points. This queue ensures file operations
-// are atomic by chaining them sequentially.
-let writeQueue = Promise.resolve();
-
-/**
- * Serialize access to the events file.
- * Chains the provided function onto a promise queue so that only one
- * read-modify-write cycle runs at a time.
- * @param {() => void} fn - Synchronous function that reads and writes events.
- * @returns {Promise<void>}
- */
-function withEventLock(fn) {
-  writeQueue = writeQueue.then(fn).catch((err) => {
-    console.error('Event lock operation failed:', err.message);
-  });
-  return writeQueue;
-}
-
-/**
- * Load all stored events from the JSON file.
- * Returns an empty array if the file does not exist or is corrupted.
- * @returns {Array<object>}
- */
-function loadEvents() {
-  if (!existsSync(DB_FILE)) return [];
-  try {
-    return JSON.parse(readFileSync(DB_FILE, "utf-8"));
-  } catch {
-    return [];
+async function getEventStore() {
+  if (!eventStorePromise) {
+    if (STORAGE_MODE === "postgres" && !DATABASE_URL) {
+      throw new Error("DATABASE_URL is required when CHAINHOOK_STORAGE=postgres");
+    }
+    eventStorePromise = createEventStore({
+      mode: STORAGE_MODE,
+      databaseUrl: DATABASE_URL,
+      retentionDays: RETENTION_DAYS,
+    });
+    await eventStorePromise.init();
   }
-}
-
-/**
- * Persist events to the JSON file.
- * Must only be called within withEventLock to avoid race conditions.
- * @param {Array<object>} events
- */
-function saveEvents(events) {
-  writeFileSync(DB_FILE, JSON.stringify(events, null, 2));
+  return eventStorePromise;
 }
 
 /**
@@ -168,11 +136,7 @@ function parseTipEvent(event) {
   };
 }
 
-function __test_resetQueue() {
-  writeQueue = Promise.resolve();
-}
-
-export { parseBody, extractEvents, parseTipEvent, sendJson, withEventLock, loadEvents, __test_resetQueue };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore };
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -219,45 +183,46 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
+      const store = await getEventStore();
       const payload = await parseBody(req);
       const newEvents = extractEvents(payload);
       
       if (newEvents.length > 0) {
-        await withEventLock(() => {
-          const stored = loadEvents();
-          const { deduplicated, duplicateCount } = deduplicateEvents(newEvents, stored);
-          
-          for (const evt of deduplicated) {
-            const detection = detectBypass(evt, stored.slice(-50));
-            if (detection.isBypass) {
-              logger.warn("Bypass detected", { detection, txId: evt.txId });
-            }
-            const adminEvt = parseAdminEvent(evt);
-            if (adminEvt) {
-              logger.info("Admin event indexed", {
-                event_type: adminEvt.eventType,
-                block_height: adminEvt.blockHeight,
-              });
-            }
-          }
+        const existingEvents = await store.listEvents();
+        const { deduplicated, duplicateCount } = deduplicateEvents(newEvents, existingEvents);
 
-          stored.push(...deduplicated);
-          saveEvents(stored);
-          
-          const processingMs = Date.now() - startTime;
-          metrics.recordEventIndex(deduplicated.length, duplicateCount, processingMs);
-          logger.info("Events indexed", {
-            indexed: deduplicated.length,
-            duplicates: duplicateCount,
-            total: stored.length,
-            processing_ms: processingMs,
-          });
+        for (const evt of deduplicated) {
+          const detection = detectBypass(evt, existingEvents.slice(-50));
+          if (detection.isBypass) {
+            logger.warn("Bypass detected", { detection, txId: evt.txId });
+          }
+          const adminEvt = parseAdminEvent(evt);
+          if (adminEvt) {
+            logger.info("Admin event indexed", {
+              event_type: adminEvt.eventType,
+              block_height: adminEvt.blockHeight,
+            });
+          }
+        }
+
+        const result = await store.insertEvents(deduplicated);
+        const totalDuplicates = duplicateCount + result.duplicateCount;
+        await store.pruneExpired(getRetentionCutoff(RETENTION_DAYS));
+
+        const processingMs = Date.now() - startTime;
+        metrics.recordEventIndex(result.insertedCount, totalDuplicates, processingMs);
+        logger.info("Events indexed", {
+          indexed: result.insertedCount,
+          duplicates: totalDuplicates,
+          total: result.totalCount,
+          processing_ms: processingMs,
+          storage_mode: STORAGE_MODE,
         });
       }
       
       metrics.recordRequest(true);
       const processingMs = Date.now() - startTime;
-      logger.logResponse(req, 200, processingMs, { indexed: newEvents.length });
+      logger.logResponse(req, 200, processingMs, { indexed: newEvents.length, storage_mode: STORAGE_MODE });
       return sendJson(res, 200, { ok: true, indexed: newEvents.length });
     } catch (err) {
       metrics.recordRequest(false);
@@ -273,6 +238,7 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/tips -- paginated list of parsed tips
   if (req.method === "GET" && path === "/api/tips") {
+    const store = await getEventStore();
     const limit = sanitizeQueryInt(url.searchParams.get("limit") || "20", 1, 100);
     const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
 
@@ -283,7 +249,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: "offset must be a non-negative integer" });
     }
 
-    const allEvents = loadEvents();
+    const allEvents = await store.listEvents();
     const tips = allEvents
       .map(parseTipEvent)
       .filter(Boolean)
@@ -294,11 +260,12 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/tips/user/:address -- tips sent or received by address
   if (req.method === "GET" && path.startsWith("/api/tips/user/")) {
+    const store = await getEventStore();
     const address = path.split("/api/tips/user/")[1];
     if (!isValidStacksAddress(address)) {
       return sendJson(res, 400, { error: "invalid address format" });
     }
-    const allEvents = loadEvents();
+    const allEvents = await store.listEvents();
     const tips = allEvents
       .map(parseTipEvent)
       .filter((t) => t && (t.sender === address || t.recipient === address))
@@ -308,11 +275,12 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/tips/:id -- single tip by numeric ID
   if (req.method === "GET" && path.match(/^\/api\/tips\/\d+$/)) {
+    const store = await getEventStore();
     const tipId = parseInt(path.split("/api/tips/")[1], 10);
     if (isNaN(tipId) || tipId < 0) {
       return sendJson(res, 400, { error: "invalid tip ID" });
     }
-    const allEvents = loadEvents();
+    const allEvents = await store.listEvents();
     const tip = allEvents.map(parseTipEvent).find((t) => t && t.tipId === tipId);
     if (!tip) return sendJson(res, 404, { error: "tip not found" });
     return sendJson(res, 200, tip);
@@ -320,7 +288,8 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/stats -- aggregate tip statistics
   if (req.method === "GET" && path === "/api/stats") {
-    const allEvents = loadEvents();
+    const store = await getEventStore();
+    const allEvents = await store.listEvents();
     const tips = allEvents.map(parseTipEvent).filter(Boolean);
     const totalVolume = tips.reduce((sum, t) => sum + (t.amount || 0), 0);
     const totalFees = tips.reduce((sum, t) => sum + (t.fee || 0), 0);
@@ -335,7 +304,8 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/admin/events -- admin event log
   if (req.method === "GET" && path === "/api/admin/events") {
-    const allEvents = loadEvents();
+    const store = await getEventStore();
+    const allEvents = await store.listEvents();
     const adminEvents = allEvents
       .map(parseAdminEvent)
       .filter(Boolean)
@@ -345,7 +315,8 @@ const server = http.createServer(async (req, res) => {
 
   // GET /api/admin/bypasses -- detected timelock bypass events
   if (req.method === "GET" && path === "/api/admin/bypasses") {
-    const allEvents = loadEvents();
+    const store = await getEventStore();
+    const allEvents = await store.listEvents();
     const bypasses = [];
     for (let i = 0; i < allEvents.length; i++) {
       const detection = detectBypass(allEvents[i], allEvents.slice(Math.max(0, i - 50), i));
@@ -363,16 +334,25 @@ const server = http.createServer(async (req, res) => {
 
   // GET /health -- health check endpoint
   if (req.method === "GET" && path === "/health") {
+    const store = await getEventStore();
+    const storage = await store.health();
     return sendJson(res, 200, {
       status: "healthy",
       timestamp: new Date().toISOString(),
       uptime_seconds: Math.round((Date.now() - metrics.startTime) / 1000),
+      storage,
+      retention_days: RETENTION_DAYS,
     });
   }
 
   // GET /metrics -- service metrics for monitoring
   if (req.method === "GET" && path === "/metrics") {
-    return sendJson(res, 200, metrics.toJSON());
+    const store = await getEventStore();
+    const storage = await store.getStats();
+    return sendJson(res, 200, {
+      ...metrics.toJSON(),
+      storage,
+    });
   }
 
   sendJson(res, 404, { error: "not found", path: path });
@@ -385,21 +365,35 @@ const isMain =
   import.meta.url === `file://${process.argv[1]}`;
 
 if (isMain) {
-  const cleanupInterval = setInterval(() => {
-    rateLimiter.cleanup();
-  }, 60000);
+  (async () => {
+    const store = await getEventStore();
+    const cleanupInterval = setInterval(async () => {
+      rateLimiter.cleanup();
+      try {
+        await store.pruneExpired(getRetentionCutoff(RETENTION_DAYS));
+      } catch (error) {
+        logger.warn("Retention sweep failed", { error: error.message });
+      }
+    }, 60000);
 
-  setupGracefulShutdown(server, async () => {
-    clearInterval(cleanupInterval);
-    logger.info("Shutdown initiated");
-  });
-
-  server.listen(PORT, () => {
-    logger.info("Chainhook service started", {
-      port: PORT,
-      auth_enabled: !!AUTH_TOKEN,
-      cors_origins: CORS_ALLOWED_ORIGINS.join(", "),
-      rate_limit: `${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_WINDOW_MS}ms`,
+    setupGracefulShutdown(server, async () => {
+      clearInterval(cleanupInterval);
+      await store.close();
+      logger.info("Shutdown initiated");
     });
+
+    server.listen(PORT, () => {
+      logger.info("Chainhook service started", {
+        port: PORT,
+        auth_enabled: !!AUTH_TOKEN,
+        cors_origins: CORS_ALLOWED_ORIGINS.join(", "),
+        rate_limit: `${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_WINDOW_MS}ms`,
+        storage_mode: STORAGE_MODE,
+        retention_days: RETENTION_DAYS,
+      });
+    });
+  })().catch((error) => {
+    logger.error("Failed to start chainhook service", error);
+    process.exit(1);
   });
 }
