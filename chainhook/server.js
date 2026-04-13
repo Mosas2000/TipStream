@@ -20,21 +20,21 @@ const CORS_ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGIN
 const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10);
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
-let eventStorePromise = null;
+let eventStore = null;
 
 async function getEventStore() {
-  if (!eventStorePromise) {
+  if (!eventStore) {
     if (STORAGE_MODE === "postgres" && !DATABASE_URL) {
       throw new Error("DATABASE_URL is required when CHAINHOOK_STORAGE=postgres");
     }
-    eventStorePromise = createEventStore({
+    eventStore = await createEventStore({
       mode: STORAGE_MODE,
       databaseUrl: DATABASE_URL,
       retentionDays: RETENTION_DAYS,
     });
-    await eventStorePromise.init();
+    await eventStore.init();
   }
-  return eventStorePromise;
+  return eventStore;
 }
 
 /**
@@ -186,10 +186,12 @@ const server = http.createServer(async (req, res) => {
       const store = await getEventStore();
       const payload = await parseBody(req);
       const newEvents = extractEvents(payload);
+      let insertedCount = 0;
+      let duplicateCount = 0;
       
       if (newEvents.length > 0) {
         const existingEvents = await store.listEvents();
-        const { deduplicated, duplicateCount } = deduplicateEvents(newEvents, existingEvents);
+        const { deduplicated, duplicateCount: existingDuplicateCount } = deduplicateEvents(newEvents, existingEvents);
 
         for (const evt of deduplicated) {
           const detection = detectBypass(evt, existingEvents.slice(-50));
@@ -206,14 +208,16 @@ const server = http.createServer(async (req, res) => {
         }
 
         const result = await store.insertEvents(deduplicated);
-        const totalDuplicates = duplicateCount + result.duplicateCount;
+        const totalDuplicates = existingDuplicateCount + result.duplicateCount;
+        insertedCount = result.insertedCount;
+        duplicateCount = totalDuplicates;
         await store.pruneExpired(getRetentionCutoff(RETENTION_DAYS));
 
         const processingMs = Date.now() - startTime;
-        metrics.recordEventIndex(result.insertedCount, totalDuplicates, processingMs);
+        metrics.recordEventIndex(insertedCount, duplicateCount, processingMs);
         logger.info("Events indexed", {
-          indexed: result.insertedCount,
-          duplicates: totalDuplicates,
+          indexed: insertedCount,
+          duplicates: duplicateCount,
           total: result.totalCount,
           processing_ms: processingMs,
           storage_mode: STORAGE_MODE,
@@ -222,8 +226,17 @@ const server = http.createServer(async (req, res) => {
       
       metrics.recordRequest(true);
       const processingMs = Date.now() - startTime;
-      logger.logResponse(req, 200, processingMs, { indexed: newEvents.length, storage_mode: STORAGE_MODE });
-      return sendJson(res, 200, { ok: true, indexed: newEvents.length });
+      logger.logResponse(req, 200, processingMs, {
+        indexed: insertedCount,
+        duplicates: duplicateCount,
+        storage_mode: STORAGE_MODE,
+      });
+      return sendJson(res, 200, {
+        ok: true,
+        received: newEvents.length,
+        indexed: insertedCount,
+        duplicates: duplicateCount,
+      });
     } catch (err) {
       metrics.recordRequest(false);
       const processingMs = Date.now() - startTime;
