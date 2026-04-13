@@ -10,5 +10,8 @@
   "engines": {
     "node": ">=18"
   },
-  "description": "Chainhook webhook listener for TipStream on-chain events"
+  "description": "Chainhook webhook listener for TipStream on-chain events",
+  "dependencies": {
+    "pg": "^8.20.0"
+  }
 }
