@@ -11,15 +11,16 @@ The TipStream chainhook service is a durable, production-ready webhook receiver 
 1. **Webhook Ingestion**: Receives Chainhook events via POST /api/chainhook/events
 2. **Deduplication**: Filters duplicate events using stable keys (txId, blockHeight, contract, event type)
 3. **Validation**: Validates event structure and required fields
-4. **Storage**: Persists to JSON file store (development) or external database (production)
+4. **Storage**: Persists to PostgreSQL in production, with an in-memory mode for tests and local development
 5. **Metrics**: Records statistics for monitoring and alerting
 
 ### Persistence
 
-Currently uses JSON file storage in the `data/` directory. For production deployments:
-- Consider switching to a durable datastore (PostgreSQL, MongoDB, etc.)
-- Implement retention policies and compaction
-- Add backup/recovery procedures
+Production deployments use PostgreSQL via `DATABASE_URL`. For local or test runs:
+- Use `CHAINHOOK_STORAGE=memory` when a database is not available
+- Use `CHAINHOOK_STORAGE=postgres` and `DATABASE_URL` for production
+- Configure `CHAINHOOK_RETENTION_DAYS` for compaction policy
+- Add backup/recovery procedures around the database, not a local JSON file
 
 ## Configuration
 
@@ -31,6 +32,11 @@ PORT=3100                              # HTTP listen port
 
 # Authentication
 CHAINHOOK_AUTH_TOKEN=<bearer-token>   # Optional bearer token for webhook auth
+
+# Storage
+CHAINHOOK_STORAGE=postgres             # postgres or memory
+DATABASE_URL=postgres://...            # Required when CHAINHOOK_STORAGE=postgres
+CHAINHOOK_RETENTION_DAYS=30            # Event retention window in days
 
 # CORS Security
 CORS_ALLOWED_ORIGINS=https://app.example.com,https://api.example.com
@@ -87,6 +93,8 @@ npm start
 export NODE_ENV=production
 export PORT=3100
 export CHAINHOOK_AUTH_TOKEN="secure-random-token"
+export CHAINHOOK_STORAGE=postgres
+export DATABASE_URL="postgres://user:pass@host:5432/tipstream"
 export CORS_ALLOWED_ORIGINS="https://api.example.com"
 node server.js
 ```
@@ -168,8 +176,9 @@ Service metrics.
 ### Data Corruption
 
 1. Stop service
-2. Backup corrupted file: `mv data/events.json data/events.json.backup`
-3. Restart service (creates empty database)
+2. Verify the database is reachable and the `DATABASE_URL` is correct
+3. Restore from the last known-good database backup or snapshot
+4. Restart the service after the datastore is repaired
 
 ### Graceful Shutdown
 
@@ -184,13 +193,13 @@ The service handles SIGTERM and SIGINT by:
 ### Current Limitations
 
 - Single-threaded Node.js
-- Local file storage
+- Local file storage is no longer used for production persistence
 - In-memory rate limiter
 
 ### Production Enhancements
 
 - Multiple instances behind load balancer
-- External database (PostgreSQL, MongoDB)
+- External database (PostgreSQL)
 - Distributed rate limiting
 - Caching layer (Redis)
 - Event stream storage (Kafka, Kinesis)
