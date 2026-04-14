@@ -90,7 +90,7 @@ export function usePaginatedEvents() {
     return () => {
       cancelledRef.current = true;
     };
-  }, []);
+  }, [loadPage]);
 
   const cursor = createCursorFromPosition(events, Math.min(PAGE_SIZE - 1, events.length - 1));
 
