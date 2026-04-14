@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { userSession, authenticate, disconnect, getMainnetAddress, isValidUserData } from './utils/stacks';
 import Header from './components/Header';
 import SkipNav from './components/SkipNav';
@@ -8,7 +8,7 @@ import RequireAdmin from './components/RequireAdmin';
 import RequireAuth from './components/RequireAuth';
 import LazyErrorBoundary from './components/LazyErrorBoundary';
 import OfflineBanner from './components/OfflineBanner';
-import DemoIndicator from './components/DemoIndicator';
+import { DemoIndicator } from './components/DemoIndicator';
 import { ToastContainer, useToast } from './components/ui/toast';
 import { analytics } from './lib/analytics';
 import { useNotifications } from './hooks/useNotifications';
@@ -16,6 +16,7 @@ import { useContractHealth } from './hooks/useContractHealth';
 import { useAdmin } from './hooks/useAdmin';
 import { usePageTitle } from './hooks/usePageTitle';
 import { useSessionSync } from './hooks/useSessionSync';
+import { useDemoMode } from './context/DemoContext';
 import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
@@ -23,6 +24,7 @@ import {
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
 import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
+import { activateDemo, deactivateDemo } from './lib/demo-utils';
 
 const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
 const MaintenancePage = lazy(() => import('./components/MaintenancePage'));
@@ -42,9 +44,12 @@ const TelemetryDashboard = lazy(() => import('./components/TelemetryDashboard'))
 function App() {
   const [userData, setUserData] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const { healthy, error: healthError, checking: healthChecking, retry: retryHealth } = useContractHealth();
+  const { demoEnabled, toggleDemo } = useDemoMode();
 
   const userAddress = getMainnetAddress(userData);
   const { notifications, unreadCount, lastSeenTimestamp, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
@@ -84,6 +89,15 @@ function App() {
   }, [location.pathname]);
 
   const handleAuth = async () => {
+    if (demoEnabled) {
+      deactivateDemo();
+      toggleDemo(false);
+      setDemoLoading(false);
+      navigate(ROUTE_FEED, { replace: true });
+      addToast('Demo mode exited.', 'info');
+      return;
+    }
+
     if (userData) {
       disconnect();
       setUserData(null);
@@ -115,6 +129,17 @@ function App() {
     }
   };
 
+  const handleTryDemo = () => {
+    setDemoLoading(true);
+    activateDemo();
+    toggleDemo(true);
+    setUserData(null);
+    setAuthLoading(false);
+    navigate(ROUTE_SEND, { replace: true });
+    addToast('Demo mode started. No wallet required.', 'success');
+    setDemoLoading(false);
+  };
+
   const navItems = useMemo(() => {
     const allItems = [
       { path: ROUTE_SEND, label: 'Send Tip', icon: Zap },
@@ -132,7 +157,7 @@ function App() {
     const items = allItems.filter((item) => {
       const meta = ROUTE_META[item.path];
       // Show authenticated routes only if user is authenticated
-      if (meta.requiresAuth && !userData) return false;
+      if (meta.requiresAuth && !userData && !demoEnabled) return false;
       // Show admin routes only if user is owner
       if (meta.adminOnly && !isOwner) return false;
       return true;
@@ -143,7 +168,7 @@ function App() {
       items.push({ path: ROUTE_TELEMETRY, label: 'Telemetry', icon: Gauge });
     }
     return items;
-  }, [userData, isOwner]);
+  }, [userData, isOwner, demoEnabled]);
 
   if (healthy === false) {
     return (
@@ -167,6 +192,7 @@ function App() {
         userData={userData}
         onAuth={handleAuth}
         authLoading={authLoading}
+        demoEnabled={demoEnabled}
         notifications={notifications}
         unreadCount={unreadCount}
         lastSeenTimestamp={lastSeenTimestamp}
@@ -177,9 +203,9 @@ function App() {
 
       <main id="main-content" tabIndex={-1} className="flex-1">
         {/* Show landing hero only if user has not connected AND is on home route */}
-        {!userData && location.pathname === '/' ? (
+        {!userData && !demoEnabled && location.pathname === '/' ? (
           <Suspense fallback={<div className="min-h-[85vh] bg-black" />}>
-            <AnimatedHero onGetStarted={handleAuth} loading={authLoading} />
+            <AnimatedHero onGetStarted={handleAuth} onTryDemo={handleTryDemo} loading={authLoading} demoLoading={demoLoading} />
           </Suspense>
         ) : (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
@@ -223,7 +249,7 @@ function App() {
                   <Route 
                     path={ROUTE_SEND} 
                     element={
-                      userData ? (
+                      userData || demoEnabled ? (
                         <SendTip addToast={addToast} />
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_SEND}>
@@ -235,7 +261,7 @@ function App() {
                   <Route 
                     path={ROUTE_BATCH} 
                     element={
-                      userData ? (
+                      userData || demoEnabled ? (
                         <BatchTip addToast={addToast} />
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_BATCH}>
@@ -247,7 +273,7 @@ function App() {
                   <Route 
                     path={ROUTE_TOKEN_TIP} 
                     element={
-                      userData ? (
+                      userData || demoEnabled ? (
                         <TokenTip addToast={addToast} />
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_TOKEN_TIP}>
@@ -266,7 +292,7 @@ function App() {
                   <Route 
                     path={ROUTE_ACTIVITY} 
                     element={
-                      userData ? (
+                      userData || demoEnabled ? (
                         <TipHistory userAddress={userAddress} />
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_ACTIVITY}>
@@ -278,7 +304,7 @@ function App() {
                   <Route 
                     path={ROUTE_PROFILE} 
                     element={
-                      userData ? (
+                      userData || demoEnabled ? (
                         <ProfileManager addToast={addToast} />
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_PROFILE}>
@@ -290,7 +316,7 @@ function App() {
                   <Route 
                     path={ROUTE_BLOCK} 
                     element={
-                      userData ? (
+                      userData || demoEnabled ? (
                         <BlockManager addToast={addToast} />
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_BLOCK}>
@@ -305,7 +331,7 @@ function App() {
                   <Route path={ROUTE_TELEMETRY} element={<RequireAdmin><TelemetryDashboard addToast={addToast} /></RequireAdmin>} />
                   
                   {/* Root and fallback */}
-                  <Route path="/" element={<Navigate to={userData ? DEFAULT_AUTHENTICATED_ROUTE : ROUTE_FEED} replace />} />
+                  <Route path="/" element={<Navigate to={userData || demoEnabled ? DEFAULT_AUTHENTICATED_ROUTE : ROUTE_FEED} replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

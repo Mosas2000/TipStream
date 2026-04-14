@@ -52,7 +52,7 @@ describe('useSessionSync', () => {
   });
 
   it('detects session logout from another tab', () => {
-    const { rerender } = renderHook(() => useSessionSync(mockCallback));
+    renderHook(() => useSessionSync(mockCallback));
 
     // Simulate other tab logging out
     stacksUtils.userSession.isUserSignedIn.mockReturnValue(false);

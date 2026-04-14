@@ -21,12 +21,13 @@ const NotificationBell = lazy(() => import('./NotificationBell'));
  * @param {Object|null} props.userData - Authenticated user session data.
  * @param {Function} props.onAuth - Callback for connect/disconnect action.
  * @param {boolean} props.authLoading - Whether authentication is in progress.
+ * @param {boolean} props.demoEnabled - Whether demo mode is active.
  * @param {Array} props.notifications - List of notification objects.
  * @param {number} props.unreadCount - Number of unread notifications.
  * @param {Function} props.onMarkNotificationsRead - Callback to mark all read.
  * @param {boolean} props.notificationsLoading - Whether notifications are loading.
  */
-export default function Header({ userData, onAuth, authLoading, notifications, unreadCount, lastSeenTimestamp, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
+export default function Header({ userData, onAuth, authLoading, demoEnabled, notifications, unreadCount, lastSeenTimestamp, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
     const { theme, toggleTheme } = useTheme();
     const isOnline = useOnlineStatus();
 
@@ -53,6 +54,11 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                         />
                         <div className="flex items-center gap-2">
                             <h1 className="text-lg font-black text-white tracking-tight">TipStream</h1>
+                            {demoEnabled && (
+                                <span className="hidden sm:inline-flex items-center rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                                    Demo
+                                </span>
+                            )}
                             <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/5" role="status" aria-label={`API status: ${apiReachable === null ? 'checking' : apiReachable ? 'connected' : 'disconnected'}`}>
                                 <span
                                     className={`h-1.5 w-1.5 rounded-full ${apiReachable === null ? 'bg-yellow-400 animate-pulse' : apiReachable ? 'bg-green-400 pulse-live' : 'bg-red-400'}`}
@@ -116,7 +122,7 @@ export default function Header({ userData, onAuth, authLoading, notifications, u
                                     : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:shadow-lg hover:shadow-amber-500/20'
                             }`}
                         >
-                            {authLoading ? 'Connecting...' : userData ? 'Disconnect' : 'Connect Wallet'}
+                            {authLoading ? 'Connecting...' : demoEnabled ? 'Exit Demo' : userData ? 'Disconnect' : 'Connect Wallet'}
                         </button>
                     </div>
                 </div>

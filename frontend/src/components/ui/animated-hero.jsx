@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 const TITLE_ROTATION_INTERVAL_MS = 2200;
 
-function AnimatedHero({ onGetStarted, loading }) {
+function AnimatedHero({ onGetStarted, onTryDemo, loading, demoLoading }) {
     const [titleNumber, setTitleNumber] = useState(0);
     const titles = useMemo(
         () => ["instant", "secure", "transparent", "effortless", "unstoppable"],
@@ -95,6 +95,13 @@ function AnimatedHero({ onGetStarted, loading }) {
                                 </svg>
                             )}
                         </span>
+                    </button>
+                    <button
+                        onClick={onTryDemo}
+                        disabled={demoLoading}
+                        className="px-8 py-4 bg-white/5 border border-white/10 text-white font-semibold text-base rounded-xl hover:bg-white/10 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {demoLoading ? 'Starting Demo...' : 'Try Demo'}
                     </button>
                     <a
                         href="https://explorer.hiro.so/txid/SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream?chain=mainnet"

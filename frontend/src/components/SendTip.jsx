@@ -13,6 +13,8 @@ import { isValidStacksPrincipal } from '../lib/stacks-principal';
 import { canProceedWithRecipient, getRecipientValidationMessage } from '../lib/recipient-validation';
 import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
+import { useDemoMode } from '../context/DemoContext';
+import { useSendTipWithDemo } from '../hooks/useSendTipWithDemo';
 import { useBalance } from '../hooks/useBalance';
 import { useBlockCheck } from '../hooks/useBlockCheck';
 import { useStxPrice } from '../hooks/useStxPrice';
@@ -46,9 +48,10 @@ const TIP_CATEGORIES = [
  * @param {Function} props.addToast - Callback to display a toast notification.
  */
 export default function SendTip({ addToast }) {
-    const { notifyTipSent } = useTipContext();
-    const { toUsd } = useStxPrice();
-    const { blocked: blockedWarning, checkBlocked, reset: resetBlockCheck } = useBlockCheck();
+  const { notifyTipSent } = useTipContext();
+  const { demoEnabled, getDemoData } = useDemoMode();
+  const { toUsd } = useStxPrice();
+  const { blocked: blockedWarning, checkBlocked, reset: resetBlockCheck } = useBlockCheck();
     const [recipient, setRecipient] = useState('');
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
@@ -59,11 +62,20 @@ export default function SendTip({ addToast }) {
     const [recipientError, setRecipientError] = useState('');
     const [amountError, setAmountError] = useState('');
     const [cooldown, setCooldown] = useState(0);
-    const cooldownRef = useRef(null);
+  const cooldownRef = useRef(null);
 
-    const senderAddress = useMemo(() => getSenderAddress(), []);
-
-    const { balance, balanceStx: balanceSTX, loading: balanceLoading, refetch: refetchBalance } = useBalance(senderAddress);
+  const senderAddress = useMemo(
+    () => (demoEnabled ? getDemoData().mockWalletAddress : getSenderAddress()),
+    [demoEnabled, getDemoData],
+  );
+  const realBalanceState = useBalance(senderAddress);
+  const { displayBalance: balance, sendTipInDemo, pendingTransaction } = useSendTipWithDemo(realBalanceState.balance);
+  const balanceLoading = demoEnabled ? false : realBalanceState.loading;
+  const refetchBalance = demoEnabled ? realBalanceState.refetch : realBalanceState.refetch;
+  const balanceSTX = useMemo(() => {
+    if (balance === null || balance === undefined) return null;
+    return typeof balance === 'string' ? Number(balance) / 1000000 : balance / 1000000;
+  }, [balance]);
 
     const isRecipientHighRisk = !canProceedWithRecipient(recipient, blockedWarning);
 
@@ -158,6 +170,19 @@ export default function SendTip({ addToast }) {
         setLoading(true);
 
         try {
+            if (demoEnabled) {
+                const result = await sendTipInDemo(recipient.trim(), amount, message, category);
+                setPendingTx(result);
+                setRecipient('');
+                setAmount('');
+                setMessage('');
+                setCategory(0);
+                startCooldown();
+                addToast('Demo tip sent successfully.', 'success');
+                setLoading(false);
+                return;
+            }
+
             const microSTX = toMicroSTX(amount);
             const postConditions = [
                 tipPostCondition(senderAddress, microSTX)
@@ -239,7 +264,7 @@ export default function SendTip({ addToast }) {
                                     ? formatBalance(balance)
                                     : 'Unavailable'}
                             </p>
-                            {pendingTx && (
+                            {(pendingTx || pendingTransaction) && (
                                 <p className="text-xs text-amber-600 dark:text-amber-400">
                                     Pending confirmation
                                 </p>

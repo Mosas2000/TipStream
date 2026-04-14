@@ -5,6 +5,7 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS, STACKS_API_BASE } f
 import { formatSTX, formatAddress } from '../lib/utils';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
+import { useDemoMode } from '../context/DemoContext';
 
 const CATEGORY_LABELS = {
     0: 'General', 1: 'Content Creation', 2: 'Open Source',
@@ -42,6 +43,7 @@ function parseUtf8(repr) {
  * @param {string} props.userAddress - The STX address of the logged-in user.
  */
 export default function TipHistory({ userAddress }) {
+    const { demoEnabled, getDemoData } = useDemoMode();
     const [tips, setTips] = useState([]);
     const [tipsLoading, setTipsLoading] = useState(true);
     const [tipsError, setTipsError] = useState(null);
@@ -54,8 +56,36 @@ export default function TipHistory({ userAddress }) {
     const [loadingMore, setLoadingMore] = useState(false);
 
     const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+    const demoWalletAddress = demoEnabled ? getDemoData().mockWalletAddress : null;
+
+    const buildDemoTips = useCallback(() => {
+        const walletAddress = demoWalletAddress;
+        return getDemoData().mockTips
+            .filter((tip) => tip.sender === walletAddress || tip.recipient === walletAddress)
+            .map((tip) => ({
+                tipId: tip.id,
+                txId: tip.id,
+                sender: tip.sender,
+                recipient: tip.recipient,
+                amount: String(tip.amount),
+                message: tip.memo || '',
+                category: tip.category ?? null,
+                direction: tip.sender === walletAddress ? 'sent' : 'received',
+                timestamp: tip.timestamp || null,
+            }));
+    }, [demoWalletAddress, getDemoData]);
 
     const fetchTips = useCallback(async (reset = true) => {
+        if (demoEnabled) {
+            const parsed = buildDemoTips();
+            setTips(parsed);
+            setTipsLoading(false);
+            setTipsError(null);
+            setTipsMeta({ offset: parsed.length, total: parsed.length, hasMore: false });
+            setLastTipsRefresh(new Date());
+            return;
+        }
+
         if (!userAddress) {
             setTips([]);
             setTipsLoading(false);
@@ -121,7 +151,7 @@ export default function TipHistory({ userAddress }) {
         } finally {
             setTipsLoading(false);
         }
-    }, [userAddress, tipsMeta.offset, contractId]);
+    }, [userAddress, tipsMeta.offset, contractId, demoEnabled, buildDemoTips]);
 
     const handleRefresh = useCallback(() => {
         fetchTips(true);
@@ -139,6 +169,20 @@ export default function TipHistory({ userAddress }) {
     // Fetch on-chain user stats (tips sent/received counts and volume).
     // This is user-specific data not available from the shared event cache.
     const fetchUserStats = useCallback(async () => {
+        if (demoEnabled) {
+            const demoTips = buildDemoTips();
+            const sent = demoTips.filter((tip) => tip.direction === 'sent');
+            const received = demoTips.filter((tip) => tip.direction === 'received');
+            setStats({
+                'tips-sent': { value: sent.length },
+                'tips-received': { value: received.length },
+                'total-sent': { value: sent.reduce((sum, tip) => sum + Number(tip.amount || 0), 0) },
+                'total-received': { value: received.reduce((sum, tip) => sum + Number(tip.amount || 0), 0) },
+            });
+            setStatsLoading(false);
+            return;
+        }
+
         if (!userAddress) return;
         try {
             const result = await fetchCallReadOnlyFunction({
@@ -151,7 +195,7 @@ export default function TipHistory({ userAddress }) {
         } finally {
             setStatsLoading(false);
         }
-    }, [userAddress]);
+    }, [userAddress, demoEnabled, buildDemoTips]);
 
     useEffect(() => { fetchUserStats(); }, [fetchUserStats]);
 
@@ -193,7 +237,14 @@ export default function TipHistory({ userAddress }) {
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Activity</h2>
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Activity</h2>
+                    {demoEnabled && (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                            Demo
+                        </span>
+                    )}
+                </div>
                 <div className="flex items-center gap-3">
                     {lastTipsRefresh && <span className="text-xs text-gray-400">{lastTipsRefresh.toLocaleTimeString()}</span>}
                     <button onClick={handleRefresh} aria-label="Refresh activity" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>

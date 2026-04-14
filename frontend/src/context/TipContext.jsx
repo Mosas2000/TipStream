@@ -11,6 +11,7 @@ import { createContext, useContext, useReducer, useCallback, useState, useEffect
 import { fetchAllContractEvents, POLL_INTERVAL_MS } from '../lib/contractEvents';
 import { updatePaginationState } from '../lib/eventPageCache';
 import { mergeAndDeduplicateEvents, sortEventsStably } from '../lib/eventDeduplication.js';
+import { useDemoMode } from './DemoContext';
 
 const TipContext = createContext(null);
 
@@ -39,6 +40,7 @@ function tipReducer(state, action) {
 
 export function TipProvider({ children }) {
   const [state, dispatch] = useReducer(tipReducer, initialState);
+  const { demoEnabled, demoTips, addDemoTip } = useDemoMode();
 
   // ---- Shared event cache ------------------------------------------------
   const [events, setEvents] = useState([]);
@@ -48,6 +50,21 @@ export function TipProvider({ children }) {
   const [lastEventRefresh, setLastEventRefresh] = useState(null);
   const fetchIdRef = useRef(0);
 
+  const demoEvents = useCallback(() => {
+    return demoTips.map((tip, index) => ({
+      event: 'tip-sent',
+      tipId: tip.id || `demo-tip-${index}`,
+      sender: tip.sender,
+      recipient: tip.recipient,
+      amount: String(tip.amount),
+      fee: '0',
+      message: tip.memo || '',
+      category: tip.category ?? null,
+      timestamp: tip.timestamp || Date.now(),
+      txId: tip.id || `demo-tip-${index}`,
+    }));
+  }, [demoTips]);
+
   /**
    * Fetch contract events from the Stacks API and update the shared cache.
    * Uses a fetchId counter to discard stale responses when a newer fetch
@@ -56,6 +73,16 @@ export function TipProvider({ children }) {
    * Also invalidates page cache to ensure fresh pagination data.
    */
   const refreshEvents = useCallback(async () => {
+    if (demoEnabled) {
+      const demoEventData = demoEvents();
+      setEvents(demoEventData);
+      setEventsMeta({ apiOffset: demoEventData.length, total: demoEventData.length, hasMore: false });
+      setLastEventRefresh(new Date());
+      setEventsLoading(false);
+      setEventsError(null);
+      return;
+    }
+
     const id = ++fetchIdRef.current;
     try {
       setEventsError(null);
@@ -73,13 +100,17 @@ export function TipProvider({ children }) {
     } finally {
       if (id === fetchIdRef.current) setEventsLoading(false);
     }
-  }, []);
+  }, [demoEnabled, demoEvents]);
 
   /**
    * Load the next batch of events beyond the current apiOffset.
    * Appends new events to the existing cache rather than replacing it.
    */
   const loadMoreEvents = useCallback(async () => {
+    if (demoEnabled) {
+      return;
+    }
+
     try {
       const result = await fetchAllContractEvents({ startOffset: eventsMeta.apiOffset });
       // Merge and deduplicate to prevent duplicates from pagination overlap
@@ -90,30 +121,50 @@ export function TipProvider({ children }) {
     } catch (err) {
       console.error('Failed to load more events:', err.message || err);
     }
-  }, [eventsMeta.apiOffset, events]);
+  }, [demoEnabled, eventsMeta.apiOffset, events]);
 
   const notifyTipSent = useCallback(() => {
+    if (demoEnabled) {
+      return;
+    }
     dispatch({ type: 'TIP_SENT' });
-  }, []);
+  }, [demoEnabled]);
 
   const triggerRefresh = useCallback(() => {
+    if (demoEnabled) {
+      const demoEventData = demoEvents();
+      setEvents(demoEventData);
+      setEventsMeta({ apiOffset: demoEventData.length, total: demoEventData.length, hasMore: false });
+      setLastEventRefresh(new Date());
+      return;
+    }
     dispatch({ type: 'REFRESH' });
-  }, []);
+  }, [demoEnabled, demoEvents]);
+
+  const handleDemoTipAdded = useCallback((tipData) => {
+    addDemoTip(tipData);
+    triggerRefresh();
+  }, [addDemoTip, triggerRefresh]);
 
   // Fetch events on mount and whenever refreshCounter bumps.
-  useEffect(() => { refreshEvents(); }, [refreshEvents, state.refreshCounter]);
+  useEffect(() => { refreshEvents(); }, [refreshEvents, state.refreshCounter, demoEnabled, demoEvents]);
 
   // Single polling interval shared across all consumers.
   useEffect(() => {
+    if (demoEnabled) {
+      return () => {};
+    }
+
     const id = setInterval(refreshEvents, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [refreshEvents]);
+  }, [demoEnabled, refreshEvents]);
 
   return (
     <TipContext.Provider value={{
       ...state,
       notifyTipSent,
       triggerRefresh,
+      addDemoTip: handleDemoTipAdded,
       // Shared event cache
       events,
       eventsLoading,
