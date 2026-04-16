@@ -30,7 +30,7 @@ export const POLL_INTERVAL_MS = 30_000;
  */
 function buildEventsUrl(limit, offset) {
     const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
-    return `${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${limit}&offset=${offset}`;
+    return `${STACKS_API_BASE}/extended/v1/contract/${contractId}/events?limit=${limit}&offset=${offset}&decode_clarity_values=true`;
 }
 
 /**
@@ -49,18 +49,20 @@ async function fetchEventsPage(offset) {
 /**
  * Parse raw API results into typed tip event objects.
  *
- * Filters for entries that have a contract_log value, runs them through
- * parseTipEvent, and enriches each with the block timestamp and txId
- * from the original API entry.
+ * Filters for entries that have a contract_log value, prefers decoded
+ * Clarity data when present, and falls back to repr strings when needed.
+ * Each parsed event is enriched with the block timestamp and txId from the
+ * original API entry.
  *
  * @param {Array} results - Raw results array from the Stacks API.
  * @returns {Array} Parsed tip event objects.
  */
 export function parseRawEvents(results) {
     return results
-        .filter(e => e.contract_log?.value?.repr)
+        .filter((e) => e.contract_log?.value)
         .map(e => {
-            const parsed = parseTipEvent(e.contract_log.value.repr);
+            const value = e.contract_log.value;
+            const parsed = parseTipEvent(value.value ?? value.raw_value ?? value.repr ?? value);
             if (!parsed) return null;
             return {
                 ...parsed,

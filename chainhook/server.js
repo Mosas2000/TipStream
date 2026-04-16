@@ -10,6 +10,7 @@ import { RateLimiter, getClientIp } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown } from "./graceful-shutdown.js";
 import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
+import { normalizeClarityEventFields } from "../shared/clarityValues.js";
 import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, classifyError, toErrorResponse } from "./errors.js";
 
 const PORT = process.env.PORT || 3100;
@@ -145,8 +146,8 @@ function sendError(res, error, requestId, context = {}) {
  * @returns {object|null}
  */
 function parseTipEvent(event) {
-  const val = event.event;
-  if (!val || typeof val !== "object") return null;
+  const val = normalizeClarityEventFields(event.event);
+  if (!val) return null;
   if (val.event !== "tip-sent") return null;
   return {
     tipId: val["tip-id"],
@@ -348,7 +349,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
     const allEvents = await store.listEvents();
-    const tip = allEvents.map(parseTipEvent).find((t) => t && t.tipId === tipId);
+    const tip = allEvents.map(parseTipEvent).find((t) => t && Number(t.tipId) === tipId);
     if (!tip) return sendJson(res, 404, { error: "tip not found" });
     return sendJson(res, 200, tip);
   }
@@ -358,8 +359,8 @@ const server = http.createServer(async (req, res) => {
     const store = await getEventStore();
     const allEvents = await store.listEvents();
     const tips = allEvents.map(parseTipEvent).filter(Boolean);
-    const totalVolume = tips.reduce((sum, t) => sum + (t.amount || 0), 0);
-    const totalFees = tips.reduce((sum, t) => sum + (t.fee || 0), 0);
+    const totalVolume = tips.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const totalFees = tips.reduce((sum, t) => sum + Number(t.fee || 0), 0);
     return sendJson(res, 200, {
       totalTips: tips.length,
       totalVolume,

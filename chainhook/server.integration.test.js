@@ -105,7 +105,7 @@ describe('chainhook server integration', () => {
 
     assert.strictEqual(tips.status, 200);
     assert.strictEqual(tips.body.total, 1);
-    assert.strictEqual(tips.body.tips[0].tipId, 1);
+    assert.strictEqual(tips.body.tips[0].tipId, '1');
     assert.strictEqual(tips.body.tips[0].sender, 'SP1SENDER');
 
     const duplicate = await request({

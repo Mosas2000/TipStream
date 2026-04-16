@@ -1,3 +1,5 @@
+import { normalizeClarityEventFields } from "../shared/clarityValues.js";
+
 /**
  * Timelock bypass detection for chainhook events.
  *
@@ -38,8 +40,8 @@ const TIMELOCKED_EVENTS = new Set([
  * @returns {{ isBypass: boolean, eventType: string, detail: string }}
  */
 export function detectBypass(event, recentEvents = []) {
-    const value = event?.event;
-    if (!value || typeof value !== 'object') {
+    const value = normalizeClarityEventFields(event?.event);
+    if (!value) {
         return { isBypass: false, eventType: '', detail: '' };
     }
 
@@ -51,8 +53,8 @@ export function detectBypass(event, recentEvents = []) {
 
     // Check if there was a corresponding proposal in recent history
     const hasProposal = recentEvents.some((e) => {
-        const v = e?.event;
-        if (!v || typeof v !== 'object') return false;
+        const v = normalizeClarityEventFields(e?.event);
+        if (!v) return false;
 
         if (eventType === 'contract-paused') {
             return v.event === 'pause-change-executed';
@@ -82,8 +84,8 @@ export function detectBypass(event, recentEvents = []) {
  * @returns {object|null} Parsed admin event or null
  */
 export function parseAdminEvent(event) {
-    const val = event?.event;
-    if (!val || typeof val !== 'object') return null;
+    const val = normalizeClarityEventFields(event?.event);
+    if (!val) return null;
 
     const eventType = val.event;
     if (!BYPASS_EVENTS.has(eventType) && !TIMELOCKED_EVENTS.has(eventType)) {

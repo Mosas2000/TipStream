@@ -90,6 +90,22 @@ describe('eventParser', () => {
       expect(result.amount).toBe('5000');
     });
 
+    it('parses a structured clarity object', () => {
+      const value = {
+        event: 'tip-sent',
+        'tip-id': 42,
+        sender: 'SP1SENDER',
+        recipient: 'SP2RECV',
+        amount: 1000,
+      };
+
+      const result = parseContractEvent(value);
+
+      expect(result.event).toBe('tip-sent');
+      expect(result['tip-id']).toBe('42');
+      expect(result.amount).toBe('1000');
+    });
+
     it('parses profile-updated event with optional fields', () => {
       const repr = '(tuple (event "profile-updated") (user \'SP1USER) (display-name u"Alice") (bio u"Hello"))';
       const result = parseContractEvent(repr);

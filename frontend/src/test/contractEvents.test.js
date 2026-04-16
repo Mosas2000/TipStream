@@ -11,8 +11,9 @@ import { parseRawEvents, fetchAllContractEvents, PAGE_LIMIT, MAX_INITIAL_PAGES, 
  * @param {Object} [overrides] - Optional field overrides.
  */
 function fakeApiEntry(repr, overrides = {}) {
+    const value = typeof repr === 'string' ? { repr } : { value: repr };
     return {
-        contract_log: { value: { repr } },
+        contract_log: { value },
         block_time: overrides.block_time ?? 1700000000,
         tx_id: overrides.tx_id ?? '0xabc123',
     };
@@ -56,7 +57,7 @@ describe('parseRawEvents', () => {
         expect(parsed[0].txId).toBe('0xdef456');
     });
 
-    it('filters out entries without contract_log.value.repr', () => {
+    it('filters out entries without contract_log data', () => {
         const results = [
             { tx_id: '0x111' },
             { contract_log: { value: {} } },
@@ -65,6 +66,25 @@ describe('parseRawEvents', () => {
         ];
         const parsed = parseRawEvents(results);
         expect(parsed).toHaveLength(1);
+    });
+
+    it('parses structured decoded clarity values when available', () => {
+        const results = [
+            fakeApiEntry({
+                event: 'tip-sent',
+                'tip-id': 1,
+                sender: 'SP1SENDER',
+                recipient: 'SP2RECEIVER',
+                amount: 1000000,
+                fee: 50000,
+            }),
+        ];
+
+        const parsed = parseRawEvents(results);
+
+        expect(parsed).toHaveLength(1);
+        expect(parsed[0].tipId).toBe('1');
+        expect(parsed[0].amount).toBe('1000000');
     });
 
     it('filters out entries that parseTipEvent cannot parse', () => {
@@ -113,6 +133,7 @@ describe('parseRawEvents', () => {
         const parsed = parseRawEvents(results);
         expect(parsed[0].timestamp).toBeNull();
     });
+
 });
 
 // ---------------------------------------------------------------------------
@@ -260,6 +281,15 @@ describe('fetchAllContractEvents', () => {
 
         expect(fetchSpy).toHaveBeenCalledTimes(2);
         expect(result.events).toHaveLength(PAGE_LIMIT + 1);
+    });
+
+    it('requests decoded clarity values from the stacks api', async () => {
+        fetchSpy.mockReturnValueOnce(mockFetchResponse([], 0, 0));
+
+        await fetchAllContractEvents();
+
+        const url = fetchSpy.mock.calls[0][0];
+        expect(url).toContain('decode_clarity_values=true');
     });
 
     it('throws when second page fails mid-pagination', async () => {

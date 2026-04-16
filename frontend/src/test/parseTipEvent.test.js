@@ -28,6 +28,24 @@ describe('parseTipEvent', () => {
         expect(result.tipId).toBe('42');
     });
 
+    it('parses a structured clarity event object', () => {
+        const value = {
+            event: 'tip-sent',
+            'tip-id': 42,
+            sender: 'SP1SENDER',
+            recipient: 'SP2RECV',
+            amount: 5000000,
+            fee: 50000,
+        };
+
+        const result = parseTipEvent(value);
+
+        expect(result.event).toBe('tip-sent');
+        expect(result.tipId).toBe('42');
+        expect(result.amount).toBe('5000000');
+        expect(result.fee).toBe('50000');
+    });
+
     it('parses a tip-categorized event', () => {
         const repr = '(tuple (event "tip-categorized") (tip-id u7) (category u3))';
         const result = parseTipEvent(repr);

@@ -1,7 +1,8 @@
 import { parseContractEventLenient } from './eventParser';
 
 /**
- * Parse a Clarity contract event `repr` string into a structured object.
+ * Parse a Clarity contract event into a structured object.
+ * Accepts either a raw `repr` string or a decoded Clarity value object.
  * Used by TipHistory, RecentTips, Leaderboard, and useNotifications.
  *
  * NOTE: The contract's `send-tip` print event does NOT include the `message`

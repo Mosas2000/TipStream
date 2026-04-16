@@ -260,12 +260,12 @@ describe("parseTipEvent", () => {
       },
     };
     const tip = parseTipEvent(event);
-    assert.strictEqual(tip.tipId, 42);
+    assert.strictEqual(tip.tipId, '42');
     assert.strictEqual(tip.sender, "SP1SENDER");
     assert.strictEqual(tip.recipient, "SP2RECIPIENT");
-    assert.strictEqual(tip.amount, 100000);
-    assert.strictEqual(tip.fee, 5000);
-    assert.strictEqual(tip.netAmount, 95000);
+    assert.strictEqual(tip.amount, '100000');
+    assert.strictEqual(tip.fee, '5000');
+    assert.strictEqual(tip.netAmount, '95000');
     assert.strictEqual(tip.txId, "0xabc");
     assert.strictEqual(tip.blockHeight, 200);
   });

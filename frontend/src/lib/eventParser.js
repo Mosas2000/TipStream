@@ -1,4 +1,5 @@
 import { getEventSchema, isValidEventType } from './eventSchemas';
+import { normalizeClarityEventFields } from '../../../shared/clarityValues.js';
 
 function tokenizeClarityRepr(repr) {
   const tokens = [];
@@ -312,6 +313,15 @@ function parseTupleFields(repr) {
   return fields;
 }
 
+function parseStructuredFields(value) {
+  const fields = normalizeClarityEventFields(value);
+  if (!fields) {
+    return null;
+  }
+
+  return fields;
+}
+
 function extractEventType(fields) {
   const eventField = fields.event;
   if (typeof eventField === 'string') {
@@ -391,25 +401,46 @@ function parseReprObjectLenient(repr) {
   return result;
 }
 
+function parseStructuredObject(value, strict = true) {
+  const fields = parseStructuredFields(value);
+  if (!fields) {
+    return null;
+  }
+
+  const eventType = extractEventType(fields);
+  if (!eventType || !isValidEventType(eventType)) {
+    return null;
+  }
+
+  const schema = getEventSchema(eventType);
+  const result = { event: eventType };
+
+  if (!hydrateSchemaFields(fields, schema, result, strict)) {
+    return null;
+  }
+
+  return result;
+}
+
 export function parseContractEvent(repr) {
-  if (!repr || typeof repr !== 'string') {
+  if (!repr) {
     return null;
   }
 
   try {
-    return parseReprObject(repr);
+    return typeof repr === 'string' ? parseReprObject(repr) : parseStructuredObject(repr, true);
   } catch {
     return null;
   }
 }
 
 export function parseContractEventLenient(repr) {
-  if (!repr || typeof repr !== 'string') {
+  if (!repr) {
     return null;
   }
 
   try {
-    return parseReprObjectLenient(repr);
+    return typeof repr === 'string' ? parseReprObjectLenient(repr) : parseStructuredObject(repr, false);
   } catch {
     return null;
   }
