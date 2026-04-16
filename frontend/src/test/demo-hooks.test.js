@@ -1,13 +1,20 @@
+import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { DemoProvider } from '../context/DemoContext';
 import { useDemoMode } from '../context/DemoContext';
 import { useDemoStats } from '../hooks/useDemoStats';
 import { useDemoHistory } from '../hooks/useDemoHistory';
+import { setDemoMode } from '../config/demo';
 
-const wrapper = ({ children }) => <DemoProvider>{children}</DemoProvider>;
+const wrapper = ({ children }) => React.createElement(DemoProvider, null, children);
 
 describe('Demo Mode Hooks', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setDemoMode(false);
+  });
+
   describe('useDemoMode', () => {
     it('should toggle demo mode', () => {
       const { result } = renderHook(() => useDemoMode(), { wrapper });
@@ -39,14 +46,17 @@ describe('Demo Mode Hooks', () => {
     });
 
     it('should calculate stats when demo enabled', () => {
-      const { result: modeResult } = renderHook(() => useDemoMode(), { wrapper });
-      const { result: statsResult } = renderHook(() => useDemoStats(), { wrapper });
-      
+      const { result } = renderHook(() => {
+        const mode = useDemoMode();
+        const stats = useDemoStats();
+        return { mode, stats };
+      }, { wrapper });
+
       act(() => {
-        modeResult.current.toggleDemo(true);
+        result.current.mode.toggleDemo(true);
       });
-      
-      const stats = statsResult.current.getDemoStats();
+
+      const stats = result.current.stats.getDemoStats();
       expect(stats).toBeDefined();
       expect(stats.totalTips).toBeGreaterThanOrEqual(0);
       expect(stats.platformStats).toBeDefined();

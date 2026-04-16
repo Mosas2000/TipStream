@@ -8,7 +8,7 @@
  */
 import { Link } from 'react-router-dom';
 
-export default function RequireAuth({ children, onAuth, authLoading, route }) {
+export default function RequireAuth({ children, onAuth, authLoading }) {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       {children}

@@ -8,6 +8,7 @@ import { network, appDetails, userSession, getSenderAddress } from '../utils/sta
 import { clearTipCache } from '../lib/fetchTipDetails';
 import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackValidation';
 import { useTipContext } from '../context/TipContext';
+import { useDemoMode } from '../context/DemoContext';
 import { useFilteredAndPaginatedEvents } from '../hooks/useFilteredAndPaginatedEvents';
 import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
@@ -23,7 +24,9 @@ export default function RecentTips({ addToast }) {
         lastEventRefresh,
         refreshEvents,
         loadMoreEvents: contextLoadMore,
+        addDemoTip,
     } = useTipContext();
+    const { demoEnabled, setDemoBalance } = useDemoMode();
 
     const {
         enrichedTips: allEnrichedTips,
@@ -153,6 +156,22 @@ export default function RecentTips({ addToast }) {
      * @param {Object} tip - The tip event to reciprocate.
      */
     const handleTipBack = async (tip) => {
+        if (demoEnabled) {
+            const microSTX = toMicroSTX(tipBackAmount);
+            setDemoBalance((prev) => Math.max(0, prev - microSTX));
+            addDemoTip({
+                recipient: tip.sender,
+                amount: microSTX,
+                message: tipBackMessage || 'Tipping back!',
+                category: tip.category,
+            });
+            setSending(false);
+            closeTipBackModal();
+            setTipBackMessage('');
+            addToast?.('Demo tip-a-tip sent!', 'success');
+            return;
+        }
+
         if (!userSession.isUserSignedIn()) return;
 
         // Validate the amount before opening the wallet prompt (Issue #233).

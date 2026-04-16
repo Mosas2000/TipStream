@@ -4,15 +4,33 @@ import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PLATFORM_STATS } from '../config/contracts';
 import { formatSTX } from '../lib/utils';
 import { useTipContext } from '../context/TipContext';
+import { useDemoMode } from '../context/DemoContext';
+import { useDemoStats } from '../hooks/useDemoStats';
 
 export default function PlatformStats() {
     const { refreshCounter } = useTipContext();
+    const { demoEnabled } = useDemoMode();
+    const { getDemoStats } = useDemoStats();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [lastRefresh, setLastRefresh] = useState(null);
 
+    const demoStats = demoEnabled ? getDemoStats() : null;
+
     const fetchPlatformStats = useCallback(async () => {
+        if (demoEnabled) {
+            setStats({
+                'total-tips': { value: demoStats?.platformStats.totalTipsOnPlatform ?? 0 },
+                'total-volume': { value: demoStats?.totalAmount ?? 0 },
+                'platform-fees': { value: Math.round((demoStats?.totalAmount ?? 0) * 0.005) },
+            });
+            setLoading(false);
+            setError(null);
+            setLastRefresh(new Date());
+            return;
+        }
+
         try {
             const result = await fetchCallReadOnlyFunction({
                 network,
@@ -31,7 +49,7 @@ export default function PlatformStats() {
             setError(isNet ? 'Unable to reach the Stacks API. Check your connection.' : `Failed to load stats: ${err.message}`);
             setLoading(false);
         }
-    }, []);
+    }, [demoEnabled, demoStats]);
 
     useEffect(() => { 
         Promise.resolve().then(() => fetchPlatformStats()); 
@@ -66,16 +84,23 @@ export default function PlatformStats() {
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Global Impact</h2>
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Global Impact</h2>
+                    {demoEnabled && (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                            Demo
+                        </span>
+                    )}
+                </div>
                 <div className="flex items-center gap-3">
                     {lastRefresh && <span className="text-xs text-gray-400">{lastRefresh.toLocaleTimeString()}</span>}
                     <button onClick={fetchPlatformStats}
                         className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
                         Refresh
                     </button>
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />Live
-                    </span>
+                        <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" />Live
+                        </span>
                 </div>
             </div>
 

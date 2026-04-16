@@ -10,7 +10,7 @@ export function useDemoTransaction() {
   const { demoEnabled } = useDemoMode();
   const [pendingTransaction, setPendingTransaction] = useState(null);
 
-  const submitMockTransaction = useCallback(async (data) => {
+  const submitMockTransaction = useCallback(async (_data) => {
     if (!demoEnabled) {
       return null;
     }
