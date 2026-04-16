@@ -36,7 +36,6 @@ export function useCachedData(
   const [source, setSource] = useState('cache');
   const [metadata, setMetadata] = useState(null);
   const cancelledRef = useRef(false);
-  const timeoutIdRef = useRef(null);
 
   const fetchWithTimeout = useCallback(async () => {
     return Promise.race([
@@ -99,11 +98,8 @@ export function useCachedData(
     loadData();
     return () => {
       cancelledRef.current = true;
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-      }
     };
-  }, [cacheKey, fetchWithTimeout]);
+  }, [loadData]);
 
   return {
     data,
