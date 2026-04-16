@@ -7,6 +7,95 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+function getManualChunk(id) {
+  if (!id.includes('node_modules')) {
+    return undefined;
+  }
+
+  const modulePath = id.split('node_modules/')[1];
+  if (!modulePath) {
+    return undefined;
+  }
+
+  const packageName = modulePath.startsWith('@')
+    ? modulePath.split('/').slice(0, 2).join('/')
+    : modulePath.split('/')[0];
+
+  if (
+    packageName === 'react' ||
+    packageName === 'react-dom' ||
+    packageName === 'react-router-dom'
+  ) {
+    return 'vendor-react';
+  }
+
+  if (
+    packageName === '@stacks/network' ||
+    packageName === '@stacks/transactions' ||
+    packageName === '@stacks/wallet-sdk' ||
+    packageName === 'c32check' ||
+    packageName === '@noble/hashes' ||
+    packageName === '@noble/curves'
+  ) {
+    return 'vendor-stacks';
+  }
+
+  if (
+    packageName === '@stacks/connect'
+  ) {
+    return 'vendor-stacks-connect';
+  }
+
+  if (
+    packageName.startsWith('@walletconnect/')
+  ) {
+    return 'vendor-walletconnect';
+  }
+
+  if (
+    packageName.startsWith('@reown/')
+  ) {
+    return 'vendor-reown';
+  }
+
+  if (
+    packageName === 'viem'
+  ) {
+    return 'vendor-viem';
+  }
+
+  if (
+    packageName === 'ox'
+  ) {
+    return 'vendor-ox';
+  }
+
+  if (
+    packageName === 'qrcode'
+  ) {
+    return 'vendor-qrcode';
+  }
+
+  if (
+    packageName === '@tanstack'
+  ) {
+    return 'vendor-tanstack';
+  }
+
+  if (
+    packageName === '@radix-ui/react-slot' ||
+    packageName === 'class-variance-authority' ||
+    packageName === 'clsx' ||
+    packageName === 'tailwind-merge' ||
+    packageName === 'lucide-react' ||
+    packageName === 'web-vitals'
+  ) {
+    return 'vendor-ui';
+  }
+
+  return undefined;
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -102,10 +191,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-stacks': ['@stacks/transactions', '@stacks/network'],
-        },
+        manualChunks: getManualChunk,
       },
       treeshake: {
         preset: 'recommended',
