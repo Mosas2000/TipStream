@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { openContractCall } from '@stacks/connect';
 import {
     uintCV,
@@ -9,13 +9,14 @@ import {
     PostConditionMode,
     Pc,
 } from '@stacks/transactions';
-import { network, appDetails, getSenderAddress } from '../utils/stacks';
+import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_BATCH_TIPS, FN_SEND_BATCH_TIPS_STRICT } from '../config/contracts';
 import { toMicroSTX } from '../lib/utils';
 import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { analytics } from '../lib/analytics';
 import { summarizeBatchTipResult, buildBatchTipOutcomeMessage } from '../lib/batchTipResults';
 import { useBalance } from '../hooks/useBalance';
+import { useSenderAddress } from '../hooks/useSenderAddress';
 import { useTipContext } from '../context/TipContext';
 import { Users, Plus, Trash2, Send, Loader2, AlertTriangle } from 'lucide-react';
 import ConfirmDialog from './ui/confirm-dialog';
@@ -37,7 +38,7 @@ export default function BatchTip({ addToast }) {
     const [errors, setErrors] = useState({});
     const [pendingTx, setPendingTx] = useState(null);
 
-    const senderAddress = useMemo(() => getSenderAddress(), []);
+    const senderAddress = useSenderAddress();
 
     const { balance, balanceStx: balanceSTX, loading: balanceLoading } = useBalance(senderAddress);
 
@@ -61,6 +62,34 @@ export default function BatchTip({ addToast }) {
         if (balanceSTX === null) return false;
         return !hasSufficientMicroStx(balance, totalAmountMicro);
     }, [balance, balanceSTX, totalAmountMicro]);
+
+    useEffect(() => {
+        setErrors((prev) => {
+            let changed = false;
+            const next = { ...prev };
+
+            recipients.forEach((recipient, index) => {
+                const key = `${index}-address`;
+                const address = recipient.address.trim();
+                const isSelfTip = Boolean(address) && address === senderAddress;
+
+                if (isSelfTip) {
+                    if (next[key] !== 'Cannot tip yourself') {
+                        next[key] = 'Cannot tip yourself';
+                        changed = true;
+                    }
+                    return;
+                }
+
+                if (next[key] === 'Cannot tip yourself') {
+                    delete next[key];
+                    changed = true;
+                }
+            });
+
+            return changed ? next : prev;
+        });
+    }, [recipients, senderAddress]);
 
     const isValidStacksAddress = (address) => {
         if (!address) return false;
