@@ -5,7 +5,7 @@ import {
     uintCV,
     principalCV,
 } from '@stacks/transactions';
-import { network, appDetails, getSenderAddress } from '../utils/stacks';
+import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_SEND_CATEGORIZED_TIP } from '../config/contracts';
 import { toMicroSTX, formatSTX } from '../lib/utils';
 import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
@@ -18,6 +18,7 @@ import { useSendTipWithDemo } from '../hooks/useSendTipWithDemo';
 import { useBalance } from '../hooks/useBalance';
 import { useBlockCheck } from '../hooks/useBlockCheck';
 import { useStxPrice } from '../hooks/useStxPrice';
+import { useSenderAddress } from '../hooks/useSenderAddress';
 import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
@@ -64,10 +65,8 @@ export default function SendTip({ addToast }) {
     const [cooldown, setCooldown] = useState(0);
   const cooldownRef = useRef(null);
 
-  const senderAddress = useMemo(
-    () => (demoEnabled ? getDemoData().mockWalletAddress : getSenderAddress()),
-    [demoEnabled, getDemoData],
-  );
+  const walletSenderAddress = useSenderAddress();
+  const senderAddress = demoEnabled ? getDemoData().mockWalletAddress : walletSenderAddress;
   const realBalanceState = useBalance(senderAddress);
   const { displayBalance: balance, sendTipInDemo, pendingTransaction } = useSendTipWithDemo(realBalanceState.balance);
   const balanceLoading = demoEnabled ? false : realBalanceState.loading;
@@ -99,8 +98,7 @@ export default function SendTip({ addToast }) {
         }, 1000);
     }, []);
 
-    const handleRecipientChange = (value) => {
-        setRecipient(value);
+    const validateRecipient = useCallback((value) => {
         resetBlockCheck();
         setRecipientError('');
 
@@ -109,9 +107,22 @@ export default function SendTip({ addToast }) {
             return;
         }
 
+        if (value.trim() === senderAddress) {
+            setRecipientError('You cannot send a tip to yourself');
+            return;
+        }
+
         if (value) {
             checkBlocked(value);
         }
+    }, [checkBlocked, resetBlockCheck, senderAddress]);
+
+    useEffect(() => {
+        validateRecipient(recipient);
+    }, [recipient, validateRecipient]);
+
+    const handleRecipientChange = (value) => {
+        setRecipient(value);
     };
 
     const handleAmountChange = (value) => {
