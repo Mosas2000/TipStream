@@ -15,6 +15,8 @@ import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedErro
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
+const METRICS_AUTH_TOKEN = process.env.METRICS_AUTH_TOKEN || "";
+const HEALTH_CHECK_ALWAYS_ENABLED = process.env.HEALTH_CHECK_ALWAYS_ENABLED !== "false";
 const STORAGE_MODE = process.env.CHAINHOOK_STORAGE || (process.env.NODE_ENV === "test" ? "memory" : "postgres");
 const RETENTION_DAYS = parseRetentionDays(process.env.CHAINHOOK_RETENTION_DAYS, 30);
 const DATABASE_URL = process.env.DATABASE_URL || "";
