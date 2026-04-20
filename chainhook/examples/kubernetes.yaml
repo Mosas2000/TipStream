@@ -1,0 +1,204 @@
+# Example Kubernetes Deployment for Chainhook
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chainhook-config
+  namespace: default
+data:
+  LOG_LEVEL: "info"
+  HEALTH_CHECK_ALWAYS_ENABLED: "true"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chainhook-secrets
+  namespace: default
+type: Opaque
+stringData:
+  METRICS_AUTH_TOKEN: ""  # Set via kubectl or secrets management
+  DATABASE_URL: ""        # Set via secure secrets manager
+  REDIS_URL: ""           # Set via secure secrets manager
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chainhook
+  namespace: default
+  labels:
+    app: chainhook
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: chainhook
+  template:
+    metadata:
+      labels:
+        app: chainhook
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3100"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: chainhook
+        image: tipstream-chainhook:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3100
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: chainhook-config
+        - secretRef:
+            name: chainhook-secrets
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chainhook
+  namespace: default
+  labels:
+    app: chainhook
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3100
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: chainhook
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: chainhook-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: chainhook
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: chainhook-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: chainhook
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 3100
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3100
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: default
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 53    # DNS
+    - protocol: UDP
+      port: 53
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: chainhook-metrics
+  namespace: default
+  labels:
+    app: chainhook
+spec:
+  selector:
+    matchLabels:
+      app: chainhook
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    bearerTokenSecret:
+      name: chainhook-secrets
+      key: METRICS_AUTH_TOKEN
