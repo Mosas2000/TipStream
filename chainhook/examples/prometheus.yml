@@ -1,0 +1,50 @@
+# Example Prometheus Configuration for Chainhook Metrics
+
+# Global configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'stacks-mainnet'
+    environment: 'production'
+
+# Alerting rules
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - localhost:9093
+
+# Load alert rules
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Chainhook metrics - requires bearer token authentication
+  - job_name: 'chainhook-metrics'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    bearer_token: '{{ METRICS_AUTH_TOKEN }}'
+    static_configs:
+      - targets: ['localhost:3100']
+        labels:
+          service: 'chainhook'
+          component: 'metrics'
+
+  # Chainhook health check - no authentication required
+  - job_name: 'chainhook-health'
+    metrics_path: '/health'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ['localhost:3100']
+        labels:
+          service: 'chainhook'
+          component: 'health'
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -15,6 +15,8 @@ import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedErro
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
+const METRICS_AUTH_TOKEN = process.env.METRICS_AUTH_TOKEN || "";
+const HEALTH_CHECK_ALWAYS_ENABLED = process.env.HEALTH_CHECK_ALWAYS_ENABLED !== "false";
 const STORAGE_MODE = process.env.CHAINHOOK_STORAGE || (process.env.NODE_ENV === "test" ? "memory" : "postgres");
 const RETENTION_DAYS = parseRetentionDays(process.env.CHAINHOOK_RETENTION_DAYS, 30);
 const DATABASE_URL = process.env.DATABASE_URL || "";
@@ -400,7 +402,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { bypasses, total: bypasses.length });
   }
 
-  // GET /health -- health check endpoint
+  // GET /health -- health check endpoint (always accessible for orchestration)
   if (req.method === "GET" && path === "/health") {
     const store = await getEventStore();
     const storage = await store.health();
@@ -413,8 +415,14 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // GET /metrics -- service metrics for monitoring
+  // GET /metrics -- service metrics for monitoring (gated by optional auth)
   if (req.method === "GET" && path === "/metrics") {
+    if (METRICS_AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, METRICS_AUTH_TOKEN)) {
+        return sendJson(res, 401, { error: "unauthorized", message: "metrics access requires valid authentication token" });
+      }
+    }
     const store = await getEventStore();
     const storage = await store.getStats();
     return sendJson(res, 200, {
