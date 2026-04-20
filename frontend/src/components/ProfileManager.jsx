@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { openContractCall } from '@stacks/connect';
 import {
     fetchCallReadOnlyFunction,
@@ -7,9 +7,10 @@ import {
     stringUtf8CV,
     PostConditionMode,
 } from '@stacks/transactions';
-import { network, appDetails, getSenderAddress } from '../utils/stacks';
+import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PROFILE, FN_UPDATE_PROFILE } from '../config/contracts';
 import { User, Save, Loader2, ImageOff } from 'lucide-react';
+import { useSenderAddress } from '../hooks/useSenderAddress';
 
 /**
  * Validate that a URL is safe to render as an avatar image.
@@ -36,7 +37,14 @@ export default function ProfileManager({ addToast }) {
     const [saving, setSaving] = useState(false);
     const [profileLoaded, setProfileLoaded] = useState(false);
 
-    const senderAddress = useMemo(() => getSenderAddress(), []);
+    const senderAddress = useSenderAddress();
+
+    const clearProfile = useCallback(() => {
+        setDisplayName('');
+        setBio('');
+        setAvatarUrl('');
+        setProfileLoaded(false);
+    }, []);
 
     /** Fetch the existing on-chain profile for the connected wallet. */
     const fetchProfile = useCallback(async () => {
@@ -58,21 +66,24 @@ export default function ProfileManager({ addToast }) {
                 setBio(profile['bio']?.value || '');
                 setAvatarUrl(profile['avatar-url']?.value || '');
                 setProfileLoaded(true);
+            } else {
+                clearProfile();
             }
         } catch (err) {
             console.error('Failed to fetch profile:', err.message || err);
         } finally {
             setLoading(false);
         }
-    }, [senderAddress]);
+    }, [senderAddress, clearProfile]);
 
     useEffect(() => {
         if (!senderAddress) {
+            clearProfile();
             setLoading(false);
             return;
         }
         void fetchProfile();
-    }, [senderAddress, fetchProfile]);
+    }, [senderAddress, fetchProfile, clearProfile]);
 
     /** Validate all form fields before submission. */
     const validateForm = () => {

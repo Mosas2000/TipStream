@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { openContractCall } from '@stacks/connect';
 import {
     fetchCallReadOnlyFunction,
@@ -11,11 +11,12 @@ import {
     Pc,
     FungibleConditionCode,
 } from '@stacks/transactions';
-import { network, appDetails, getSenderAddress } from '../utils/stacks';
+import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_TOKEN_WHITELISTED, FN_SEND_TOKEN_TIP } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { Coins, CheckCircle, XCircle, Loader2, Send } from 'lucide-react';
 import ConfirmDialog from './ui/confirm-dialog';
+import { useSenderAddress } from '../hooks/useSenderAddress';
 
 export default function TokenTip({ addToast }) {
     const [tokenContract, setTokenContract] = useState('');
@@ -29,8 +30,9 @@ export default function TokenTip({ addToast }) {
     const [tokenError, setTokenError] = useState('');
     const [recipientError, setRecipientError] = useState('');
     const [amountError, setAmountError] = useState('');
+    const [hasCheckedWhitelist, setHasCheckedWhitelist] = useState(false);
 
-    const senderAddress = useMemo(() => getSenderAddress(), []);
+    const senderAddress = useSenderAddress();
 
     const isValidStacksAddress = (address) => {
         if (!address) return false;
@@ -51,7 +53,23 @@ export default function TokenTip({ addToast }) {
         return { address: parts[0], name: parts[1] };
     };
 
-    const handleCheckWhitelist = async () => {
+    const validateRecipient = useCallback((value) => {
+        if (!value) {
+            setRecipientError('');
+            return;
+        }
+
+        const trimmed = value.trim();
+        if (!isValidStacksAddress(trimmed)) {
+            setRecipientError('Enter a valid Stacks address (SP... or SM...)');
+        } else if (trimmed === senderAddress) {
+            setRecipientError('Cannot send a tip to yourself');
+        } else {
+            setRecipientError('');
+        }
+    }, [senderAddress]);
+
+    const handleCheckWhitelist = useCallback(async () => {
         const tokenId = tokenContract.trim();
         if (!tokenId) return;
 
@@ -63,6 +81,7 @@ export default function TokenTip({ addToast }) {
         setCheckingWhitelist(true);
         setWhitelistStatus(null);
         setTokenError('');
+        setHasCheckedWhitelist(true);
 
         try {
             const result = await fetchCallReadOnlyFunction({
@@ -87,17 +106,26 @@ export default function TokenTip({ addToast }) {
         } finally {
             setCheckingWhitelist(false);
         }
-    };
+    }, [senderAddress, tokenContract]);
+
+    useEffect(() => {
+        validateRecipient(recipient);
+    }, [recipient, validateRecipient]);
+
+    useEffect(() => {
+        if (!hasCheckedWhitelist) return;
+
+        const tokenId = tokenContract.trim();
+        if (!tokenId || !isValidContractId(tokenId)) {
+            setWhitelistStatus(null);
+            return;
+        }
+
+        void handleCheckWhitelist();
+    }, [handleCheckWhitelist, hasCheckedWhitelist, tokenContract]);
 
     const handleRecipientChange = (value) => {
         setRecipient(value);
-        if (value && !isValidStacksAddress(value)) {
-            setRecipientError('Enter a valid Stacks address (SP... or SM...)');
-        } else if (value.trim() === senderAddress) {
-            setRecipientError('Cannot send a tip to yourself');
-        } else {
-            setRecipientError('');
-        }
     };
 
     const handleAmountChange = (value) => {
@@ -225,6 +253,7 @@ export default function TokenTip({ addToast }) {
                                     setTokenContract(e.target.value);
                                     setWhitelistStatus(null);
                                     setTokenError('');
+                                    setHasCheckedWhitelist(false);
                                 }}
                                 className={`flex-1 px-4 py-2.5 border rounded-xl text-sm bg-white dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all ${
                                     tokenError
