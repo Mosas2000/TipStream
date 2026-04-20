@@ -1,0 +1,135 @@
+# Example Docker Compose for Chainhook with Prometheus Monitoring
+
+version: '3.8'
+
+services:
+  # Chainhook service with metrics authentication enabled
+  chainhook:
+    image: tipstream-chainhook:latest
+    container_name: chainhook-prod
+    ports:
+      - "3100:3100"
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/chainhook
+      REDIS_URL: redis://redis:6379
+      METRICS_AUTH_TOKEN: ${METRICS_AUTH_TOKEN}
+      HEALTH_CHECK_ALWAYS_ENABLED: "true"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: chainhook-db
+    environment:
+      POSTGRES_DB: chainhook
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: chainhook-cache
+    ports:
+      - "6379:6379"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Prometheus monitoring (scrapes metrics endpoint)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-chainhook
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./examples/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    environment:
+      METRICS_AUTH_TOKEN: ${METRICS_AUTH_TOKEN}
+    depends_on:
+      - chainhook
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-chainhook
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Nginx reverse proxy (optional - for production deployments)
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-chainhook
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./examples/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - chainhook
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  nginx_logs:
+
+networks:
+  monitoring:
+    driver: bridge
