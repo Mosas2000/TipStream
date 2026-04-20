@@ -402,7 +402,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { bypasses, total: bypasses.length });
   }
 
-  // GET /health -- health check endpoint
+  // GET /health -- health check endpoint (always accessible for orchestration)
   if (req.method === "GET" && path === "/health") {
     const store = await getEventStore();
     const storage = await store.health();
@@ -415,8 +415,14 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // GET /metrics -- service metrics for monitoring
+  // GET /metrics -- service metrics for monitoring (gated by optional auth)
   if (req.method === "GET" && path === "/metrics") {
+    if (METRICS_AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, METRICS_AUTH_TOKEN)) {
+        return sendJson(res, 401, { error: "unauthorized", message: "metrics access requires valid authentication token" });
+      }
+    }
     const store = await getEventStore();
     const storage = await store.getStats();
     return sendJson(res, 200, {
