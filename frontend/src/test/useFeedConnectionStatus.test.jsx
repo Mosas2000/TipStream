@@ -86,6 +86,26 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.lastProbeError).toBe('Network error');
     });
 
+    it('marks API degraded when probe latency is high', async () => {
+        let t = 0;
+        vi.spyOn(Date, 'now').mockImplementation(() => {
+            t += 3000;
+            return t;
+        });
+
+        global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+        const { result } = renderHook(() => useFeedConnectionStatus());
+
+        await act(async () => {
+            await flushMicrotasks();
+        });
+
+        expect(result.current.apiStatus).toBe('degraded');
+        expect(result.current.status).toBe('degraded');
+        expect(result.current.apiReachable).toBe(true);
+        expect(result.current.apiLatencyMs).toBeGreaterThanOrEqual(2500);
+    });
+
     it('runs the probe again on the polling interval while online', async () => {
         global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
         const { result } = renderHook(() => useFeedConnectionStatus());
