@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseClarityValue } from '../lib/admin-contract';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { fetchCurrentFee, parseClarityValue } from '../lib/admin-contract';
 
 describe('parseClarityValue', () => {
     describe('null and invalid inputs', () => {
@@ -91,5 +91,32 @@ describe('parseClarityValue', () => {
         it('handles 0x prefix on none', () => {
             expect(parseClarityValue('0x09')).toBeNull();
         });
+    });
+});
+
+describe('fetchCurrentFee', () => {
+    beforeEach(() => {
+        global.fetch = vi.fn();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('calls the current fee read-only and returns the decoded number', async () => {
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ result: '0x070100000000000000000000000000000032' }),
+        });
+
+        const fee = await fetchCurrentFee();
+
+        expect(fee).toBe(50);
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+
+        const [url, options] = global.fetch.mock.calls[0];
+        expect(url).toContain('/get-current-fee-basis-points');
+        expect(options.method).toBe('POST');
+        expect(JSON.parse(options.body)).toMatchObject({ arguments: [] });
     });
 });

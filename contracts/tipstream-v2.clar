@@ -518,6 +518,10 @@
     (ok (var-get pending-owner))
 )
 
+(define-read-only (get-current-fee-basis-points)
+    (ok (var-get current-fee-basis-points))
+)
+
 (define-read-only (get-fee-for-amount (amount uint))
     (ok (calculate-fee amount))
 )

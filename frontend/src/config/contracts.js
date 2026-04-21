@@ -41,3 +41,4 @@ export const FN_WHITELIST_TOKEN = 'whitelist-token';
 // Stats / read-only
 export const FN_GET_USER_STATS = 'get-user-stats';
 export const FN_GET_PLATFORM_STATS = 'get-platform-stats';
+export const FN_GET_CURRENT_FEE_BASIS_POINTS = 'get-current-fee-basis-points';

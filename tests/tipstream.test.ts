@@ -123,6 +123,17 @@ describe("TipStream Contract Tests", () => {
         });
     });
 
+    it("exposes the current fee basis points via read-only", () => {
+        const { result } = simnet.callReadOnlyFn(
+            "tipstream",
+            "get-current-fee-basis-points",
+            [],
+            wallet1
+        );
+
+        expect(result).toBeOk(Cl.uint(50));
+    });
+
     it("fee calculation is correct", () => {
         const { result } = simnet.callReadOnlyFn(
             "tipstream",
@@ -132,6 +143,22 @@ describe("TipStream Contract Tests", () => {
         );
 
         expect(result).toBeOk(Cl.uint(5000));
+    });
+
+    it("updates the current fee basis points when the owner changes it", () => {
+        const setFee = simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(75)], deployer);
+        expect(setFee.result).toBeOk(Cl.bool(true));
+
+        const { result } = simnet.callReadOnlyFn(
+            "tipstream",
+            "get-current-fee-basis-points",
+            [],
+            wallet1
+        );
+
+        expect(result).toBeOk(Cl.uint(75));
+
+        simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
     });
 
     it("enforces minimum fee of 1 uSTX when raw calculation truncates to zero", () => {
