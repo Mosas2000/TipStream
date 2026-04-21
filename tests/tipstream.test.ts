@@ -123,6 +123,17 @@ describe("TipStream Contract Tests", () => {
         });
     });
 
+    it("exposes the current fee basis points via read-only", () => {
+        const { result } = simnet.callReadOnlyFn(
+            "tipstream",
+            "get-current-fee-basis-points",
+            [],
+            wallet1
+        );
+
+        expect(result).toBeOk(Cl.uint(50));
+    });
+
     it("fee calculation is correct", () => {
         const { result } = simnet.callReadOnlyFn(
             "tipstream",
