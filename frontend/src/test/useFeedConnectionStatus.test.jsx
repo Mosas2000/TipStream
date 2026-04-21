@@ -143,6 +143,25 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.apiReachable).toBeNull();
     });
 
+    it('probes immediately on online transition', async () => {
+        setNavigatorOnline(false);
+        global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+        renderHook(() => useFeedConnectionStatus());
+
+        expect(global.fetch).not.toHaveBeenCalled();
+
+        act(() => {
+            setNavigatorOnline(true);
+            window.dispatchEvent(new Event('online'));
+        });
+
+        await act(async () => {
+            await flushMicrotasks();
+        });
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it('reports degraded status when failures reach threshold and API is reachable', async () => {
         global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
         const { result } = renderHook(() => useFeedConnectionStatus());
