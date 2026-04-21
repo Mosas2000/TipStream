@@ -110,7 +110,7 @@ export function useFeedConnectionStatus() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [probeApiHealth]);
+  }, []);
 
   useEffect(() => {
     if (!isOnline) return;
