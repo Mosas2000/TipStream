@@ -9,12 +9,6 @@ const DEFAULT_METRICS = {
   tipsConfirmed: 0,
   tipsCancelled: 0,
   tipsFailed: 0,
-  batchTipsStarted: 0,
-  batchTipsSubmitted: 0,
-  batchTipsConfirmed: 0,
-  batchTipsFailed: 0,
-  batchTipsCancelled: 0,
-  batchSizes: {},
   tabNavigations: {},
   routeRedirects: {},
   errors: {},
@@ -30,7 +24,6 @@ function freshDefaults() {
     tabNavigations: {},
     routeRedirects: {},
     errors: {},
-    batchSizes: {},
     firstSeen: Date.now(),
     lastSeen: Date.now(),
     sessions: 1,
@@ -106,39 +99,6 @@ export const analytics = {
     increment('tipsFailed');
   },
 
-  /** Record that a user opened the batch tip form. */
-  trackBatchTipStarted() {
-    increment('batchTipsStarted');
-  },
-
-  /** Record that a batch tip transaction was submitted to the wallet. */
-  trackBatchTipSubmitted() {
-    increment('batchTipsSubmitted');
-  },
-
-  /**
-   * Record the number of recipients in a batch tip.
-   * @param {number} size - Number of recipients in the batch.
-   */
-  trackBatchSize(size) {
-    incrementMap('batchSizes', String(size));
-  },
-
-  /** Record that a batch tip transaction was confirmed on-chain. */
-  trackBatchTipConfirmed() {
-    increment('batchTipsConfirmed');
-  },
-
-  /** Record that a batch tip transaction failed or was rejected. */
-  trackBatchTipFailed() {
-    increment('batchTipsFailed');
-  },
-
-  /** Record that a user cancelled the batch tip confirmation dialog. */
-  trackBatchTipCancelled() {
-    increment('batchTipsCancelled');
-  },
-
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
@@ -182,15 +142,6 @@ export const analytics = {
       ? (((m.tipsStarted - m.tipsConfirmed) / m.tipsStarted) * 100).toFixed(1)
       : '0.0';
 
-    const batchStarted = m.batchTipsStarted || 0;
-    const batchConfirmed = m.batchTipsConfirmed || 0;
-    const batchCompletionRate = batchStarted > 0
-      ? ((batchConfirmed / batchStarted) * 100).toFixed(1)
-      : '0.0';
-    const batchDropOffRate = batchStarted > 0
-      ? (((batchStarted - batchConfirmed) / batchStarted) * 100).toFixed(1)
-      : '0.0';
-
     const sortedTabs = Object.entries(m.tabNavigations || {})
       .sort((a, b) => b[1] - a[1]);
 
@@ -204,12 +155,6 @@ export const analytics = {
     const totalPageViews = Object.values(m.pageViews || {}).reduce((a, b) => a + b, 0);
     const totalErrors = Object.values(m.errors || {}).reduce((a, b) => a + b, 0);
 
-    const batchSizeEntries = Object.entries(m.batchSizes || {});
-    const totalBatches = batchSizeEntries.reduce((sum, [, count]) => sum + count, 0);
-    const weightedSum = batchSizeEntries.reduce((sum, [size, count]) => sum + Number(size) * count, 0);
-    const averageBatchSize = totalBatches > 0 ? (weightedSum / totalBatches).toFixed(1) : '0.0';
-    const sortedBatchSizes = batchSizeEntries.sort((a, b) => b[1] - a[1]);
-
     return {
       totalPageViews,
       walletConnections: m.walletConnections,
@@ -218,15 +163,6 @@ export const analytics = {
       tipsConfirmed: m.tipsConfirmed,
       tipsCancelled: m.tipsCancelled,
       tipsFailed: m.tipsFailed,
-      batchTipsStarted: m.batchTipsStarted || 0,
-      batchTipsSubmitted: m.batchTipsSubmitted || 0,
-      batchTipsConfirmed: m.batchTipsConfirmed || 0,
-      batchTipsFailed: m.batchTipsFailed || 0,
-      batchTipsCancelled: m.batchTipsCancelled || 0,
-      batchCompletionRate,
-      batchDropOffRate,
-      averageBatchSize,
-      sortedBatchSizes,
       tipCompletionRate,
       tipDropOffRate,
       sortedTabs,

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeTipFunnel,
-  computeBatchFunnel,
   computeWalletDropOff,
   identifyDropOffPoints,
   getFunnelBarWidth,
@@ -90,58 +89,6 @@ describe('telemetry-funnel', () => {
       const result = computeTipFunnel(summary);
       expect(result.cancelled).toBe(5);
       expect(result.failed).toBe(5);
-    });
-  });
-
-  describe('computeBatchFunnel', () => {
-    it('computes batch funnel stages', () => {
-      const summary = {
-        batchTipsStarted: 50,
-        batchTipsSubmitted: 40,
-        batchTipsConfirmed: 35,
-        batchTipsCancelled: 2,
-        batchTipsFailed: 3,
-        averageBatchSize: '3.5',
-      };
-
-      const result = computeBatchFunnel(summary);
-      expect(result.stages).toHaveLength(3);
-      expect(result.stages[0].count).toBe(50);
-      expect(result.stages[2].count).toBe(35);
-    });
-
-    it('calculates batch conversion rate', () => {
-      const summary = {
-        batchTipsStarted: 50,
-        batchTipsSubmitted: 40,
-        batchTipsConfirmed: 35,
-      };
-
-      const result = computeBatchFunnel(summary);
-      expect(result.overallConversion).toBe('70.0');
-    });
-
-    it('includes average batch size', () => {
-      const summary = {
-        batchTipsStarted: 50,
-        batchTipsSubmitted: 40,
-        batchTipsConfirmed: 35,
-        averageBatchSize: '4.2',
-      };
-
-      const result = computeBatchFunnel(summary);
-      expect(result.averageBatchSize).toBe('4.2');
-    });
-
-    it('handles zero batch tips', () => {
-      const summary = {
-        batchTipsStarted: 0,
-        batchTipsSubmitted: 0,
-        batchTipsConfirmed: 0,
-      };
-
-      const result = computeBatchFunnel(summary);
-      expect(result.overallConversion).toBe('0.0');
     });
   });
 

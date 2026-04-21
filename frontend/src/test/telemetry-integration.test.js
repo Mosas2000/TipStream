@@ -77,21 +77,6 @@ describe('telemetry integration', () => {
       expect(payload.summary.sortedErrors).toBeDefined();
     });
 
-    it('tracks batch operations', () => {
-      analytics.trackBatchTipStarted();
-      analytics.trackBatchTipStarted();
-      analytics.trackBatchSize(5);
-      analytics.trackBatchSize(3);
-      analytics.trackBatchTipSubmitted();
-      analytics.trackBatchTipConfirmed();
-
-      const summary = analytics.getSummary();
-      expect(summary.batchTipsStarted).toBe(2);
-      expect(summary.batchTipsSubmitted).toBe(1);
-      expect(summary.batchTipsConfirmed).toBe(1);
-      expect(summary.averageBatchSize).toBe('4.0');
-    });
-
     it('tracks Web Vitals performance', () => {
       analytics.trackPerformance('LCP', 2000, 'good');
       analytics.trackPerformance('CLS', 50, 'good');
@@ -162,7 +147,7 @@ describe('telemetry integration', () => {
 
     it('includes multiple routes in summary', () => {
       analytics.trackPageView('/send');
-      analytics.trackPageView('/batch');
+      analytics.trackPageView('/token-tip');
       analytics.trackPageView('/feed');
       analytics.trackPageView('/send');
 

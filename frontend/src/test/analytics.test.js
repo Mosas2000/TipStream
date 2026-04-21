@@ -58,7 +58,7 @@ describe('Analytics', () => {
     it('tracks errors by component', () => {
         analytics.trackError('SendTip', 'Network error');
         analytics.trackError('SendTip', 'Network error');
-        analytics.trackError('BatchTip', 'Timeout');
+        analytics.trackError('TokenTip', 'Timeout');
         const summary = analytics.getSummary();
         expect(summary.totalErrors).toBe(3);
         expect(summary.sortedErrors[0]).toEqual(['SendTip:Network error', 2]);
@@ -82,113 +82,10 @@ describe('Analytics', () => {
         expect(authKey.length).toBeLessThanOrEqual(200);
     });
 
-    it('tracks batch tip events', () => {
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipSubmitted();
-        const summary = analytics.getSummary();
-        expect(summary.batchTipsStarted).toBe(1);
-        expect(summary.batchTipsSubmitted).toBe(1);
-    });
-
-    it('tracks batch tip confirmed events', () => {
-        analytics.trackBatchTipConfirmed();
-        analytics.trackBatchTipConfirmed();
-        const summary = analytics.getSummary();
-        expect(summary.batchTipsConfirmed).toBe(2);
-    });
-
-    it('tracks batch tip failed events', () => {
-        analytics.trackBatchTipFailed();
-        const summary = analytics.getSummary();
-        expect(summary.batchTipsFailed).toBe(1);
-    });
-
-    it('tracks batch tip cancelled events', () => {
-        analytics.trackBatchTipCancelled();
-        analytics.trackBatchTipCancelled();
-        analytics.trackBatchTipCancelled();
-        const summary = analytics.getSummary();
-        expect(summary.batchTipsCancelled).toBe(3);
-    });
-
     it('computes zero rates when no tips started', () => {
         const summary = analytics.getSummary();
         expect(summary.tipCompletionRate).toBe('0.0');
         expect(summary.tipDropOffRate).toBe('0.0');
-        expect(summary.batchCompletionRate).toBe('0.0');
-        expect(summary.batchDropOffRate).toBe('0.0');
-    });
-
-    it('computes batch completion rate from started and confirmed', () => {
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipConfirmed();
-        analytics.trackBatchTipConfirmed();
-        const summary = analytics.getSummary();
-        expect(summary.batchCompletionRate).toBe('50.0');
-        expect(summary.batchDropOffRate).toBe('50.0');
-    });
-
-    it('tracks a complete batch tip funnel lifecycle', () => {
-        // 3 started, 2 submitted, 1 confirmed, 1 failed, 1 cancelled
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipSubmitted();
-        analytics.trackBatchTipSubmitted();
-        analytics.trackBatchTipConfirmed();
-        analytics.trackBatchTipFailed();
-        analytics.trackBatchTipCancelled();
-        const summary = analytics.getSummary();
-        expect(summary.batchTipsStarted).toBe(3);
-        expect(summary.batchTipsSubmitted).toBe(2);
-        expect(summary.batchTipsConfirmed).toBe(1);
-        expect(summary.batchTipsFailed).toBe(1);
-        expect(summary.batchTipsCancelled).toBe(1);
-        expect(summary.batchCompletionRate).toBe('33.3');
-    });
-
-    it('tracks batch sizes as a frequency map', () => {
-        analytics.trackBatchSize(3);
-        analytics.trackBatchSize(3);
-        analytics.trackBatchSize(5);
-        analytics.trackBatchSize(10);
-        const metrics = analytics.getMetrics();
-        expect(metrics.batchSizes['3']).toBe(2);
-        expect(metrics.batchSizes['5']).toBe(1);
-        expect(metrics.batchSizes['10']).toBe(1);
-    });
-
-    it('computes average batch size from recorded sizes', () => {
-        // 2 batches of 3, 1 batch of 5, 1 batch of 10 → (6+5+10)/4 = 5.25
-        analytics.trackBatchSize(3);
-        analytics.trackBatchSize(3);
-        analytics.trackBatchSize(5);
-        analytics.trackBatchSize(10);
-        const summary = analytics.getSummary();
-        expect(summary.averageBatchSize).toBe('5.3');
-    });
-
-    it('returns zero average batch size when no batches recorded', () => {
-        const summary = analytics.getSummary();
-        expect(summary.averageBatchSize).toBe('0.0');
-    });
-
-    it('sorts batch sizes by frequency descending', () => {
-        analytics.trackBatchSize(2);
-        analytics.trackBatchSize(5);
-        analytics.trackBatchSize(5);
-        analytics.trackBatchSize(5);
-        analytics.trackBatchSize(10);
-        analytics.trackBatchSize(10);
-        const summary = analytics.getSummary();
-        expect(summary.sortedBatchSizes).toEqual([
-            ['5', 3],
-            ['10', 2],
-            ['2', 1],
-        ]);
     });
 
     it('records firstSeen timestamp', () => {
@@ -202,17 +99,12 @@ describe('Analytics', () => {
         analytics.trackTipStarted();
         analytics.trackTipStarted();
         analytics.trackTipConfirmed();
-        analytics.trackBatchTipStarted();
-        analytics.trackBatchTipConfirmed();
         const before = analytics.getSummary();
         expect(before.tipsStarted).toBeGreaterThanOrEqual(2);
         expect(before.tipsConfirmed).toBeGreaterThanOrEqual(1);
-        expect(before.batchTipsStarted).toBeGreaterThanOrEqual(1);
         analytics.reset();
         const after = analytics.getSummary();
         expect(after.tipsStarted).toBe(0);
         expect(after.tipsConfirmed).toBe(0);
-        expect(after.batchTipsStarted).toBe(0);
-        expect(after.batchTipsConfirmed).toBe(0);
     });
 });

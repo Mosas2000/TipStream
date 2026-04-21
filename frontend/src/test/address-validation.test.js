@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 /**
  * The isValidStacksAddress validation function is defined inline in
- * SendTip, BatchTip, and TokenTip. This test verifies the regex pattern
+ * SendTip and TokenTip. This test verifies the regex pattern
  * used across all three components works correctly.
  */
 function isValidStacksAddress(address) {

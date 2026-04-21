@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { analytics } from '../lib/analytics';
 import { getEnvironmentLabel, getEnvironmentColor } from '../lib/telemetry-env';
 import { computeVitalsSummary } from '../lib/telemetry-vitals';
-import { computeTipFunnel, computeBatchFunnel, computeWalletDropOff, identifyDropOffPoints } from '../lib/telemetry-funnel';
+import { computeTipFunnel, computeWalletDropOff, identifyDropOffPoints } from '../lib/telemetry-funnel';
 import { downloadExport, exportToCsv, copyToClipboard } from '../lib/telemetry-export';
 import { isSinkEnabled, getSinkConfig, sendSnapshot } from '../lib/telemetry-sink';
 import { getStorageUsage } from '../lib/telemetry-storage';
@@ -120,7 +120,6 @@ export default function TelemetryDashboard({ addToast }) {
 
   const vitalsSummary = computeVitalsSummary(summary?.webVitals || {});
   const tipFunnel = computeTipFunnel(summary || {});
-  const batchFunnel = computeBatchFunnel(summary || {});
   const walletMetrics = computeWalletDropOff(summary || {});
   const dropOffIssues = identifyDropOffPoints(tipFunnel);
   const sinkEnabled = isSinkEnabled();
@@ -179,7 +178,6 @@ export default function TelemetryDashboard({ addToast }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FunnelPanel title="Tip Conversion Funnel" funnel={tipFunnel} />
-        <FunnelPanel title="Batch Tip Funnel" funnel={batchFunnel} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

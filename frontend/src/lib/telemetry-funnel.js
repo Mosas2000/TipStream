@@ -55,59 +55,6 @@ export function computeTipFunnel(summary) {
   };
 }
 
-export function computeBatchFunnel(summary) {
-  const {
-    batchTipsStarted,
-    batchTipsSubmitted,
-    batchTipsConfirmed,
-    batchTipsCancelled,
-    batchTipsFailed,
-    averageBatchSize,
-    sortedBatchSizes,
-  } = summary;
-
-  const stages = [
-    {
-      id: 'started',
-      label: 'Batch Started',
-      count: batchTipsStarted || 0,
-      dropOff: 0,
-      dropOffPercent: 0,
-    },
-    {
-      id: 'submitted',
-      label: 'Batch Submitted',
-      count: batchTipsSubmitted || 0,
-      dropOff: (batchTipsStarted || 0) - (batchTipsSubmitted || 0),
-      dropOffPercent: batchTipsStarted > 0
-        ? (((batchTipsStarted - batchTipsSubmitted) / batchTipsStarted) * 100)
-        : 0,
-    },
-    {
-      id: 'confirmed',
-      label: 'Batch Confirmed',
-      count: batchTipsConfirmed || 0,
-      dropOff: (batchTipsSubmitted || 0) - (batchTipsConfirmed || 0),
-      dropOffPercent: batchTipsSubmitted > 0
-        ? (((batchTipsSubmitted - batchTipsConfirmed) / batchTipsSubmitted) * 100)
-        : 0,
-    },
-  ];
-
-  const overallConversion = batchTipsStarted > 0
-    ? ((batchTipsConfirmed / batchTipsStarted) * 100).toFixed(1)
-    : '0.0';
-
-  return {
-    stages,
-    overallConversion,
-    cancelled: batchTipsCancelled || 0,
-    failed: batchTipsFailed || 0,
-    averageBatchSize: averageBatchSize || '0.0',
-    sortedBatchSizes: sortedBatchSizes || [],
-  };
-}
-
 export function computeWalletDropOff(summary) {
   const { walletConnections, walletDisconnections } = summary;
   const rawMetrics = summary.rawMetrics || {};
