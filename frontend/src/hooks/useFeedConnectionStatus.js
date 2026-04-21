@@ -7,7 +7,7 @@
  * reliability and enable graceful fallback behaviors.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
 
 const DEGRADATION_THRESHOLD = 3;
@@ -26,6 +26,7 @@ export function useFeedConnectionStatus() {
   const [apiReachable, setApiReachable] = useState(null);
   const [apiLatencyMs, setApiLatencyMs] = useState(null);
   const [apiProbing, setApiProbing] = useState(false);
+  const probeInFlightRef = useRef(false);
   const [lastProbeAt, setLastProbeAt] = useState(null);
   const [lastProbeError, setLastProbeError] = useState(null);
 
@@ -51,7 +52,9 @@ export function useFeedConnectionStatus() {
 
   const probeApiHealth = useCallback(async () => {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+    if (probeInFlightRef.current) return;
 
+    probeInFlightRef.current = true;
     setApiProbing(true);
 
     const start = Date.now();
@@ -82,6 +85,7 @@ export function useFeedConnectionStatus() {
     } finally {
       clearTimeout(timeoutId);
       setApiProbing(false);
+      probeInFlightRef.current = false;
     }
   }, [apiProbeUrl]);
 
