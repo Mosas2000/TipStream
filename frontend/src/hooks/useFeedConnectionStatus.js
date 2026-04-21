@@ -101,6 +101,17 @@ export function useFeedConnectionStatus() {
     };
   }, [probeApiHealth]);
 
+  useEffect(() => {
+    if (!isOnline) return;
+
+    probeApiHealth();
+    const intervalId = setInterval(probeApiHealth, API_PROBE_INTERVAL_MS);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [isOnline, probeApiHealth]);
+
   const getStatus = useCallback(() => {
     if (!isOnline) return 'offline';
     if (!apiHealthy) return 'degraded';
