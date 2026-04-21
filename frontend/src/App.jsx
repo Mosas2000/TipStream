@@ -18,12 +18,12 @@ import { usePageTitle } from './hooks/usePageTitle';
 import { useSessionSync } from './hooks/useSessionSync';
 import { useDemoMode } from './context/DemoContext';
 import {
-  ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
+  ROUTE_SEND, ROUTE_TOKEN_TIP, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
   ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
 
 const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
@@ -35,7 +35,6 @@ const RecentTips = lazy(() => import('./components/RecentTips'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const ProfileManager = lazy(() => import('./components/ProfileManager'));
 const BlockManager = lazy(() => import('./components/BlockManager'));
-const BatchTip = lazy(() => import('./components/BatchTip'));
 const TokenTip = lazy(() => import('./components/TokenTip'));
 const NotFound = lazy(() => import('./components/NotFound'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
@@ -143,7 +142,6 @@ function App() {
   const navItems = useMemo(() => {
     const allItems = [
       { path: ROUTE_SEND, label: 'Send Tip', icon: Zap },
-      { path: ROUTE_BATCH, label: 'Batch', icon: Users },
       { path: ROUTE_TOKEN_TIP, label: 'Token Tip', icon: Coins },
       { path: ROUTE_FEED, label: 'Live Feed', icon: Radio },
       { path: ROUTE_LEADERBOARD, label: 'Leaderboard', icon: Trophy },
@@ -254,18 +252,6 @@ function App() {
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_SEND}>
                           <SendTip addToast={addToast} />
-                        </RequireAuth>
-                      )
-                    } 
-                  />
-                  <Route 
-                    path={ROUTE_BATCH} 
-                    element={
-                      userData || demoEnabled ? (
-                        <BatchTip addToast={addToast} />
-                      ) : (
-                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_BATCH}>
-                          <BatchTip addToast={addToast} />
                         </RequireAuth>
                       )
                     } 

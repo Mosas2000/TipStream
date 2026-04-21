@@ -39,11 +39,6 @@ export interface SendTipArgs {
     message: string;
 }
 
-export interface BatchTipEntry {
-    recipient: string;
-    amount: string;
-}
-
 export interface PendingTransaction {
     txId: string;
     recipient: string;

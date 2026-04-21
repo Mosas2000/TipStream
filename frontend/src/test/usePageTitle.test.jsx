@@ -10,7 +10,6 @@ import {
   ROUTE_STATS,
   ROUTE_PROFILE,
   ROUTE_BLOCK,
-  ROUTE_BATCH,
   ROUTE_TOKEN_TIP,
   ROUTE_ADMIN,
   ROUTE_TITLES,
@@ -70,11 +69,6 @@ describe('usePageTitle', () => {
   it('sets the title for the /block route', () => {
     renderHook(() => usePageTitle(), { wrapper: wrapper(ROUTE_BLOCK) });
     expect(document.title).toBe(ROUTE_TITLES[ROUTE_BLOCK]);
-  });
-
-  it('sets the title for the /batch route', () => {
-    renderHook(() => usePageTitle(), { wrapper: wrapper(ROUTE_BATCH) });
-    expect(document.title).toBe(ROUTE_TITLES[ROUTE_BATCH]);
   });
 
   it('sets the title for the /token-tip route', () => {

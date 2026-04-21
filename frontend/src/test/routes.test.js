@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   ROUTE_HOME,
   ROUTE_SEND,
-  ROUTE_BATCH,
   ROUTE_TOKEN_TIP,
   ROUTE_FEED,
   ROUTE_LEADERBOARD,
@@ -30,7 +29,6 @@ describe('Route constants', () => {
   const ALL_ROUTES = [
     ROUTE_HOME,
     ROUTE_SEND,
-    ROUTE_BATCH,
     ROUTE_TOKEN_TIP,
     ROUTE_FEED,
     ROUTE_LEADERBOARD,
@@ -69,10 +67,6 @@ describe('Route constants', () => {
     expect(ROUTE_SEND).toBe('/send');
   });
 
-  it('ROUTE_BATCH is "/batch"', () => {
-    expect(ROUTE_BATCH).toBe('/batch');
-  });
-
   it('ROUTE_TOKEN_TIP is "/token-tip"', () => {
     expect(ROUTE_TOKEN_TIP).toBe('/token-tip');
   });
@@ -109,7 +103,6 @@ describe('Route constants', () => {
 describe('ROUTE_LABELS', () => {
   it('has a label for every navigable route', () => {
     expect(ROUTE_LABELS[ROUTE_SEND]).toBeDefined();
-    expect(ROUTE_LABELS[ROUTE_BATCH]).toBeDefined();
     expect(ROUTE_LABELS[ROUTE_TOKEN_TIP]).toBeDefined();
     expect(ROUTE_LABELS[ROUTE_FEED]).toBeDefined();
     expect(ROUTE_LABELS[ROUTE_LEADERBOARD]).toBeDefined();
@@ -138,7 +131,7 @@ describe('ROUTE_LABELS', () => {
 
 describe('ROUTE_META', () => {
   const NAVIGABLE_ROUTES = [
-    ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
+    ROUTE_SEND, ROUTE_TOKEN_TIP, ROUTE_FEED,
     ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
     ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN,
   ];
@@ -186,7 +179,7 @@ describe('ROUTE_META', () => {
   });
 
   it('authenticated routes require authentication', () => {
-    const authRequiredRoutes = [ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_BLOCK];
+    const authRequiredRoutes = [ROUTE_SEND, ROUTE_TOKEN_TIP, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_BLOCK];
     for (const route of authRequiredRoutes) {
       expect(ROUTE_META[route].requiresAuth).toBe(true);
     }

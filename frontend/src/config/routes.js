@@ -26,12 +26,6 @@ export const ROUTE_HOME = '/';
 export const ROUTE_SEND = '/send';
 
 /**
- * Send tips to multiple recipients at once.
- * @type {string}
- */
-export const ROUTE_BATCH = '/batch';
-
-/**
  * Send a token-based tip (SIP-010).
  * @type {string}
  */
@@ -99,7 +93,6 @@ export const DEFAULT_AUTHENTICATED_ROUTE = ROUTE_SEND;
  */
 export const ROUTE_LABELS = {
   [ROUTE_SEND]: 'Send Tip',
-  [ROUTE_BATCH]: 'Batch',
   [ROUTE_TOKEN_TIP]: 'Token Tip',
   [ROUTE_FEED]: 'Live Feed',
   [ROUTE_LEADERBOARD]: 'Leaderboard',
@@ -121,7 +114,6 @@ export const ROUTE_LABELS = {
  */
 export const ROUTE_TITLES = {
   [ROUTE_SEND]: 'Send Tip -- TipStream',
-  [ROUTE_BATCH]: 'Batch Tip -- TipStream',
   [ROUTE_TOKEN_TIP]: 'Token Tip -- TipStream',
   [ROUTE_FEED]: 'Live Feed -- TipStream',
   [ROUTE_LEADERBOARD]: 'Leaderboard -- TipStream',
@@ -152,11 +144,6 @@ export const DEFAULT_TITLE = 'TipStream';
 export const ROUTE_META = {
   [ROUTE_SEND]: {
     description: 'Send a single STX micro-tip to any Stacks address.',
-    requiresAuth: true,
-    adminOnly: false,
-  },
-  [ROUTE_BATCH]: {
-    description: 'Tip up to 50 recipients in one transaction.',
     requiresAuth: true,
     adminOnly: false,
   },

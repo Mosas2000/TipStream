@@ -6,7 +6,6 @@ import { TipProvider } from '../context/TipContext';
 import {
   ROUTE_HOME,
   ROUTE_SEND,
-  ROUTE_BATCH,
   ROUTE_TOKEN_TIP,
   ROUTE_FEED,
   ROUTE_LEADERBOARD,
@@ -122,10 +121,6 @@ vi.mock('../components/BlockManager', () => ({
   default: () => <div data-testid="block-manager-page">BlockManager Page</div>,
 }));
 
-vi.mock('../components/BatchTip', () => ({
-  default: () => <div data-testid="batch-tip-page">BatchTip Page</div>,
-}));
-
 vi.mock('../components/TokenTip', () => ({
   default: () => <div data-testid="token-tip-page">TokenTip Page</div>,
 }));
@@ -208,12 +203,6 @@ describe('App routing', () => {
   it('renders BlockManager at /block', async () => {
     renderWithRouter(ROUTE_BLOCK);
     const page = await screen.findByTestId('block-manager-page');
-    expect(page).toBeInTheDocument();
-  });
-
-  it('renders BatchTip at /batch', async () => {
-    renderWithRouter(ROUTE_BATCH);
-    const page = await screen.findByTestId('batch-tip-page');
     expect(page).toBeInTheDocument();
   });
 

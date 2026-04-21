@@ -22,8 +22,6 @@ export const APP_URL = import.meta.env.VITE_APP_URL || 'https://tipstream-silk.v
 // Tipping
 export const FN_SEND_CATEGORIZED_TIP = 'send-categorized-tip';
 export const FN_TIP_A_TIP = 'tip-a-tip';
-export const FN_SEND_BATCH_TIPS = 'send-batch-tips';
-export const FN_SEND_BATCH_TIPS_STRICT = 'send-batch-tips-strict';
 export const FN_SEND_TOKEN_TIP = 'send-token-tip';
 
 // Profile
