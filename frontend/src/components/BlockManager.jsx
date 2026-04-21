@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { openContractCall } from '@stacks/connect';
 import {
     fetchCallReadOnlyFunction,
@@ -6,10 +6,11 @@ import {
     principalCV,
     PostConditionMode,
 } from '@stacks/transactions';
-import { network, appDetails, getSenderAddress } from '../utils/stacks';
+import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_USER_BLOCKED, FN_TOGGLE_BLOCK_USER } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { ShieldBan, Search, UserX, UserCheck, Loader2 } from 'lucide-react';
+import { useSenderAddress } from '../hooks/useSenderAddress';
 
 export default function BlockManager({ addToast }) {
     const [addressInput, setAddressInput] = useState('');
@@ -18,7 +19,7 @@ export default function BlockManager({ addToast }) {
     const [toggling, setToggling] = useState(false);
     const [blockedList, setBlockedList] = useState([]);
 
-    const senderAddress = useMemo(() => getSenderAddress(), []);
+    const senderAddress = useSenderAddress();
 
     const isValidStacksAddress = (address) => {
         if (!address) return false;
