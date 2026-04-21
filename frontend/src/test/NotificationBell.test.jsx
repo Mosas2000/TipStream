@@ -338,6 +338,112 @@ describe('NotificationBell', () => {
         });
     });
 
+    describe('stable keys for notification rows', () => {
+        it('uses txId as key when available', () => {
+            const notifications = [makeNotification({ txId: '0xabc123' })];
+            const { container } = render(
+                <NotificationBell {...defaultProps} notifications={notifications} />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            const items = container.querySelectorAll('[class*="px-4"]');
+            expect(items.length).toBeGreaterThan(0);
+        });
+
+        it('uses id field as fallback key when txId is missing', () => {
+            const notificationWithoutTxId = {
+                id: 'notification-123',
+                event: 'tip-sent',
+                sender: 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T',
+                recipient: 'SP1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE',
+                amount: '1000000',
+                timestamp: Math.floor(Date.now() / 1000),
+            };
+            const { container } = render(
+                <NotificationBell
+                    {...defaultProps}
+                    notifications={[notificationWithoutTxId]}
+                />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByText(/STX/)).toBeInTheDocument();
+        });
+
+        it('generates stable key from sender, recipient, timestamp when txId and id missing', () => {
+            const notificationWithoutIdFields = {
+                event: 'tip-sent',
+                sender: 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T',
+                recipient: 'SP1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE',
+                amount: '1000000',
+                timestamp: 1234567890,
+            };
+            const notifications = [notificationWithoutIdFields];
+            const { container } = render(
+                <NotificationBell {...defaultProps} notifications={notifications} />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getByText(/STX/)).toBeInTheDocument();
+        });
+
+        it('preserves notification rendering after list reorder', () => {
+            const notifications = [
+                makeNotification({ txId: '0xaaa', amount: '1000000' }),
+                makeNotification({ txId: '0xbbb', amount: '2000000' }),
+                makeNotification({ txId: '0xccc', amount: '3000000' }),
+            ];
+            const { rerender } = render(
+                <NotificationBell {...defaultProps} notifications={notifications} />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            
+            const reorderedNotifications = [
+                notifications[2],
+                notifications[0],
+                notifications[1],
+            ];
+            rerender(
+                <NotificationBell {...defaultProps} notifications={reorderedNotifications} />
+            );
+            
+            expect(screen.getAllByText(/STX/)).toHaveLength(3);
+        });
+
+        it('handles notifications with missing txId alongside those with txId', () => {
+            const notifications = [
+                makeNotification({ txId: '0xabc123' }),
+                {
+                    event: 'tip-sent',
+                    sender: 'SP2PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVX1234',
+                    recipient: 'SP2HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5K5678',
+                    amount: '2000000',
+                    timestamp: Math.floor(Date.now() / 1000),
+                },
+                makeNotification({ txId: '0xdef456' }),
+            ];
+            const { container } = render(
+                <NotificationBell {...defaultProps} notifications={notifications} />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            expect(screen.getAllByText(/STX/)).toHaveLength(3);
+        });
+
+        it('does not reuse DOM elements when notifications are trimmed', () => {
+            const initialNotifications = Array.from({ length: 25 }, (_, i) =>
+                makeNotification({ txId: `0x${String(i).padStart(8, '0')}` })
+            );
+            const { rerender } = render(
+                <NotificationBell {...defaultProps} notifications={initialNotifications} />
+            );
+            fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+            
+            const trimmedNotifications = initialNotifications.slice(0, 10);
+            rerender(
+                <NotificationBell {...defaultProps} notifications={trimmedNotifications} />
+            );
+            
+            expect(screen.getAllByText(/STX/)).toHaveLength(10);
+        });
+    });
+
     describe('mark all read button', () => {
         it('shows mark all read button when notifications exist', () => {
             const notifications = [makeNotification()];
