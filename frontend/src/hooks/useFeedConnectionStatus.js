@@ -79,8 +79,18 @@ export function useFeedConnectionStatus() {
   }, [apiProbeUrl]);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = () => {
+      setIsOnline(true);
+      probeApiHealth();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      setApiReachable(null);
+      setApiLatencyMs(null);
+      setLastProbeAt(null);
+      setLastProbeError(null);
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -89,7 +99,7 @@ export function useFeedConnectionStatus() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [probeApiHealth]);
 
   const getStatus = useCallback(() => {
     if (!isOnline) return 'offline';
