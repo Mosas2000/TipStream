@@ -1,12 +1,14 @@
 export function getTipRowKey(tip) {
-  const tipId = tip?.tipId;
-  if (tipId !== undefined && tipId !== null && String(tipId) !== '') {
-    return `tip:${String(tipId)}`;
+  const rawTipId = tip?.tipId;
+  if (rawTipId !== undefined && rawTipId !== null) {
+    const tipId = String(rawTipId).trim();
+    if (tipId) return `tip:${tipId}`;
   }
 
-  const txId = tip?.txId;
-  if (txId !== undefined && txId !== null && String(txId) !== '') {
-    return `tx:${String(txId)}`;
+  const rawTxId = tip?.txId;
+  if (rawTxId !== undefined && rawTxId !== null) {
+    const txId = String(rawTxId).trim();
+    if (txId) return `tx:${txId}`;
   }
 
   const sender = tip?.sender ?? 'unknown';

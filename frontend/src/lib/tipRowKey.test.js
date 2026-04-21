@@ -6,12 +6,20 @@ describe('getTipRowKey', () => {
     expect(getTipRowKey({ tipId: '123' })).toBe('tip:123');
   });
 
+  it('trims whitespace from tipId', () => {
+    expect(getTipRowKey({ tipId: '  123  ' })).toBe('tip:123');
+  });
+
   it('handles numeric tipId', () => {
     expect(getTipRowKey({ tipId: 0 })).toBe('tip:0');
   });
 
   it('uses txId when tipId is missing', () => {
     expect(getTipRowKey({ txId: '0xabc' })).toBe('tx:0xabc');
+  });
+
+  it('trims whitespace from txId', () => {
+    expect(getTipRowKey({ tipId: '', txId: '  0xabc  ' })).toBe('tx:0xabc');
   });
 
   it('builds a fingerprint when tipId and txId are missing', () => {
