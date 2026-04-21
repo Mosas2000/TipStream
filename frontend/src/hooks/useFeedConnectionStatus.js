@@ -7,10 +7,13 @@
  * reliability and enable graceful fallback behaviors.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { STACKS_API_BASE } from '../config/contracts';
 
-const CONNECTION_TIMEOUT_MS = 5000;
 const DEGRADATION_THRESHOLD = 3;
+const API_PROBE_PATH = '/v2/info';
+const API_PROBE_INTERVAL_MS = 30_000;
+const API_PROBE_TIMEOUT_MS = 5_000;
 
 export function useFeedConnectionStatus() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
