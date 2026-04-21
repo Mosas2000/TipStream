@@ -88,7 +88,6 @@ export function useFeedConnectionStatus() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      probeApiHealth();
     };
 
     const handleOffline = () => {
