@@ -50,7 +50,7 @@ export function useFeedConnectionStatus() {
   }, [recordFailure]);
 
   const probeApiHealth = useCallback(async () => {
-    if (!isOnline) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 
     setApiProbing(true);
 
@@ -83,7 +83,7 @@ export function useFeedConnectionStatus() {
       clearTimeout(timeoutId);
       setApiProbing(false);
     }
-  }, [apiProbeUrl, isOnline]);
+  }, [apiProbeUrl]);
 
   useEffect(() => {
     const handleOnline = () => {
