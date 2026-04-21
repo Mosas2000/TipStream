@@ -48,6 +48,8 @@ export function useFeedConnectionStatus() {
   }, [recordFailure]);
 
   const probeApiHealth = useCallback(async () => {
+    if (!isOnline) return;
+
     const start = Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_PROBE_TIMEOUT_MS);
@@ -76,7 +78,7 @@ export function useFeedConnectionStatus() {
     } finally {
       clearTimeout(timeoutId);
     }
-  }, [apiProbeUrl]);
+  }, [apiProbeUrl, isOnline]);
 
   useEffect(() => {
     const handleOnline = () => {
