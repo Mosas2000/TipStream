@@ -68,6 +68,7 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.status).toBe('healthy');
         expect(result.current.apiReachable).toBe(true);
         expect(typeof result.current.apiLatencyMs).toBe('number');
+        expect(result.current.apiProbing).toBe(false);
         expect(result.current.lastProbeError).toBeNull();
     });
 
