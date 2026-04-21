@@ -112,6 +112,23 @@ export function useFeedConnectionStatus() {
     };
   }, [isOnline, probeApiHealth]);
 
+  const browserStatus = useMemo(() => (isOnline ? 'online' : 'offline'), [isOnline]);
+
+  const apiStatus = useMemo(() => {
+    if (!isOnline) return 'unknown';
+    if (apiReachable === null) return 'unknown';
+    if (apiReachable === false) return 'unreachable';
+    return apiHealthy ? 'healthy' : 'degraded';
+  }, [isOnline, apiReachable, apiHealthy]);
+
+  const combinedStatus = useMemo(() => {
+    if (browserStatus === 'offline') return 'offline';
+    if (apiStatus === 'unknown') return 'checking';
+    if (apiStatus === 'unreachable') return 'api-down';
+    if (apiStatus === 'degraded') return 'degraded';
+    return 'healthy';
+  }, [browserStatus, apiStatus]);
+
   const getStatus = useCallback(() => {
     if (!isOnline) return 'offline';
     if (!apiHealthy) return 'degraded';
