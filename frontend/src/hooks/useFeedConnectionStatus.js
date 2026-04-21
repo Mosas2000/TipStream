@@ -14,6 +14,7 @@ const DEGRADATION_THRESHOLD = 3;
 const API_PROBE_PATH = '/v2/info';
 const API_PROBE_INTERVAL_MS = 30_000;
 const API_PROBE_TIMEOUT_MS = 5_000;
+const API_DEGRADED_LATENCY_MS = 2_500;
 
 export function useFeedConnectionStatus() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
