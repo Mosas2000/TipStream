@@ -43,6 +43,18 @@ describe('useFeedConnectionStatus', () => {
         expect(global.fetch).not.toHaveBeenCalled();
     });
 
+    it('does not probe when probeNow is called while offline', async () => {
+        setNavigatorOnline(false);
+        const { result } = renderHook(() => useFeedConnectionStatus());
+
+        await act(async () => {
+            await result.current.probeNow();
+            await flushMicrotasks();
+        });
+
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
     it('marks API healthy when probe succeeds', async () => {
         global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
         const { result } = renderHook(() => useFeedConnectionStatus());
