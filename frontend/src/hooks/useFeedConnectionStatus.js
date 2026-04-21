@@ -142,10 +142,21 @@ export function useFeedConnectionStatus() {
 
   return {
     isOnline,
+    browserStatus,
+
+    apiStatus,
     apiHealthy,
+    apiReachable,
+    apiLatencyMs,
+    lastProbeAt,
+    lastProbeError,
+
     failureCount,
     lastSuccess,
-    status: getStatus(),
+
+    status: combinedStatus,
+    legacyStatus: getStatus(),
+
     recordSuccess,
     recordFailure,
     recordTimeout,
