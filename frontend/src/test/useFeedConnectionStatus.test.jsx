@@ -119,6 +119,29 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.lastProbeError).toBe('Network error');
     });
 
+    it('clears lastProbeError after a later successful probe', async () => {
+        global.fetch
+            .mockRejectedValueOnce(new Error('Network error'))
+            .mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+
+        const { result } = renderHook(() => useFeedConnectionStatus());
+
+        await act(async () => {
+            await flushMicrotasks();
+        });
+
+        expect(result.current.apiReachable).toBe(false);
+        expect(result.current.lastProbeError).toBe('Network error');
+
+        await act(async () => {
+            await result.current.probeNow();
+            await flushMicrotasks();
+        });
+
+        expect(result.current.apiReachable).toBe(true);
+        expect(result.current.lastProbeError).toBeNull();
+    });
+
     it('marks API degraded when probe latency is high', async () => {
         let t = 0;
         vi.spyOn(Date, 'now').mockImplementation(() => {
