@@ -142,6 +142,20 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.lastProbeError).toBeNull();
     });
 
+    it('marks API unreachable when probe returns a non-ok response', async () => {
+        global.fetch.mockResolvedValue({ ok: false, status: 500 });
+        const { result } = renderHook(() => useFeedConnectionStatus());
+
+        await act(async () => {
+            await flushMicrotasks();
+        });
+
+        expect(result.current.apiReachable).toBe(false);
+        expect(result.current.apiStatus).toBe('unreachable');
+        expect(result.current.status).toBe('api-down');
+        expect(result.current.lastProbeError).toBe('HTTP 500');
+    });
+
     it('marks API degraded when probe latency is high', async () => {
         let t = 0;
         vi.spyOn(Date, 'now').mockImplementation(() => {
