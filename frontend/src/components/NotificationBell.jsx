@@ -31,6 +31,15 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
         return tip.timestamp > lastSeenTimestamp;
     };
 
+    const getNotificationKey = (tip, index) => {
+        if (tip.txId) return tip.txId;
+        if (tip.id) return tip.id;
+        if (tip.sender && tip.recipient && tip.timestamp) {
+            return `${tip.sender}:${tip.recipient}:${tip.timestamp}:${tip.event || 'tip'}`;
+        }
+        return `notification-${index}`;
+    };
+
     return (
         <div className="relative" ref={dropdownRef}>
             <button
@@ -85,7 +94,7 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
                         ) : (
                             notifications.slice(0, 20).map((tip, i) => (
                                 <div
-                                    key={tip.txId || i}
+                                    key={getNotificationKey(tip, i)}
                                     className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0${isUnread(tip) ? ' bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 >
                                     <div className="flex items-start justify-between gap-2">
