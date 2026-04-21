@@ -9,5 +9,11 @@ export function getTipRowKey(tip) {
     return `tx:${String(txId)}`;
   }
 
-  return 'tip:unknown';
+  const sender = tip?.sender ?? 'unknown';
+  const recipient = tip?.recipient ?? 'unknown';
+  const amount = tip?.amount ?? '0';
+  const fee = tip?.fee ?? '0';
+  const timestamp = tip?.timestamp ?? '0';
+
+  return `fp:${sender}:${recipient}:${amount}:${fee}:${timestamp}`;
 }
