@@ -21,6 +21,12 @@ export function useFeedConnectionStatus() {
   const [failureCount, setFailureCount] = useState(0);
   const [lastSuccess, setLastSuccess] = useState(() => Date.now());
 
+  const apiProbeUrl = useMemo(() => `${STACKS_API_BASE}${API_PROBE_PATH}`, []);
+  const [apiReachable, setApiReachable] = useState(null);
+  const [apiLatencyMs, setApiLatencyMs] = useState(null);
+  const [lastProbeAt, setLastProbeAt] = useState(null);
+  const [lastProbeError, setLastProbeError] = useState(null);
+
   const recordSuccess = useCallback(() => {
     setFailureCount(0);
     setApiHealthy(true);
