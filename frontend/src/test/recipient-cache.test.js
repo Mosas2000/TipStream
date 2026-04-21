@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   RECIPIENT_CACHE,
   setCacheEntry,
@@ -32,16 +32,22 @@ describe('recipient-cache', () => {
       expect(retrieved).toBeNull();
     });
 
-    it('respects TTL', (done) => {
-      const shortTTL = 100;
-      setCacheEntry(testRecipient, testData, shortTTL);
+    it('respects TTL', () => {
+      vi.useFakeTimers();
 
-      expect(getCacheEntry(testRecipient)).toEqual(testData);
+      try {
+        vi.setSystemTime(new Date(0));
 
-      setTimeout(() => {
+        const shortTTL = 100;
+        setCacheEntry(testRecipient, testData, shortTTL);
+
+        expect(getCacheEntry(testRecipient)).toEqual(testData);
+
+        vi.setSystemTime(new Date(150));
         expect(getCacheEntry(testRecipient)).toBeNull();
-        done();
-      }, 150);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('checks cache validity', () => {
@@ -61,18 +67,24 @@ describe('recipient-cache', () => {
   });
 
   describe('cache management', () => {
-    it('clears expired entries', (done) => {
-      const shortTTL = 100;
-      setCacheEntry(testRecipient, testData, shortTTL);
-      setCacheEntry('another-recipient', testData, 60000);
+    it('clears expired entries', () => {
+      vi.useFakeTimers();
 
-      expect(RECIPIENT_CACHE.size).toBe(2);
+      try {
+        vi.setSystemTime(new Date(0));
 
-      setTimeout(() => {
+        const shortTTL = 100;
+        setCacheEntry(testRecipient, testData, shortTTL);
+        setCacheEntry('another-recipient', testData, 60000);
+
+        expect(RECIPIENT_CACHE.size).toBe(2);
+
+        vi.setSystemTime(new Date(150));
         clearExpiredEntries();
         expect(RECIPIENT_CACHE.size).toBe(1);
-        done();
-      }, 150);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('provides cache statistics', () => {
@@ -99,18 +111,24 @@ describe('recipient-cache', () => {
   });
 
   describe('cache optimization', () => {
-    it('removes expired entries during optimization', (done) => {
-      const shortTTL = 100;
-      setCacheEntry(testRecipient, testData, shortTTL);
-      setCacheEntry('another-recipient', testData, 60000);
+    it('removes expired entries during optimization', () => {
+      vi.useFakeTimers();
 
-      expect(RECIPIENT_CACHE.size).toBe(2);
+      try {
+        vi.setSystemTime(new Date(0));
 
-      setTimeout(() => {
+        const shortTTL = 100;
+        setCacheEntry(testRecipient, testData, shortTTL);
+        setCacheEntry('another-recipient', testData, 60000);
+
+        expect(RECIPIENT_CACHE.size).toBe(2);
+
+        vi.setSystemTime(new Date(150));
         optimizeCache();
         expect(RECIPIENT_CACHE.size).toBe(1);
-        done();
-      }, 150);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('limits cache size to 100 entries', () => {
