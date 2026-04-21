@@ -56,6 +56,24 @@ describe('useFeedConnectionStatus', () => {
         expect(global.fetch).not.toHaveBeenCalled();
     });
 
+    it('probes when probeNow is called while online', async () => {
+        global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+        const { result } = renderHook(() => useFeedConnectionStatus());
+
+        await act(async () => {
+            await flushMicrotasks();
+        });
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            await result.current.probeNow();
+            await flushMicrotasks();
+        });
+
+        expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
     it('marks API healthy when probe succeeds', async () => {
         global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
         const { result } = renderHook(() => useFeedConnectionStatus());
