@@ -24,6 +24,7 @@ export function useFeedConnectionStatus() {
   const apiProbeUrl = useMemo(() => `${STACKS_API_BASE}${API_PROBE_PATH}`, [STACKS_API_BASE]);
   const [apiReachable, setApiReachable] = useState(null);
   const [apiLatencyMs, setApiLatencyMs] = useState(null);
+  const [apiProbing, setApiProbing] = useState(false);
   const [lastProbeAt, setLastProbeAt] = useState(null);
   const [lastProbeError, setLastProbeError] = useState(null);
 
@@ -49,6 +50,8 @@ export function useFeedConnectionStatus() {
 
   const probeApiHealth = useCallback(async () => {
     if (!isOnline) return;
+
+    setApiProbing(true);
 
     const start = Date.now();
     const controller = new AbortController();
@@ -77,6 +80,7 @@ export function useFeedConnectionStatus() {
       setLastProbeError(message);
     } finally {
       clearTimeout(timeoutId);
+      setApiProbing(false);
     }
   }, [apiProbeUrl, isOnline]);
 
@@ -90,6 +94,7 @@ export function useFeedConnectionStatus() {
       setIsOnline(false);
       setApiReachable(null);
       setApiLatencyMs(null);
+      setApiProbing(false);
       setLastProbeAt(null);
       setLastProbeError(null);
     };
@@ -150,6 +155,7 @@ export function useFeedConnectionStatus() {
     apiHealthy,
     apiReachable,
     apiLatencyMs,
+    apiProbing,
     lastProbeAt,
     lastProbeError,
 
