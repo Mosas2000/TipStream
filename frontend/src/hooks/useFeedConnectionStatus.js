@@ -47,6 +47,37 @@ export function useFeedConnectionStatus() {
     recordFailure();
   }, [recordFailure]);
 
+  const probeApiHealth = useCallback(async () => {
+    const start = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_PROBE_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(apiProbeUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      setApiReachable(true);
+      setApiLatencyMs(Date.now() - start);
+      setLastProbeAt(Date.now());
+      setLastProbeError(null);
+    } catch (err) {
+      const message = err?.name === 'AbortError' ? 'timeout' : (err?.message || 'error');
+      setApiReachable(false);
+      setApiLatencyMs(null);
+      setLastProbeAt(Date.now());
+      setLastProbeError(message);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, [apiProbeUrl]);
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
