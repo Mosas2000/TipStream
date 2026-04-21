@@ -105,6 +105,27 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.lastProbeError).toBeNull();
     });
 
+    it('calls the Stacks API info endpoint with a JSON accept header', async () => {
+        global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
+        renderHook(() => useFeedConnectionStatus());
+
+        await act(async () => {
+            await flushMicrotasks();
+        });
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+
+        const [url, options] = global.fetch.mock.calls[0];
+        expect(String(url)).toMatch(/\/v2\/info$/);
+        expect(options).toMatchObject({
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+        });
+        expect(options.signal).toBeTruthy();
+        expect(typeof options.signal.addEventListener).toBe('function');
+        expect(typeof options.signal.aborted).toBe('boolean');
+    });
+
     it('marks API unreachable when probe fails', async () => {
         global.fetch.mockRejectedValue(new Error('Network error'));
         const { result } = renderHook(() => useFeedConnectionStatus());
