@@ -106,6 +106,30 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.apiLatencyMs).toBeGreaterThanOrEqual(2500);
     });
 
+    it('marks the probe as timed out when the request is aborted', async () => {
+        global.fetch.mockImplementation((_, options) => {
+            return new Promise((_, reject) => {
+                options.signal.addEventListener('abort', () => {
+                    const err = new Error('aborted');
+                    err.name = 'AbortError';
+                    reject(err);
+                });
+            });
+        });
+
+        const { result } = renderHook(() => useFeedConnectionStatus());
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(5000);
+            await flushMicrotasks();
+        });
+
+        expect(result.current.apiReachable).toBe(false);
+        expect(result.current.apiStatus).toBe('unreachable');
+        expect(result.current.lastProbeError).toBe('timeout');
+        expect(result.current.apiProbing).toBe(false);
+    });
+
     it('runs the probe again on the polling interval while online', async () => {
         global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
         const { result } = renderHook(() => useFeedConnectionStatus());
