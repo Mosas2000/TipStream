@@ -32,6 +32,7 @@ describe('useFeedConnectionStatus', () => {
         expect(result.current.browserStatus).toBe('online');
         expect(result.current.apiStatus).toBe('unknown');
         expect(result.current.status).toBe('checking');
+        expect(result.current.apiProbing).toBe(true);
     });
 
     it('does not probe when navigator is offline', () => {
