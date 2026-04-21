@@ -125,6 +125,10 @@ systemctl daemon-reload
 systemctl restart tipstream-chainhook
 ```
 
+If you need to tighten or loosen the ingress limit during an incident, update
+`RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_MS`, then restart the service.
+The in-memory limiter does not reload these values at runtime.
+
 ### Scenario 5: Authentication Token Compromise
 
 **Symptoms:**

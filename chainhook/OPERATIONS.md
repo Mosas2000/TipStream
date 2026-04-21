@@ -154,6 +154,16 @@ export RATE_LIMIT_WINDOW_MS=60000
 systemctl restart tipstream-chainhook
 ```
 
+The rate limiter is initialized when the process starts. Changes to
+`RATE_LIMIT_MAX_REQUESTS` or `RATE_LIMIT_WINDOW_MS` are not applied until the
+service is restarted.
+
+During an incident, update the environment values and restart the service:
+
+```bash
+sudo systemctl restart tipstream-chainhook
+```
+
 ### Memory Management
 
 Monitor memory usage:
