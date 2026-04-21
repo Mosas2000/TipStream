@@ -7,7 +7,7 @@
  * enforce the 144-block timelock on all admin actions.
  */
 
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_GET_CURRENT_FEE_BASIS_POINTS } from '../config/contracts';
 
 /**
  * Fetch the current block height from the Stacks API.
@@ -110,11 +110,7 @@ export async function fetchMultisig() {
  * @returns {Promise<number>} Current fee in basis points
  */
 export async function fetchCurrentFee() {
-    // Use get-fee-for-amount with a known amount to derive the rate
-    // 10000 microSTX -> fee = basis_points
-    const data = await callReadOnly('get-fee-for-amount', [
-        '0100000000000000000000000000002710', // u10000
-    ]);
+    const data = await callReadOnly(FN_GET_CURRENT_FEE_BASIS_POINTS);
     const result = parseClarityValue(data.result);
     return typeof result === 'number' ? result : 0;
 }
