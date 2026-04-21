@@ -74,6 +74,21 @@ describe('useFeedConnectionStatus', () => {
         expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
+    it('does not overlap probes when probeNow is called during an active probe', async () => {
+        global.fetch.mockReturnValue(new Promise(() => {}));
+        const { result } = renderHook(() => useFeedConnectionStatus());
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            await result.current.probeNow();
+            await flushMicrotasks();
+        });
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        expect(result.current.apiProbing).toBe(true);
+    });
+
     it('marks API healthy when probe succeeds', async () => {
         global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
         const { result } = renderHook(() => useFeedConnectionStatus());
