@@ -157,6 +157,8 @@ export function useFeedConnectionStatus() {
     status: combinedStatus,
     legacyStatus: getStatus(),
 
+    probeNow: probeApiHealth,
+
     recordSuccess,
     recordFailure,
     recordTimeout,
