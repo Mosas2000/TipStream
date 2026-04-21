@@ -10,7 +10,11 @@ describe('getTipRowKey', () => {
     expect(getTipRowKey({ tipId: 0 })).toBe('tip:0');
   });
 
-  it('falls back to unknown when tipId is missing', () => {
+  it('uses txId when tipId is missing', () => {
+    expect(getTipRowKey({ txId: '0xabc' })).toBe('tx:0xabc');
+  });
+
+  it('falls back to unknown when tipId and txId are missing', () => {
     expect(getTipRowKey({})).toBe('tip:unknown');
   });
 });
