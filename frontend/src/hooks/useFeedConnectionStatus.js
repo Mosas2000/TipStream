@@ -126,8 +126,13 @@ export function useFeedConnectionStatus() {
     if (!isOnline) return 'unknown';
     if (apiReachable === null) return 'unknown';
     if (apiReachable === false) return 'unreachable';
+
+    if (typeof apiLatencyMs === 'number' && apiLatencyMs >= API_DEGRADED_LATENCY_MS) {
+      return 'degraded';
+    }
+
     return apiHealthy ? 'healthy' : 'degraded';
-  }, [isOnline, apiReachable, apiHealthy]);
+  }, [isOnline, apiReachable, apiHealthy, apiLatencyMs]);
 
   const combinedStatus = useMemo(() => {
     if (browserStatus === 'offline') return 'offline';
