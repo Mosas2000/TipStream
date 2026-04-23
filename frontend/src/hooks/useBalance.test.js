@@ -140,4 +140,37 @@ describe('useBalance Hook', () => {
 
         expect(result.current.balance).toBe('6000');
     });
+
+    it('refetch cancels in-flight request', async () => {
+        let resolveFirst;
+        const firstPromise = new Promise(resolve => { resolveFirst = resolve; });
+        
+        global.fetch
+            .mockReturnValueOnce(firstPromise)
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ balance: '7000' })
+            });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        // First one is in flight
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+
+        // Start second one
+        act(() => {
+            result.current.refetch();
+        });
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
+
+        // Resolve first one - should be ignored
+        resolveFirst({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1' })
+        });
+
+        await waitFor(() => expect(result.current.balance).toBe('7000'));
+        expect(result.current.balance).not.toBe('1');
+    });
 });
