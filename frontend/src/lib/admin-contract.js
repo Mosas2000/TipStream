@@ -54,6 +54,7 @@ async function callReadOnly(functionName, args = []) {
  * @returns {Promise<{ isPaused: boolean, pendingPause: boolean|null, effectiveHeight: number }>}
  */
 export async function fetchPauseState() {
+    // Fetch both pending and current state in parallel for consistency
     const [pendingData, currentData] = await Promise.all([
         callReadOnly('get-pending-pause-change'),
         callReadOnly('is-paused')
