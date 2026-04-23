@@ -213,4 +213,25 @@ describe('useBalance Hook', () => {
 
         expect(result.current.error).toBe(null);
     });
+
+    it('updates lastFetched on success', async () => {
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '100' })
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(result.current.balance).toBe('100'));
+        const firstFetched = result.current.lastFetched;
+        expect(firstFetched).toBeGreaterThan(0);
+
+        await new Promise(r => setTimeout(r, 10));
+
+        await act(async () => {
+            await result.current.refetch();
+        });
+
+        expect(result.current.lastFetched).toBeGreaterThan(firstFetched);
+    });
 });
