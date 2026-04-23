@@ -72,7 +72,7 @@ describe('Admin Contract Helpers', () => {
 
             const state = await fetchFeeState();
             
-            expect(state.currentFee).toBe(200);
+            expect(state.currentFeeBasisPoints).toBe(200);
             expect(state.pendingFee).toBe(500);
             expect(state.effectiveHeight).toBe(12345);
         });
