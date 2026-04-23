@@ -31,6 +31,7 @@ export function useContractHealth() {
   }, []);
 
   const checkHealth = useCallback(async () => {
+    if (!isMounted.current) return;
     setChecking(true);
     setError(null);
 
