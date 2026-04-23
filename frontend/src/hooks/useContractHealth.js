@@ -17,6 +17,8 @@ export function useContractHealth() {
   const [error, setError] = useState(null);
   const [checking, setChecking] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const abortControllerRef = useRef(null);
+  const timeoutIdRef = useRef(null);
 
   useEffect(() => {
     return () => {
