@@ -76,6 +76,7 @@ export async function fetchPauseState() {
  * @returns {Promise<{ currentFee: number, pendingFee: number|null, effectiveHeight: number }>}
  */
 export async function fetchFeeState() {
+    // Fetch both pending and current state in parallel for consistency
     const [pendingData, currentFee] = await Promise.all([
         callReadOnly('get-pending-fee-change'),
         fetchCurrentFee()
