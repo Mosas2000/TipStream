@@ -19,6 +19,7 @@ export function useContractHealth() {
   const [retryCount, setRetryCount] = useState(0);
   /** @type {import('react').MutableRefObject<AbortController|null>} */
   const abortControllerRef = useRef(null);
+  /** @type {import('react').MutableRefObject<NodeJS.Timeout|number|null>} */
   const timeoutIdRef = useRef(null);
 
   useEffect(() => {
