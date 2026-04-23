@@ -54,13 +54,16 @@ async function callReadOnly(functionName, args = []) {
  * @returns {Promise<{ isPaused: boolean, pendingPause: boolean|null, effectiveHeight: number }>}
  */
 export async function fetchPauseState() {
-    const pendingData = await callReadOnly('get-pending-pause-change');
+    const [pendingData, currentData] = await Promise.all([
+        callReadOnly('get-pending-pause-change'),
+        callReadOnly('is-paused')
+    ]);
 
-    // Parse the Clarity tuple response
-    // The response contains pending-pause (optional bool) and effective-height (uint)
     const result = parseClarityValue(pendingData.result);
+    const isPaused = parseClarityValue(currentData.result);
 
     return {
+        isPaused: !!isPaused,
         pendingPause: result['pending-pause'],
         effectiveHeight: result['effective-height'] || 0,
     };
