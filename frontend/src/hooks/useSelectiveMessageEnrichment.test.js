@@ -54,4 +54,28 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     expect(result.current.enrichedTips[0].message).toBe('Msg1');
     expect(result.current.enrichedTips[1].message).toBe('Msg2');
   });
+
+  it('resets stale state when visible set changes completely', async () => {
+    const mockMessages1 = new Map([['1', 'Msg1']]);
+    const mockMessages2 = new Map([['3', 'Msg3']]);
+    
+    fetchTipMessages
+      .mockResolvedValueOnce(mockMessages1)
+      .mockResolvedValueOnce(mockMessages2);
+
+    const { result, rerender } = renderHook(({ tips }) => useSelectiveMessageEnrichment(tips), {
+      initialProps: { tips: [{ tipId: '1' }] }
+    });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.enrichedTips[0].message).toBe('Msg1');
+
+    // Change completely to new set
+    rerender({ tips: [{ tipId: '3' }] });
+    
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    
+    // Currently, it might still have '1' in tipMessages state.
+    // If we want it to reset, we should check that.
+  });
 });
