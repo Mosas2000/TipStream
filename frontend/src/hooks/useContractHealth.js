@@ -69,6 +69,10 @@ export function useContractHealth() {
       const data = await response.json();
       if (!isMounted.current) return;
 
+      if (!data) {
+        throw new Error('Stacks API returned empty response.');
+      }
+
       // Verify it has expected functions
       const functionNames = data.functions?.map(f => f.name) || [];
       if (!functionNames.includes('send-tip')) {
