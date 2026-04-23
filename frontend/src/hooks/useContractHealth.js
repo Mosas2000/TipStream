@@ -62,6 +62,7 @@ export function useContractHealth() {
       }
 
       const data = await response.json();
+      if (!isMounted.current) return;
 
       // Verify it has expected functions
       const functionNames = data.functions?.map(f => f.name) || [];
