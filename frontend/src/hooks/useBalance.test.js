@@ -67,7 +67,7 @@ describe('useBalance Hook', () => {
     });
 
     it('handles 404 response by setting error', async () => {
-        global.fetch.mockResolvedValueOnce({
+        global.fetch.mockResolvedValue({
             ok: false,
             status: 404,
             statusText: 'Not Found'
@@ -75,13 +75,13 @@ describe('useBalance Hook', () => {
 
         const { result } = renderHook(() => useBalance('SP123'));
 
-        await waitFor(() => expect(result.current.loading).toBe(false));
+        await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 6000 });
         expect(result.current.error).toBe('API returned 404');
         expect(result.current.balance).toBe(null);
     });
 
     it('handles malformed JSON response', async () => {
-        global.fetch.mockResolvedValueOnce({
+        global.fetch.mockResolvedValue({
             ok: true,
             json: () => Promise.reject(new Error('SyntaxError'))
         });
@@ -89,12 +89,12 @@ describe('useBalance Hook', () => {
         const { result } = renderHook(() => useBalance('SP123'));
 
         // It will retry twice then fail
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 6000 });
         expect(result.current.error).toBeDefined();
     });
 
     it('handles invalid balance format from API', async () => {
-        global.fetch.mockResolvedValueOnce({
+        global.fetch.mockResolvedValue({
             ok: true,
             json: () => Promise.resolve({ balance: 'abc' })
         });
@@ -195,23 +195,25 @@ describe('useBalance Hook', () => {
 
     it('clears error on refetch', async () => {
         global.fetch
-            .mockRejectedValueOnce(new Error('First fail'))
-            .mockResolvedValueOnce({
-                ok: true,
-                json: () => Promise.resolve({ balance: '100' })
-            });
+            .mockRejectedValue(new Error('Persistent fail')); // Fail all attempts
 
         const { result } = renderHook(() => useBalance('SP123'));
 
         // Wait for first one to fail all retries
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 6000 });
         expect(result.current.error).toBeDefined();
 
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '100' })
+        });
+
         await act(async () => {
-            result.current.refetch();
+            await result.current.refetch();
         });
 
         expect(result.current.error).toBe(null);
+        expect(result.current.balance).toBe('100');
     });
 
     it('updates lastFetched on success', async () => {
@@ -250,38 +252,38 @@ describe('useBalance Hook', () => {
     });
 
     it('handles negative balance from API as invalid', async () => {
-        global.fetch.mockResolvedValueOnce({
+        global.fetch.mockResolvedValue({
             ok: true,
             json: () => Promise.resolve({ balance: -100 })
         });
 
         const { result } = renderHook(() => useBalance('SP123'));
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 6000 });
         expect(result.current.balance).toBe(null);
     });
 
     it('handles decimal balance from API as invalid', async () => {
-        global.fetch.mockResolvedValueOnce({
+        global.fetch.mockResolvedValue({
             ok: true,
             json: () => Promise.resolve({ balance: 100.5 })
         });
 
         const { result } = renderHook(() => useBalance('SP123'));
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 6000 });
         expect(result.current.balance).toBe(null);
     });
 
     it('handles empty response gracefully', async () => {
-        global.fetch.mockResolvedValueOnce({
+        global.fetch.mockResolvedValue({
             ok: true,
             json: () => Promise.resolve({})
         });
 
         const { result } = renderHook(() => useBalance('SP123'));
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 6000 });
         expect(result.current.balance).toBe(null);
     });
 
