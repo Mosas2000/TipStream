@@ -284,4 +284,23 @@ describe('useBalance Hook', () => {
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
         expect(result.current.balance).toBe(null);
     });
+
+    it('handles failure after success', async () => {
+        global.fetch
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ balance: '100' })
+            })
+            .mockRejectedValue(new Error('Later fail'));
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(result.current.balance).toBe('100'));
+
+        await act(async () => {
+            await result.current.refetch();
+        });
+
+        await waitFor(() => expect(result.current.error).toBeDefined());
+    });
 });
