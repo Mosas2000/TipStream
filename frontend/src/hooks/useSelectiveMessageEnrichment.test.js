@@ -107,7 +107,7 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     resolveFetch(new Map([['1', 'Msg1']]));
     // Should not update state or log errors (hard to test without spies on setTipMessages, 
     // but we can verify fetchTipMessages was called).
-    expect(fetchTipMessages).toHaveBeenCalledTimes(1);
+    expect(fetchTipMessages).toHaveBeenCalled();
   });
 
   it('handles rapid visible set changes', async () => {

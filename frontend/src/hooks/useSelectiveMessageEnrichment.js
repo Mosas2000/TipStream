@@ -11,7 +11,7 @@
  * fetches as the visible set changes.
  */
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { fetchTipMessages } from '../lib/fetchTipDetails';
 import { createEnrichmentMarker } from '../lib/enrichmentMetrics';
 
@@ -29,7 +29,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const cancelledRef = useRef(false);
-  const [previousIds, setPreviousIds] = useState([]);
+  const previousIdsRef = useRef([]);
 
   const visibleTipIds = useMemo(
     () => visibleTips
@@ -40,9 +40,9 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   );
 
   const hasNewIds = useMemo(
-    () => visibleTipIds.length !== previousIds.length ||
-           visibleTipIds.some((id, i) => id !== previousIds[i]),
-    [visibleTipIds, previousIds]
+    () => visibleTipIds.length !== previousIdsRef.current.length ||
+           visibleTipIds.some((id, i) => id !== previousIdsRef.current[i]),
+    [visibleTipIds] // Only recalculate when visibleTipIds changes
   );
 
   useEffect(() => {
@@ -68,13 +68,13 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
        * we treat this as a material change (e.g. navigation, filtering, or deep jump).
        * We clear the stale messages to prevent memory bloat and stale mappings.
        */
-      const prevSet = new Set(previousIds);
+      const prevSet = new Set(previousIdsRef.current);
       const hasOverlap = visibleTipIds.some(id => prevSet.has(id));
-      if (!hasOverlap && previousIds.length > 0) {
+      if (!hasOverlap && previousIdsRef.current.length > 0) {
         setTipMessages({});
       }
       
-      setPreviousIds(visibleTipIds);
+      previousIdsRef.current = visibleTipIds;
     });
 
     const marker = createEnrichmentMarker();
@@ -115,7 +115,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
 
   const clearEnrichment = useCallback(() => {
     setTipMessages({});
-    setPreviousIds([]);
+    previousIdsRef.current = [];
   }, []);
 
   return {
