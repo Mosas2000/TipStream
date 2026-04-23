@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useSelectiveMessageEnrichment } from './useSelectiveMessageEnrichment';
 import { fetchTipMessages } from '../lib/fetchTipDetails';
 
@@ -156,5 +156,19 @@ describe('useSelectiveMessageEnrichment Hook', () => {
 
     await waitFor(() => expect(result.current.enrichedTips[1]?.message).toBe('Msg3'));
     expect(result.current.enrichedTips[0].message).toBe('Msg2');
+  });
+
+  it('manually clears enrichment state', async () => {
+    fetchTipMessages.mockResolvedValue(new Map([['1', 'Msg1']]));
+
+    const { result } = renderHook(() => useSelectiveMessageEnrichment([{ tipId: '1' }]));
+
+    await waitFor(() => expect(result.current.enrichedTips[0]?.message).toBe('Msg1'));
+
+    act(() => {
+      result.current.clearEnrichment();
+    });
+
+    expect(result.current.enrichedTips[0]?.message).toBeUndefined();
   });
 });
