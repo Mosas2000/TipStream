@@ -70,4 +70,19 @@ describe('useContractHealth Hook', () => {
     
     expect(result.current.error).toContain('Unable to reach the Stacks API');
   });
+
+  it('handles API errors (non-ok responses)', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 404
+    });
+
+    const { result } = renderHook(() => useContractHealth());
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(false);
+    });
+    
+    expect(result.current.error).toContain('not found');
+  });
 });
