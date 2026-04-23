@@ -68,14 +68,11 @@ export function useBalance(address) {
     const retryCount = useRef(0);
     /** @type {import('react').MutableRefObject<AbortController|null>} */
     const abortControllerRef = useRef(null);
-    /** @type {import('react').MutableRefObject<NodeJS.Timeout|null>} */
-    const timeoutIdRef = useRef(null);
 
     useEffect(() => {
         return () => {
             isMounted.current = false;
             if (abortControllerRef.current) abortControllerRef.current.abort();
-            if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
         };
     }, []);
 
