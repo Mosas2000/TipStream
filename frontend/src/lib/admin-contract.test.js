@@ -150,4 +150,18 @@ describe('Admin Contract Helpers', () => {
             // For now, let's just check that it's called.
         });
     });
+
+    describe('fetchMultisig', () => {
+        it('fetches and parses multisig address', async () => {
+            const mockMultisigHex = '05001a1c3606f37699e128df21b0e3532822180410';
+            
+            global.fetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ result: mockMultisigHex })
+            });
+
+            const multisig = await fetchMultisig();
+            expect(multisig).toBeDefined();
+        });
+    });
 });
