@@ -116,7 +116,7 @@ export function useContractHealth() {
     checkHealth();
   }, [checkHealth, retryCount]);
 
-  // Auto-retry with backoff
+  // Auto-retry with exponential backoff (5s, 10s, 15s)
   useEffect(() => {
     if (healthy === false && retryCount < MAX_RETRIES) {
       const timer = setTimeout(() => {
