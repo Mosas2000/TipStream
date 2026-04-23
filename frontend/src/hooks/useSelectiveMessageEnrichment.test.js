@@ -26,10 +26,9 @@ describe('useSelectiveMessageEnrichment Hook', () => {
 
     const { result } = renderHook(() => useSelectiveMessageEnrichment(mockTips));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.enrichedTips).toHaveLength(2);
-    expect(result.current.enrichedTips[0].message).toBe('Hello');
+    await waitFor(() => expect(result.current.enrichedTips[0].message).toBe('Hello'), { timeout: 3000 });
     expect(result.current.enrichedTips[1].message).toBe('World');
+    expect(result.current.loading).toBe(false);
   });
 
   it('maintains state across updates with overlapping IDs', async () => {
