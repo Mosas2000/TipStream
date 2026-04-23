@@ -77,4 +77,12 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     // Since tipMessages is not exposed, we can indirectly test it if needed, 
     // but the core requirement is that enrichedTips is correct.
   });
+
+  it('sets loading to true when starting enrichment', async () => {
+    fetchTipMessages.mockReturnValue(new Promise(() => {})); // Never resolves
+
+    const { result } = renderHook(() => useSelectiveMessageEnrichment([{ tipId: '1' }]));
+
+    expect(result.current.loading).toBe(true);
+  });
 });
