@@ -85,4 +85,13 @@ describe('useSelectiveMessageEnrichment Hook', () => {
 
     expect(result.current.loading).toBe(true);
   });
+
+  it('handles errors gracefully', async () => {
+    fetchTipMessages.mockRejectedValue(new Error('Fetch failed'));
+
+    const { result } = renderHook(() => useSelectiveMessageEnrichment([{ tipId: '1' }]));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBe('Fetch failed');
+  });
 });
