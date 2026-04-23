@@ -24,6 +24,15 @@ describe('Admin Contract Helpers', () => {
             const height = await fetchCurrentBlockHeight();
             expect(height).toBe(123456);
         });
+
+        it('throws when API call fails', async () => {
+            global.fetch.mockResolvedValueOnce({
+                ok: false,
+                statusText: 'Internal Server Error'
+            });
+
+            await expect(fetchCurrentBlockHeight()).rejects.toThrow('Failed to fetch block info');
+        });
     });
 
     describe('parseClarityValue', () => {
