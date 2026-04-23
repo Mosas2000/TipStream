@@ -104,4 +104,20 @@ describe('useBalance Hook', () => {
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
         expect(result.current.error).toContain('Unexpected balance format');
     });
+
+    it('resets balance when address becomes null', async () => {
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1000' })
+        });
+
+        const { result, rerender } = renderHook(({ addr }) => useBalance(addr), {
+            initialProps: { addr: 'SP123' }
+        });
+
+        await waitFor(() => expect(result.current.balance).toBe('1000'));
+
+        rerender({ addr: null });
+        expect(result.current.balance).toBe(null);
+    });
 });
