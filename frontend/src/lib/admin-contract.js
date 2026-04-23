@@ -250,6 +250,10 @@ function decodeClarityHexWithSize(hex) {
             const inner = decodeClarityHexWithSize(hex.slice(2));
             return { value: null, consumed: 2 + inner.consumed };
         }
+        case 0x05: // standard principal
+            return { value: hex.slice(0, 44), consumed: 44 };
+        case 0x06: // contract principal
+            return { value: hex, consumed: hex.length }; // Placeholder
         default:
             return { value: null, consumed: 2 };
     }
