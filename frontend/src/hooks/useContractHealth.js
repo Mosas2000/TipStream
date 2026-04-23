@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 
 const HEALTH_CHECK_TIMEOUT_MS = 10000;
@@ -12,10 +12,17 @@ const MAX_RETRIES = 3;
  * @returns {{ healthy: boolean|null, error: string|null, checking: boolean, retry: () => void }}
  */
 export function useContractHealth() {
+  const isMounted = useRef(true);
   const [healthy, setHealthy] = useState(null);
   const [error, setError] = useState(null);
   const [checking, setChecking] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const checkHealth = useCallback(async () => {
     setChecking(true);
