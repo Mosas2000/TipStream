@@ -95,6 +95,15 @@ describe('Admin Contract Helpers', () => {
             const fee = await fetchCurrentFee();
             expect(fee).toBe(200);
         });
+
+        it('throws when API returns invalid JSON', async () => {
+            global.fetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.reject(new Error('Invalid JSON'))
+            });
+
+            await expect(fetchCurrentFee()).rejects.toThrow('Failed to parse contract response');
+        });
     });
 
     describe('fetchPauseState', () => {
