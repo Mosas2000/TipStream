@@ -98,7 +98,10 @@ export function useBalance(address) {
 
                 if (retryCount.current < MAX_RETRIES) {
                     retryCount.current += 1;
-                    await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+                    await new Promise(r => {
+                        timeoutIdRef.current = setTimeout(r, RETRY_DELAY_MS);
+                    });
+                    timeoutIdRef.current = null;
                     return attempt();
                 }
                 console.error('Failed to fetch balance:', err.message);
