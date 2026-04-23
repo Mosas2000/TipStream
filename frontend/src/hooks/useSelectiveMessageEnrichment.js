@@ -108,6 +108,10 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     };
   }, [visibleTipIds, hasNewIds]);
 
+  /**
+   * Re-map the visible tips to include their fetched messages.
+   * Unfetched or failed messages simply leave the tip unchanged.
+   */
   const enrichedTips = useMemo(
     () => visibleTips.map(t => {
       const msg = tipMessages[String(t?.tipId)];
