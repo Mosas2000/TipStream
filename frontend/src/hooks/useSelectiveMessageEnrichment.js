@@ -63,6 +63,11 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     Promise.resolve().then(() => {
       if (cancelled || cancelledRef.current) return;
       
+      /** 
+       * Reconcile state: If the new visible set has NO overlap with the previous set,
+       * we treat this as a material change (e.g. navigation, filtering, or deep jump).
+       * We clear the stale messages to prevent memory bloat and stale mappings.
+       */
       const prevSet = new Set(previousIds);
       const hasOverlap = visibleTipIds.some(id => prevSet.has(id));
       if (!hasOverlap && previousIds.length > 0) {
