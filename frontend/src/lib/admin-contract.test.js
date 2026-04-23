@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { 
     parseClarityValue, 
     fetchFeeState, 
-    fetchCurrentFee 
+    fetchCurrentFee,
+    fetchCurrentBlockHeight,
+    fetchPauseState
 } from './admin-contract';
 import { STACKS_API_BASE, CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 
@@ -81,6 +83,27 @@ describe('Admin Contract Helpers', () => {
 
             const fee = await fetchCurrentFee();
             expect(fee).toBe(200);
+        });
+    });
+
+    describe('fetchPauseState', () => {
+        it('fetches and parses current and pending pause state', async () => {
+            const mockPendingHex = '0x0c000000020d70656e64696e672d70617573650a03106566666563746976652d6865696768740100000000000000000000000000003039';
+            const mockCurrentHex = '04'; // false
+            
+            global.fetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ result: mockPendingHex })
+            }).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ result: mockCurrentHex })
+            });
+
+            const state = await fetchPauseState();
+            
+            expect(state.isPaused).toBe(false);
+            expect(state.pendingPause).toBe(true);
+            expect(state.effectiveHeight).toBe(12345);
         });
     });
 });
