@@ -1,0 +1,82 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useBalance } from './useBalance';
+import { STACKS_API_BASE } from '../config/contracts';
+
+describe('useBalance Hook', () => {
+    beforeEach(() => {
+        global.fetch = vi.fn();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('fetches balance successfully', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ balance: '1000000' })
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(result.current.loading).toBe(false));
+        expect(result.current.balance).toBe('1000000');
+        expect(result.current.balanceStx).toBe(1);
+        expect(result.current.error).toBe(null);
+    });
+
+    it('handles network errors with retries', async () => {
+        global.fetch
+            .mockRejectedValueOnce(new Error('Network failure'))
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ balance: '2000000' })
+            });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+        // It will automatically retry after 1500ms
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2), { timeout: 3000 });
+        await waitFor(() => expect(result.current.balance).toBe('2000000'));
+    });
+
+    it('cleans up resources and ignores updates on unmount', async () => {
+        global.fetch.mockImplementation(() => new Promise(() => {}));
+
+        const { unmount, result } = renderHook(() => useBalance('SP123'));
+        expect(result.current.loading).toBe(true);
+
+        unmount();
+    });
+
+    it('cancels retry timer on unmount', async () => {
+        global.fetch.mockRejectedValue(new Error('Persistent failure'));
+
+        const { unmount } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+
+        unmount();
+
+        // Wait a bit to ensure no second call is made
+        await new Promise(r => setTimeout(r, 2000));
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles 404 response by setting error', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: false,
+            status: 404,
+            statusText: 'Not Found'
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(result.current.loading).toBe(false));
+        expect(result.current.error).toBe('API returned 404');
+        expect(result.current.balance).toBe(null);
+    });
+});
