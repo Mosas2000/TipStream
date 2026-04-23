@@ -23,6 +23,8 @@ export function useContractHealth() {
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, []);
 
