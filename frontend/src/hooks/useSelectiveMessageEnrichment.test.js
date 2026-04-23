@@ -130,4 +130,10 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     expect(result.current.enrichedTips).toHaveLength(1);
     expect(result.current.enrichedTips[0].tipId).toBe('2');
   });
+
+  it('handles empty visible set', async () => {
+    const { result } = renderHook(() => useSelectiveMessageEnrichment([]));
+    expect(result.current.enrichedTips).toHaveLength(0);
+    expect(result.current.loading).toBe(false);
+  });
 });
