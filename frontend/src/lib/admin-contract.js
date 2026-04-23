@@ -72,11 +72,15 @@ export async function fetchPauseState() {
  * @returns {Promise<{ currentFee: number, pendingFee: number|null, effectiveHeight: number }>}
  */
 export async function fetchFeeState() {
-    const pendingData = await callReadOnly('get-pending-fee-change');
+    const [pendingData, currentFee] = await Promise.all([
+        callReadOnly('get-pending-fee-change'),
+        fetchCurrentFee()
+    ]);
 
     const result = parseClarityValue(pendingData.result);
 
     return {
+        currentFee,
         pendingFee: result['pending-fee'],
         effectiveHeight: result['effective-height'] || 0,
     };
