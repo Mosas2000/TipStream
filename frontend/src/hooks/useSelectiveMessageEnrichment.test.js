@@ -63,15 +63,18 @@ describe('useSelectiveMessageEnrichment Hook', () => {
       initialProps: { tips: [{ tipId: '1' }] }
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.enrichedTips[0].message).toBe('Msg1');
+    await waitFor(() => expect(result.current.enrichedTips[0].message).toBe('Msg1'));
 
     // Change completely to new set
     rerender({ tips: [{ tipId: '3' }] });
     
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.enrichedTips[0].message).toBe('Msg3'));
     
-    // Currently, it might still have '1' in tipMessages state.
-    // If we want it to reset, we should check that.
+    // Check that '1' is no longer in enrichedTips if it's not visible
+    // (enrichedTips only contains visible tips, so this is naturally true)
+    
+    // However, we want to ensure tipMessages internal state was cleared if we want strictly NO stale data.
+    // Since tipMessages is not exposed, we can indirectly test it if needed, 
+    // but the core requirement is that enrichedTips is correct.
   });
 });
