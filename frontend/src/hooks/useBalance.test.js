@@ -192,4 +192,25 @@ describe('useBalance Hook', () => {
 
         await waitFor(() => expect(result.current.loading).toBe(false));
     });
+
+    it('clears error on refetch', async () => {
+        global.fetch
+            .mockRejectedValueOnce(new Error('First fail'))
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ balance: '100' })
+            });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        // Wait for first one to fail all retries
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        expect(result.current.error).toBeDefined();
+
+        await act(async () => {
+            result.current.refetch();
+        });
+
+        expect(result.current.error).toBe(null);
+    });
 });
