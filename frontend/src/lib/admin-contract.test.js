@@ -57,16 +57,21 @@ describe('Admin Contract Helpers', () => {
     });
 
     describe('fetchFeeState', () => {
-        it('fetches and parses pending fee state', async () => {
+        it('fetches and parses both current and pending fee state', async () => {
             const mockPendingHex = '0x0c000000020b70656e64696e672d6665650a01000000000000000000000000000001f4106566666563746976652d6865696768740100000000000000000000000000003039';
+            const mockCurrentHex = '01000000000000000000000000000000c8'; // u200
             
             global.fetch.mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve({ result: mockPendingHex })
+            }).mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ result: mockCurrentHex })
             });
 
             const state = await fetchFeeState();
             
+            expect(state.currentFee).toBe(200);
             expect(state.pendingFee).toBe(500);
             expect(state.effectiveHeight).toBe(12345);
         });
