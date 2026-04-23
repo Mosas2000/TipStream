@@ -58,20 +58,24 @@ async function callReadOnly(functionName, args = []) {
  * @returns {Promise<{ isPaused: boolean, pendingPause: boolean|null, effectiveHeight: number }>}
  */
 export async function fetchPauseState() {
-    // Fetch both pending and current state in parallel for consistency
-    const [pendingData, currentData] = await Promise.all([
-        callReadOnly('get-pending-pause-change'),
-        callReadOnly('is-paused')
-    ]);
+    try {
+        // Fetch both pending and current state in parallel for consistency
+        const [pendingData, currentData] = await Promise.all([
+            callReadOnly('get-pending-pause-change'),
+            callReadOnly('is-paused')
+        ]);
 
-    const result = parseClarityValue(pendingData.result);
-    const isPaused = parseClarityValue(currentData.result);
+        const result = parseClarityValue(pendingData.result);
+        const isPaused = parseClarityValue(currentData.result);
 
-    return {
-        isPaused: !!isPaused,
-        pendingPause: result['pending-pause'],
-        effectiveHeight: result['effective-height'] || 0,
-    };
+        return {
+            isPaused: !!isPaused,
+            pendingPause: result['pending-pause'],
+            effectiveHeight: result['effective-height'] || 0,
+        };
+    } catch (err) {
+        throw new Error(`Failed to fetch pause state: ${err.message}`);
+    }
 }
 
 /**
