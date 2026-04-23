@@ -85,4 +85,23 @@ describe('useContractHealth Hook', () => {
     
     expect(result.current.error).toContain('not found');
   });
+
+  it('handles health check timeout', async () => {
+    vi.useFakeTimers();
+    // Mock fetch to simulate a hang
+    global.fetch.mockImplementation(() => new Promise(() => {}));
+
+    const { result } = renderHook(() => useContractHealth());
+
+    act(() => {
+      vi.advanceTimersByTime(11000);
+    });
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(false);
+    });
+    
+    expect(result.current.error).toContain('timed out');
+    vi.useRealTimers();
+  });
 });
