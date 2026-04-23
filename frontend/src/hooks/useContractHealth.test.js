@@ -104,4 +104,33 @@ describe('useContractHealth Hook', () => {
     expect(result.current.error).toContain('timed out');
     vi.useRealTimers();
   });
+
+  it('cleans up resources on unmount and ignores late updates', async () => {
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+    let resolveFetch;
+    const fetchPromise = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    global.fetch.mockReturnValue(fetchPromise);
+
+    const { unmount, result } = renderHook(() => useContractHealth());
+
+    expect(result.current.checking).toBe(true);
+
+    unmount();
+
+    // Verify clearTimeout was called (at least once for the timeoutId)
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+
+    // Resolve fetch after unmount
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        json: () => Promise.resolve({ functions: [{ name: 'send-tip' }] })
+      });
+    });
+
+    // Healthy should still be null, not true
+    expect(result.current.healthy).toBeNull();
+  });
 });
