@@ -12,6 +12,7 @@ const MAX_RETRIES = 3;
  * @returns {{ healthy: boolean|null, error: string|null, checking: boolean, retry: () => void }}
  */
 export function useContractHealth() {
+  /** Tracks if the component is currently mounted to prevent state updates after unmount */
   const isMounted = useRef(true);
   const [healthy, setHealthy] = useState(null);
   const [error, setError] = useState(null);
