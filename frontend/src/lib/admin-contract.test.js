@@ -11,6 +11,18 @@ describe('Admin Contract Helpers', () => {
         global.fetch = vi.fn();
     });
 
+    describe('fetchCurrentBlockHeight', () => {
+        it('fetches stacks_tip_height from /v2/info', async () => {
+            global.fetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ stacks_tip_height: 123456 })
+            });
+
+            const height = await fetchCurrentBlockHeight();
+            expect(height).toBe(123456);
+        });
+    });
+
     describe('parseClarityValue', () => {
         it('parses uint values correctly', () => {
             const hex = '0100000000000000000000000000000064'; // u100
