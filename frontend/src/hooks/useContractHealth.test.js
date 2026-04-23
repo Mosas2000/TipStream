@@ -182,6 +182,21 @@ describe('useContractHealth Hook', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  it('handles empty response data', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(null)
+    });
+
+    const { result } = renderHook(() => useContractHealth());
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(false);
+    });
+    
+    expect(result.current.error).toContain('empty response');
+  });
+
   it('automatically retries on failure with backoff', async () => {
     vi.useFakeTimers();
     global.fetch.mockRejectedValue(new Error('Persistent failure'));
