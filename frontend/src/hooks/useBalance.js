@@ -87,7 +87,9 @@ export function useBalance(address) {
         retryCount.current = 0;
 
         const attempt = async () => {
-            if (abortControllerRef.current) abortControllerRef.current.abort();
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
             abortControllerRef.current = new AbortController();
 
             try {
@@ -120,7 +122,7 @@ export function useBalance(address) {
                     try {
                         await delay(RETRY_DELAY_MS, abortControllerRef.current.signal);
                     } catch (delayErr) {
-                        return; // Probably aborted
+                        return;
                     }
                     if (!isMounted.current) return;
                     return attempt();
