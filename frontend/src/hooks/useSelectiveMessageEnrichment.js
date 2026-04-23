@@ -113,6 +113,10 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     [visibleTips, tipMessages]
   );
 
+  /**
+   * Manually clears the enrichment state.
+   * Useful when forcefully refreshing the entire UI or changing networks.
+   */
   const clearEnrichment = useCallback(() => {
     setTipMessages({});
     previousIdsRef.current = [];
