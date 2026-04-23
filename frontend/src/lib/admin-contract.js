@@ -177,6 +177,10 @@ function decodeClarityHex(hex) {
         case 0x08: { // err
             return null;
         }
+        case 0x05: // standard principal
+            return hex.slice(0, 44); // 1 byte type + 1 byte version + 20 bytes hash = 22 bytes = 44 hex chars
+        case 0x06: // contract principal
+            return hex; // Complex, just return hex for now
         case 0x0c: { // tuple
             const numFields = parseInt(hex.slice(2, 10), 16);
             const result = {};
