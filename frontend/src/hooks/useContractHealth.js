@@ -109,8 +109,10 @@ export function useContractHealth() {
   }, []);
 
   const retry = useCallback(() => {
-    setRetryCount(prev => prev + 1);
-  }, []);
+    if (!checking) {
+      setRetryCount(prev => prev + 1);
+    }
+  }, [checking]);
 
   useEffect(() => {
     checkHealth();
