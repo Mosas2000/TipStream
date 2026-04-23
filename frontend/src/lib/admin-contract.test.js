@@ -5,7 +5,8 @@ import {
     fetchCurrentFee,
     fetchCurrentBlockHeight,
     fetchPauseState,
-    fetchContractOwner
+    fetchContractOwner,
+    fetchMultisig
 } from './admin-contract';
 import { STACKS_API_BASE, CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 
