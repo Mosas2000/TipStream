@@ -84,19 +84,23 @@ export async function fetchPauseState() {
  * @returns {Promise<{ currentFeeBasisPoints: number, pendingFee: number|null, effectiveHeight: number }>}
  */
 export async function fetchFeeState() {
-    // Fetch both pending and current state in parallel for consistency
-    const [pendingData, currentFee] = await Promise.all([
-        callReadOnly('get-pending-fee-change'),
-        fetchCurrentFee()
-    ]);
+    try {
+        // Fetch both pending and current state in parallel for consistency
+        const [pendingData, currentFee] = await Promise.all([
+            callReadOnly('get-pending-fee-change'),
+            fetchCurrentFee()
+        ]);
 
-    const result = parseClarityValue(pendingData.result);
+        const result = parseClarityValue(pendingData.result);
 
-    return {
-        currentFeeBasisPoints: currentFee,
-        pendingFee: result['pending-fee'],
-        effectiveHeight: result['effective-height'] || 0,
-    };
+        return {
+            currentFeeBasisPoints: currentFee,
+            pendingFee: result['pending-fee'],
+            effectiveHeight: result['effective-height'] || 0,
+        };
+    } catch (err) {
+        throw new Error(`Failed to fetch fee state: ${err.message}`);
+    }
 }
 
 /**
