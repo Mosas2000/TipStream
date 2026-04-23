@@ -46,6 +46,8 @@ export function useBalance(address) {
     const [lastFetched, setLastFetched] = useState(null);
 
     const retryCount = useRef(0);
+    const abortControllerRef = useRef(null);
+    const timeoutIdRef = useRef(null);
 
     useEffect(() => {
         return () => {
