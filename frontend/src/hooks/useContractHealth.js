@@ -89,14 +89,11 @@ export function useContractHealth() {
       const isAbort = err.name === 'AbortError';
       const isNetwork = err.name === 'TypeError' || err.message?.includes('fetch');
 
-      let message;
-      if (isAbort) {
-        message = 'Health check timed out. The Stacks API may be slow or unreachable.';
-      } else if (isNetwork) {
-        message = 'Unable to reach the Stacks API. Please check your internet connection.';
-      } else {
-        message = err.message || 'An unexpected error occurred during the health check.';
-      }
+      const message = isAbort
+        ? 'Health check timed out. The Stacks API may be slow or unreachable.'
+        : isNetwork
+          ? 'Unable to reach the Stacks API. Please check your internet connection.'
+          : err.message || 'An unexpected error occurred during the health check.';
 
       setHealthy(false);
       setError(message);
