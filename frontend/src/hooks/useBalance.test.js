@@ -234,4 +234,18 @@ describe('useBalance Hook', () => {
 
         expect(result.current.lastFetched).toBeGreaterThan(firstFetched);
     });
+
+    it('handles large balance strings', async () => {
+        const largeBalance = '1000000000000000000000000'; // Way beyond Number.MAX_SAFE_INTEGER
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ balance: largeBalance })
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(result.current.balance).toBe(largeBalance));
+        // balanceStx might be Infinity or null depending on how microToStx handles it
+        // but the raw balance should be correct
+    });
 });
