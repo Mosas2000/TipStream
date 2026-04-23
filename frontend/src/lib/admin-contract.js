@@ -139,9 +139,13 @@ export async function fetchMultisig() {
  * @returns {Promise<number>} Current fee in basis points
  */
 export async function fetchCurrentFee() {
-    const data = await callReadOnly(FN_GET_CURRENT_FEE_BASIS_POINTS);
-    const result = parseClarityValue(data.result);
-    return typeof result === 'number' ? result : 0;
+    try {
+        const data = await callReadOnly(FN_GET_CURRENT_FEE_BASIS_POINTS);
+        const result = parseClarityValue(data.result);
+        return typeof result === 'number' ? result : 0;
+    } catch (err) {
+        throw new Error(`Failed to fetch current fee: ${err.message}`);
+    }
 }
 
 /**
