@@ -39,12 +39,19 @@ function normalizeMicroStxBalance(rawBalance) {
  * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, lastFetched: number|null, refetch: () => Promise<void> }}
  */
 export function useBalance(address) {
+    const isMounted = useRef(true);
     const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [lastFetched, setLastFetched] = useState(null);
 
     const retryCount = useRef(0);
+
+    useEffect(() => {
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
 
     const fetchBalance = useCallback(async () => {
         if (!address) {
