@@ -50,6 +50,11 @@ describe('Admin Contract Helpers', () => {
             expect(parseClarityValue('080100000000000000000000000000000001')).toBe(null);
         });
 
+        it('parses standard principals as raw hex', () => {
+            const hex = '05001a1c3606f37699e128df21b0e3532822180410';
+            expect(parseClarityValue(hex)).toBe(hex.slice(0, 44));
+        });
+
         it('parses tuple values correctly', () => {
             // (tuple (pending-fee (some u500)) (effective-height u12345))
             // This is a complex hex, but let's mock it or use a simpler one.
