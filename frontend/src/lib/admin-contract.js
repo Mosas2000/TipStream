@@ -73,7 +73,7 @@ export async function fetchPauseState() {
 /**
  * Fetch the current fee basis points and any pending fee change.
  *
- * @returns {Promise<{ currentFee: number, pendingFee: number|null, effectiveHeight: number }>}
+ * @returns {Promise<{ currentFeeBasisPoints: number, pendingFee: number|null, effectiveHeight: number }>}
  */
 export async function fetchFeeState() {
     // Fetch both pending and current state in parallel for consistency
@@ -85,7 +85,7 @@ export async function fetchFeeState() {
     const result = parseClarityValue(pendingData.result);
 
     return {
-        currentFee,
+        currentFeeBasisPoints: currentFee,
         pendingFee: result['pending-fee'],
         effectiveHeight: result['effective-height'] || 0,
     };
