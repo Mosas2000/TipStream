@@ -64,6 +64,11 @@ describe('Admin Contract Helpers', () => {
             expect(parseClarityValue(hex)).toBe(hex.slice(0, 44));
         });
 
+        it('returns null for invalid hex', () => {
+            expect(parseClarityValue('not-hex')).toBe(null);
+            expect(parseClarityValue('ZZ')).toBe(null);
+        });
+
         it('parses tuple values correctly', () => {
             // (tuple (pending-fee (some u500)) (effective-height u12345))
             // This is a complex hex, but let's mock it or use a simpler one.
