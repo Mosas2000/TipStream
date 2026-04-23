@@ -136,4 +136,25 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     expect(result.current.enrichedTips).toHaveLength(0);
     expect(result.current.loading).toBe(false);
   });
+
+  it('reconciles state on partial set change', async () => {
+    const mockMessages1 = new Map([['1', 'Msg1'], ['2', 'Msg2']]);
+    const mockMessages2 = new Map([['3', 'Msg3']]);
+    
+    fetchTipMessages
+      .mockResolvedValueOnce(mockMessages1)
+      .mockResolvedValueOnce(mockMessages2);
+
+    const { result, rerender } = renderHook(({ tips }) => useSelectiveMessageEnrichment(tips), {
+      initialProps: { tips: [{ tipId: '1' }, { tipId: '2' }] }
+    });
+
+    await waitFor(() => expect(result.current.enrichedTips[1]?.message).toBe('Msg2'));
+
+    // Move from [1, 2] to [2, 3] - partial overlap
+    rerender({ tips: [{ tipId: '2' }, { tipId: '3' }] });
+
+    await waitFor(() => expect(result.current.enrichedTips[1]?.message).toBe('Msg3'));
+    expect(result.current.enrichedTips[0].message).toBe('Msg2');
+  });
 });
