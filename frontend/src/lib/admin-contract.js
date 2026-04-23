@@ -109,9 +109,13 @@ export async function fetchFeeState() {
  * @returns {Promise<string>} Contract owner principal
  */
 export async function fetchContractOwner() {
-    const data = await callReadOnly('get-contract-owner');
-    const result = parseClarityValue(data.result);
-    return result;
+    try {
+        const data = await callReadOnly('get-contract-owner');
+        const result = parseClarityValue(data.result);
+        return result;
+    } catch (err) {
+        throw new Error(`Failed to fetch contract owner: ${err.message}`);
+    }
 }
 
 /**
