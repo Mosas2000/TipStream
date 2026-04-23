@@ -52,6 +52,8 @@ export function useBalance(address) {
     useEffect(() => {
         return () => {
             isMounted.current = false;
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+            if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
         };
     }, []);
 
