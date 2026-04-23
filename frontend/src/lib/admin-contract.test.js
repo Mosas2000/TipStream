@@ -27,6 +27,14 @@ describe('Admin Contract Helpers', () => {
             expect(parseClarityValue('0a03')).toBe(true); // some true
         });
 
+        it('parses ok responses correctly', () => {
+            expect(parseClarityValue('070100000000000000000000000000000064')).toBe(100);
+        });
+
+        it('parses err responses as null', () => {
+            expect(parseClarityValue('080100000000000000000000000000000001')).toBe(null);
+        });
+
         it('parses tuple values correctly', () => {
             // (tuple (pending-fee (some u500)) (effective-height u12345))
             // This is a complex hex, but let's mock it or use a simpler one.
