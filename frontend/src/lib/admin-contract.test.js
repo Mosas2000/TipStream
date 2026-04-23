@@ -57,4 +57,18 @@ describe('Admin Contract Helpers', () => {
             expect(state.effectiveHeight).toBe(12345);
         });
     });
+
+    describe('fetchCurrentFee', () => {
+        it('fetches and parses current fee basis points', async () => {
+            const mockFeeHex = '01000000000000000000000000000000c8'; // u200
+            
+            global.fetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ result: mockFeeHex })
+            });
+
+            const fee = await fetchCurrentFee();
+            expect(fee).toBe(200);
+        });
+    });
 });
