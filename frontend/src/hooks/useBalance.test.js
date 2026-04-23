@@ -79,4 +79,17 @@ describe('useBalance Hook', () => {
         expect(result.current.error).toBe('API returned 404');
         expect(result.current.balance).toBe(null);
     });
+
+    it('handles malformed JSON response', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.reject(new Error('SyntaxError'))
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        // It will retry twice then fail
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        expect(result.current.error).toBeDefined();
+    });
 });
