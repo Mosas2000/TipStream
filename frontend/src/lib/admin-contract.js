@@ -124,9 +124,13 @@ export async function fetchContractOwner() {
  * @returns {Promise<string|null>} Multisig principal or null
  */
 export async function fetchMultisig() {
-    const data = await callReadOnly('get-multisig');
-    const result = parseClarityValue(data.result);
-    return result;
+    try {
+        const data = await callReadOnly('get-multisig');
+        const result = parseClarityValue(data.result);
+        return result;
+    } catch (err) {
+        throw new Error(`Failed to fetch multisig address: ${err.message}`);
+    }
 }
 
 /**
