@@ -34,8 +34,9 @@ export function useContractHealth() {
     setChecking(true);
     setError(null);
 
+    const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+
     try {
-      const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
       
       const controller = new AbortController();
       abortControllerRef.current = controller;
