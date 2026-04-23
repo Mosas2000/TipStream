@@ -167,6 +167,21 @@ describe('useContractHealth Hook', () => {
     });
   });
 
+  it('ignores retry calls while already checking', async () => {
+    global.fetch.mockReturnValue(new Promise(() => {})); // Hangs
+
+    const { result } = renderHook(() => useContractHealth());
+
+    expect(result.current.checking).toBe(true);
+
+    act(() => {
+      result.current.retry();
+    });
+
+    // Fetch should still have been called only once
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('automatically retries on failure with backoff', async () => {
     vi.useFakeTimers();
     global.fetch.mockRejectedValue(new Error('Persistent failure'));
