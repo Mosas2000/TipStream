@@ -120,4 +120,24 @@ describe('useBalance Hook', () => {
         rerender({ addr: null });
         expect(result.current.balance).toBe(null);
     });
+
+    it('allows manual refetch', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ balance: '5000' })
+        }).mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ balance: '6000' })
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(result.current.balance).toBe('5000'));
+
+        await act(async () => {
+            await result.current.refetch();
+        });
+
+        expect(result.current.balance).toBe('6000');
+    });
 });
