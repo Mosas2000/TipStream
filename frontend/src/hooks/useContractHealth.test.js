@@ -97,11 +97,10 @@ describe('useContractHealth Hook', () => {
       vi.advanceTimersByTime(11000);
     });
 
-    await waitFor(() => {
-      expect(result.current.healthy).toBe(false);
-    });
-    
+    // Check state immediately after advancing timers
+    expect(result.current.healthy).toBe(false);
     expect(result.current.error).toContain('timed out');
+    
     vi.useRealTimers();
   });
 
