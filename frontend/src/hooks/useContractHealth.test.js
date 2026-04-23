@@ -58,4 +58,16 @@ describe('useContractHealth Hook', () => {
     
     expect(result.current.error).toContain('does not contain expected functions');
   });
+
+  it('handles network errors', async () => {
+    global.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useContractHealth());
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(false);
+    });
+    
+    expect(result.current.error).toContain('Unable to reach the Stacks API');
+  });
 });
