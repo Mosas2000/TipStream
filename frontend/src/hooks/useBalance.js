@@ -56,7 +56,14 @@ function normalizeMicroStxBalance(rawBalance) {
  * error state. Call refetch() to manually retry after a failure.
  *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
- * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, lastFetched: number|null, refetch: () => Promise<void> }}
+ * @returns {{
+ *   balance: string|null,
+ *   balanceStx: number|null,
+ *   loading: boolean,
+ *   error: string|null,
+ *   lastFetched: number|null,
+ *   refetch: () => Promise<void>
+ * }} Hook state and refetch helper.
  */
 export function useBalance(address) {
     const isMounted = useRef(true);
