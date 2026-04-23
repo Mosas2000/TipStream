@@ -102,6 +102,7 @@ export function useBalance(address) {
                         timeoutIdRef.current = setTimeout(r, RETRY_DELAY_MS);
                     });
                     timeoutIdRef.current = null;
+                    if (!isMounted.current) return;
                     return attempt();
                 }
                 console.error('Failed to fetch balance:', err.message);
