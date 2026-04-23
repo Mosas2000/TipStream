@@ -158,19 +158,20 @@ describe('useBalance Hook', () => {
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
 
         // Start second one
-        act(() => {
-            result.current.refetch();
+        let refetchPromise;
+        await act(async () => {
+            refetchPromise = result.current.refetch();
         });
 
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
 
-        // Resolve first one - should be ignored
+        // Resolve first one - should be ignored (it already threw AbortError internally)
         resolveFirst({
             ok: true,
             json: () => Promise.resolve({ balance: '1' })
         });
 
-        await waitFor(() => expect(result.current.balance).toBe('7000'));
-        expect(result.current.balance).not.toBe('1');
+        await refetchPromise;
+        expect(result.current.balance).toBe('7000');
     });
 });
