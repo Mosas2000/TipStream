@@ -5,6 +5,26 @@ import { microToStx } from '../lib/balance-utils';
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
 
+/**
+ * Promise-based delay that can be cancelled via AbortSignal.
+ * @param {number} ms - Milliseconds to wait
+ * @param {AbortSignal} [signal] - Optional signal to cancel the delay
+ * @returns {Promise<void>}
+ */
+const delay = (ms, signal) => new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+        signal?.removeEventListener('abort', abortHandler);
+        resolve();
+    }, ms);
+
+    const abortHandler = () => {
+        clearTimeout(timeout);
+        reject(new Error('Aborted'));
+    };
+
+    signal?.addEventListener('abort', abortHandler, { once: true });
+});
+
 function normalizeMicroStxBalance(rawBalance) {
     if (typeof rawBalance === 'number') {
         if (!Number.isFinite(rawBalance) || !Number.isInteger(rawBalance) || rawBalance < 0) {
