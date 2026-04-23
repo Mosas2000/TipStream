@@ -95,7 +95,7 @@ export function useContractHealth() {
       } else if (isNetwork) {
         message = 'Unable to reach the Stacks API. Please check your internet connection.';
       } else {
-        message = err.message;
+        message = err.message || 'An unexpected error occurred during the health check.';
       }
 
       setHealthy(false);
