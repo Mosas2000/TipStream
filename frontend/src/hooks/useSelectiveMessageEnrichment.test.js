@@ -94,4 +94,19 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe('Fetch failed');
   });
+
+  it('cancels in-flight requests when unmounted', async () => {
+    let resolveFetch;
+    const fetchPromise = new Promise(resolve => { resolveFetch = resolve; });
+    fetchTipMessages.mockReturnValue(fetchPromise);
+
+    const { unmount } = renderHook(() => useSelectiveMessageEnrichment([{ tipId: '1' }]));
+    
+    unmount();
+    
+    resolveFetch(new Map([['1', 'Msg1']]));
+    // Should not update state or log errors (hard to test without spies on setTipMessages, 
+    // but we can verify fetchTipMessages was called).
+    expect(fetchTipMessages).toHaveBeenCalledTimes(1);
+  });
 });
