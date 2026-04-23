@@ -110,7 +110,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
 
   const enrichedTips = useMemo(
     () => visibleTips.map(t => {
-      const msg = tipMessages[String(t.tipId)];
+      const msg = tipMessages[String(t?.tipId)];
       return msg ? { ...t, message: msg } : t;
     }),
     [visibleTips, tipMessages]
