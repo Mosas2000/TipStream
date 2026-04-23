@@ -45,7 +45,11 @@ async function callReadOnly(functionName, args = []) {
         throw new Error(`Read-only call failed: ${response.statusText}`);
     }
 
-    return response.json();
+    try {
+        return await response.json();
+    } catch (err) {
+        throw new Error(`Failed to parse contract response: ${err.message}`);
+    }
 }
 
 /**
