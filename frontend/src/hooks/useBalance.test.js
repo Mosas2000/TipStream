@@ -174,4 +174,22 @@ describe('useBalance Hook', () => {
         await refetchPromise;
         expect(result.current.balance).toBe('7000');
     });
+
+    it('manages loading state correctly', async () => {
+        let resolveFetch;
+        global.fetch.mockReturnValue(new Promise(resolve => { resolveFetch = resolve; }));
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        expect(result.current.loading).toBe(true);
+
+        await act(async () => {
+            resolveFetch({
+                ok: true,
+                json: () => Promise.resolve({ balance: '100' })
+            });
+        });
+
+        await waitFor(() => expect(result.current.loading).toBe(false));
+    });
 });
