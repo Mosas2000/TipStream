@@ -31,13 +31,14 @@ export async function fetchCurrentBlockHeight() {
  * @returns {Promise<object>} Decoded contract response
  */
 async function callReadOnly(functionName, args = []) {
+    const clarityArgs = Array.isArray(args) ? args : [];
     const url = `${STACKS_API_BASE}/v2/contracts/call-read/${CONTRACT_ADDRESS}/${CONTRACT_NAME}/${functionName}`;
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             sender: CONTRACT_ADDRESS,
-            arguments: args,
+            arguments: clarityArgs,
         }),
     });
 
