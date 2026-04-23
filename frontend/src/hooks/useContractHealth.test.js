@@ -39,4 +39,23 @@ describe('useContractHealth Hook', () => {
     
     expect(result.current.checking).toBe(false);
   });
+
+  it('sets healthy to false when contract is missing expected functions', async () => {
+    const mockResponse = {
+      functions: [{ name: 'other-function' }]
+    };
+
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse)
+    });
+
+    const { result } = renderHook(() => useContractHealth());
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(false);
+    });
+    
+    expect(result.current.error).toContain('does not contain expected functions');
+  });
 });
