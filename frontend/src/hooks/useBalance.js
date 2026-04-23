@@ -82,6 +82,7 @@ export function useBalance(address) {
                 }
 
                 const data = await res.json();
+                if (!isMounted.current) return;
 
                 const normalized = normalizeMicroStxBalance(data?.balance);
                 if (normalized === null) {
@@ -92,6 +93,9 @@ export function useBalance(address) {
                 setLastFetched(Date.now());
                 setLoading(false);
             } catch (err) {
+                if (err.name === 'AbortError') return;
+                if (!isMounted.current) return;
+
                 if (retryCount.current < MAX_RETRIES) {
                     retryCount.current += 1;
                     await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
