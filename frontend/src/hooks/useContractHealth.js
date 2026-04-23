@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE } from '../config/contracts';
 
 const HEALTH_CHECK_TIMEOUT_MS = 10000;
@@ -12,19 +12,39 @@ const MAX_RETRIES = 3;
  * @returns {{ healthy: boolean|null, error: string|null, checking: boolean, retry: () => void }}
  */
 export function useContractHealth() {
+  /** Tracks if the component is currently mounted to prevent state updates after unmount */
+  const isMounted = useRef(true);
   const [healthy, setHealthy] = useState(null);
   const [error, setError] = useState(null);
   const [checking, setChecking] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  /** @type {import('react').MutableRefObject<AbortController|null>} */
+  const abortControllerRef = useRef(null);
+  /** @type {import('react').MutableRefObject<NodeJS.Timeout|number|null>} */
+  const timeoutIdRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
 
   const checkHealth = useCallback(async () => {
+    if (!isMounted.current) return;
     setChecking(true);
     setError(null);
 
+    const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+
     try {
-      const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+      
       const controller = new AbortController();
+      abortControllerRef.current = controller;
+      
       const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+      timeoutIdRef.current = timeoutId;
 
       const response = await fetch(
         `${STACKS_API_BASE}/v2/contracts/interface/${CONTRACT_ADDRESS}/${CONTRACT_NAME}`,
@@ -32,6 +52,8 @@ export function useContractHealth() {
       );
 
       clearTimeout(timeoutId);
+      timeoutIdRef.current = null;
+      abortControllerRef.current = null;
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -45,6 +67,11 @@ export function useContractHealth() {
       }
 
       const data = await response.json();
+      if (!isMounted.current) return;
+
+      if (!data) {
+        throw new Error('Stacks API returned empty response.');
+      }
 
       // Verify it has expected functions
       const functionNames = data.functions?.map(f => f.name) || [];
@@ -57,34 +84,43 @@ export function useContractHealth() {
       setHealthy(true);
       setError(null);
     } catch (err) {
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+      
+      if (!isMounted.current) return;
+
       const isAbort = err.name === 'AbortError';
       const isNetwork = err.name === 'TypeError' || err.message?.includes('fetch');
 
-      let message;
-      if (isAbort) {
-        message = 'Health check timed out. The Stacks API may be slow or unreachable.';
-      } else if (isNetwork) {
-        message = 'Unable to reach the Stacks API. Please check your internet connection.';
-      } else {
-        message = err.message;
-      }
+      const message = isAbort
+        ? 'Health check timed out. The Stacks API may be slow or unreachable.'
+        : isNetwork
+          ? 'Unable to reach the Stacks API. Please check your internet connection.'
+          : err.message || 'An unexpected error occurred during the health check.';
 
       setHealthy(false);
       setError(message);
     } finally {
-      setChecking(false);
+      if (isMounted.current) {
+        setChecking(false);
+      }
+      abortControllerRef.current = null;
     }
   }, []);
 
   const retry = useCallback(() => {
-    setRetryCount(prev => prev + 1);
-  }, []);
+    if (!checking) {
+      setRetryCount(prev => prev + 1);
+    }
+  }, [checking]);
 
   useEffect(() => {
     checkHealth();
   }, [checkHealth, retryCount]);
 
-  // Auto-retry with backoff
+  // Auto-retry with exponential backoff (5s, 10s, 15s)
   useEffect(() => {
     if (healthy === false && retryCount < MAX_RETRIES) {
       const timer = setTimeout(() => {
