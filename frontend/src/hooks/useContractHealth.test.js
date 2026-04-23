@@ -166,4 +166,27 @@ describe('useContractHealth Hook', () => {
       expect(result.current.healthy).toBe(true);
     });
   });
+
+  it('automatically retries on failure with backoff', async () => {
+    vi.useFakeTimers();
+    global.fetch.mockRejectedValue(new Error('Persistent failure'));
+
+    renderHook(() => useContractHealth());
+
+    // Wait for first check to fail
+    await act(async () => {
+      await Promise.resolve(); // Start fetch
+      await Promise.resolve(); // Reject fetch
+    });
+
+    // Fast forward to first retry (RETRY_DELAY_MS * 1 = 5000)
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    // Check if fetch was called again
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
 });
