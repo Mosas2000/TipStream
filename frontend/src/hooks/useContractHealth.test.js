@@ -88,8 +88,15 @@ describe('useContractHealth Hook', () => {
 
   it('handles health check timeout', async () => {
     vi.useFakeTimers();
-    // Mock fetch to simulate a hang
-    global.fetch.mockImplementation(() => new Promise(() => {}));
+    global.fetch.mockImplementation((url, options) => {
+      return new Promise((_, reject) => {
+        options.signal.addEventListener('abort', () => {
+          const err = new Error('The operation was aborted.');
+          err.name = 'AbortError';
+          reject(err);
+        });
+      });
+    });
 
     const { result } = renderHook(() => useContractHealth());
 
