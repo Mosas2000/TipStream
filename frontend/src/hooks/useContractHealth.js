@@ -75,6 +75,13 @@ export function useContractHealth() {
       setHealthy(true);
       setError(null);
     } catch (err) {
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+      
+      if (!isMounted.current) return;
+
       const isAbort = err.name === 'AbortError';
       const isNetwork = err.name === 'TypeError' || err.message?.includes('fetch');
 
@@ -90,7 +97,10 @@ export function useContractHealth() {
       setHealthy(false);
       setError(message);
     } finally {
-      setChecking(false);
+      if (isMounted.current) {
+        setChecking(false);
+      }
+      abortControllerRef.current = null;
     }
   }, []);
 
