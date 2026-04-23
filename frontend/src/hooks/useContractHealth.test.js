@@ -97,7 +97,12 @@ describe('useContractHealth Hook', () => {
       vi.advanceTimersByTime(11000);
     });
 
-    // Check state immediately after advancing timers
+    // Flush microtasks to allow the catch block to run
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Check state immediately after advancing timers and flushing
     expect(result.current.healthy).toBe(false);
     expect(result.current.error).toContain('timed out');
     
