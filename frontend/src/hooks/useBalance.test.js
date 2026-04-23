@@ -92,4 +92,16 @@ describe('useBalance Hook', () => {
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
         expect(result.current.error).toBeDefined();
     });
+
+    it('handles invalid balance format from API', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ balance: 'abc' })
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        expect(result.current.error).toContain('Unexpected balance format');
+    });
 });
