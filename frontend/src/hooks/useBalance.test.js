@@ -260,4 +260,16 @@ describe('useBalance Hook', () => {
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
         expect(result.current.balance).toBe(null);
     });
+
+    it('handles decimal balance from API as invalid', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ balance: 100.5 })
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        expect(result.current.balance).toBe(null);
+    });
 });
