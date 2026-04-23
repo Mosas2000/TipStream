@@ -54,18 +54,17 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     let cancelled = false;
     cancelledRef.current = false;
     
+    setLoading(true);
+    setError(null);
+
     Promise.resolve().then(() => {
       if (cancelled || cancelledRef.current) return;
       
-      // If the new set has no overlap with the old set, clear messages to avoid stale state.
-      // This handles rapid pagination and filtering.
       const hasOverlap = visibleTipIds.some(id => previousIds.includes(id));
       if (!hasOverlap && previousIds.length > 0) {
         setTipMessages({});
       }
       
-      setLoading(true);
-      setError(null);
       setPreviousIds(visibleTipIds);
     });
 
