@@ -31,6 +31,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   const cancelledRef = useRef(false);
   const previousIdsRef = useRef([]);
 
+  // Extract unique, non-zero tip IDs from the currently visible set
   const visibleTipIds = useMemo(
     () => visibleTips
       .map(t => t.tipId)
