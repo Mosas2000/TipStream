@@ -22,6 +22,9 @@ import { createEnrichmentMarker } from '../lib/enrichmentMetrics';
  * @returns {Object} { enrichedTips, loading, error }
  */
 export function useSelectiveMessageEnrichment(visibleTips = []) {
+  if (!Array.isArray(visibleTips)) {
+    visibleTips = [];
+  }
   const [tipMessages, setTipMessages] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
