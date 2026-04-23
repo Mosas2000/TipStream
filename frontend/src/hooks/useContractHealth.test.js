@@ -144,4 +144,26 @@ describe('useContractHealth Hook', () => {
     // Healthy should still be null, not true
     expect(result.current.healthy).toBeNull();
   });
+
+  it('retries health check when retry is called', async () => {
+    global.fetch.mockRejectedValueOnce(new Error('First failure'))
+                 .mockResolvedValueOnce({
+                   ok: true,
+                   json: () => Promise.resolve({ functions: [{ name: 'send-tip' }] })
+                 });
+
+    const { result } = renderHook(() => useContractHealth());
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(false);
+    });
+
+    act(() => {
+      result.current.retry();
+    });
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(true);
+    });
+  });
 });
