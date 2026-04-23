@@ -68,9 +68,13 @@ export function useBalance(address) {
         retryCount.current = 0;
 
         const attempt = async () => {
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+            abortControllerRef.current = new AbortController();
+
             try {
                 const res = await fetch(
-                    `${STACKS_API_BASE}/extended/v1/address/${address}/stx`
+                    `${STACKS_API_BASE}/extended/v1/address/${address}/stx`,
+                    { signal: abortControllerRef.current.signal }
                 );
 
                 if (!res.ok) {
