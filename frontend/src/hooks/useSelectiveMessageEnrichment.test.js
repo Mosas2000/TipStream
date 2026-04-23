@@ -109,4 +109,25 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     // but we can verify fetchTipMessages was called).
     expect(fetchTipMessages).toHaveBeenCalledTimes(1);
   });
+
+  it('handles rapid visible set changes', async () => {
+    const mockMessages1 = new Map([['1', 'Msg1']]);
+    const mockMessages2 = new Map([['2', 'Msg2']]);
+    
+    fetchTipMessages
+      .mockResolvedValueOnce(mockMessages1)
+      .mockResolvedValueOnce(mockMessages2);
+
+    const { result, rerender } = renderHook(({ tips }) => useSelectiveMessageEnrichment(tips), {
+      initialProps: { tips: [{ tipId: '1' }] }
+    });
+
+    // Immediately change to a different set before the first one finishes
+    rerender({ tips: [{ tipId: '2' }] });
+
+    await waitFor(() => expect(result.current.enrichedTips[0]?.message).toBe('Msg2'));
+    // Since '1' was completely replaced by '2' (no overlap), '1' should not be present in enrichedTips
+    expect(result.current.enrichedTips).toHaveLength(1);
+    expect(result.current.enrichedTips[0].tipId).toBe('2');
+  });
 });
