@@ -19,7 +19,7 @@ import { createEnrichmentMarker } from '../lib/enrichmentMetrics';
  * Selective message enrichment hook.
  *
  * @param {Array<Object>} visibleTips - The tips currently visible.
- * @returns {Object} { enrichedTips, loading, error }
+ * @returns {Object} { enrichedTips, loading, error, clearEnrichment }
  */
 export function useSelectiveMessageEnrichment(visibleTips = []) {
   if (!Array.isArray(visibleTips)) {
