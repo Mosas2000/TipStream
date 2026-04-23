@@ -40,6 +40,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     [visibleTips]
   );
 
+  // Compute whether the visible set has changed compared to our last fetch
   const hasNewIds = useMemo(
     () => visibleTipIds.length !== previousIdsRef.current.length ||
            visibleTipIds.some((id, i) => id !== previousIdsRef.current[i]),
