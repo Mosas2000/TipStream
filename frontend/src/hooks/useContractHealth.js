@@ -34,8 +34,12 @@ export function useContractHealth() {
 
     try {
       const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+      
       const controller = new AbortController();
+      abortControllerRef.current = controller;
+      
       const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+      timeoutIdRef.current = timeoutId;
 
       const response = await fetch(
         `${STACKS_API_BASE}/v2/contracts/interface/${CONTRACT_ADDRESS}/${CONTRACT_NAME}`,
@@ -43,6 +47,8 @@ export function useContractHealth() {
       );
 
       clearTimeout(timeoutId);
+      timeoutIdRef.current = null;
+      abortControllerRef.current = null;
 
       if (!response.ok) {
         if (response.status === 404) {
