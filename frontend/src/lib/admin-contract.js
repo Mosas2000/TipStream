@@ -28,7 +28,7 @@ export async function fetchCurrentBlockHeight() {
  *
  * @param {string} functionName - The read-only function name
  * @param {Array} args - Clarity function arguments (hex-encoded)
- * @returns {Promise<object>} Decoded contract response
+ * @returns {Promise<{result: string}>} Decoded contract response
  */
 async function callReadOnly(functionName, args = []) {
     const clarityArgs = Array.isArray(args) ? args : [];
