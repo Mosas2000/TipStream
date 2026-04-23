@@ -272,4 +272,16 @@ describe('useBalance Hook', () => {
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
         expect(result.current.balance).toBe(null);
     });
+
+    it('handles empty response gracefully', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({})
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        expect(result.current.balance).toBe(null);
+    });
 });
