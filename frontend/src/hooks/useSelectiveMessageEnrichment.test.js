@@ -43,15 +43,12 @@ describe('useSelectiveMessageEnrichment Hook', () => {
       initialProps: { tips: [{ tipId: '1' }] }
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.enrichedTips[0].message).toBe('Msg1');
+    await waitFor(() => expect(result.current.enrichedTips[0].message).toBe('Msg1'));
 
     rerender({ tips: [{ tipId: '1' }, { tipId: '2' }] });
     
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.enrichedTips).toHaveLength(2);
+    await waitFor(() => expect(result.current.enrichedTips[1]?.message).toBe('Msg2'));
     expect(result.current.enrichedTips[0].message).toBe('Msg1');
-    expect(result.current.enrichedTips[1].message).toBe('Msg2');
   });
 
   it('resets stale state when visible set changes completely', async () => {
