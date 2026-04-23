@@ -113,10 +113,10 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     [visibleTips, tipMessages]
   );
 
-  const clearEnrichment = () => {
+  const clearEnrichment = useCallback(() => {
     setTipMessages({});
     setPreviousIds([]);
-  };
+  }, []);
 
   return {
     enrichedTips,
