@@ -120,10 +120,7 @@ export function useBalance(address) {
 
                 if (retryCount.current < MAX_RETRIES) {
                     retryCount.current += 1;
-                    await new Promise(r => {
-                        timeoutIdRef.current = setTimeout(r, RETRY_DELAY_MS);
-                    });
-                    timeoutIdRef.current = null;
+                    await delay(RETRY_DELAY_MS, abortControllerRef.current.signal);
                     if (!isMounted.current) return;
                     return attempt();
                 }
