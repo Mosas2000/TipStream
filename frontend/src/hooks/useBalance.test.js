@@ -248,4 +248,16 @@ describe('useBalance Hook', () => {
         // balanceStx might be Infinity or null depending on how microToStx handles it
         // but the raw balance should be correct
     });
+
+    it('handles negative balance from API as invalid', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ balance: -100 })
+        });
+
+        const { result } = renderHook(() => useBalance('SP123'));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(3), { timeout: 5000 });
+        expect(result.current.balance).toBe(null);
+    });
 });
