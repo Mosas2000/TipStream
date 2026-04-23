@@ -86,6 +86,22 @@ describe('useContractHealth Hook', () => {
     expect(result.current.error).toContain('not found');
   });
 
+  it('handles 404 error specifically for contract not found', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 404
+    });
+
+    const { result } = renderHook(() => useContractHealth());
+
+    await waitFor(() => {
+      expect(result.current.healthy).toBe(false);
+    });
+    
+    expect(result.current.error).toContain('not found');
+    expect(result.current.error).toContain('deployed yet');
+  });
+
   it('handles health check timeout', async () => {
     vi.useFakeTimers();
     global.fetch.mockImplementation((url, options) => {
