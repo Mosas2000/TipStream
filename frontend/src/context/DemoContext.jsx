@@ -8,7 +8,10 @@ const DemoContext = createContext({
   demoBalance: getDemo().mockBalance,
   setDemoBalance: () => {},
   demoTips: [],
+  demoNotifications: [],
+  demoStats: getDemo().mockStats,
   addDemoTip: () => {},
+  markNotificationRead: () => {},
   clearDemoHistory: () => {},
   resetDemoState: () => {},
 });
@@ -25,18 +28,19 @@ export function DemoProvider({ children }) {
   });
   const [demoBalance, setDemoBalance] = useState(() => getDemo().mockBalance);
   const [demoTips, setDemoTips] = useState(() => [...getDemo().mockTips]);
+  const [demoNotifications, setDemoNotifications] = useState(() => [...getDemo().mockNotifications]);
+  const [demoStats, setDemoStats] = useState(() => ({ ...getDemo().mockStats }));
 
   const toggleDemo = (enabled) => {
     setDemoMode(enabled);
     setDemoEnabled(enabled);
     if (enabled) {
-      setDemoBalance(getDemo().mockBalance);
-      setDemoTips([...getDemo().mockTips]);
-      return;
+      resetDemoState();
+    } else {
+      // Clean exit state
+      setDemoTips([]);
+      setDemoNotifications([]);
     }
-
-    setDemoBalance(getDemo().mockBalance);
-    setDemoTips([]);
   };
 
   const getDemoData = () => {
@@ -46,6 +50,8 @@ export function DemoProvider({ children }) {
   const resetDemoState = () => {
     setDemoBalance(getDemo().mockBalance);
     setDemoTips([...getDemo().mockTips]);
+    setDemoNotifications([...getDemo().mockNotifications]);
+    setDemoStats({ ...getDemo().mockStats });
   };
 
   const addDemoTip = (tipData) => {
@@ -53,22 +59,39 @@ export function DemoProvider({ children }) {
       return;
     }
 
-    setDemoTips((currentTips) => [
-      {
-        id: `demo-${Date.now()}`,
-        sender: getDemo().mockWalletAddress,
-        recipient: tipData.recipient,
-        amount: tipData.amount,
-        memo: tipData.memo || tipData.message || '',
-        timestamp: Date.now(),
-        category: tipData.category ?? null,
-      },
-      ...currentTips,
-    ]);
+    const newTip = {
+      id: `demo-${Date.now()}`,
+      sender: getDemo().mockWalletAddress,
+      recipient: tipData.recipient,
+      amount: tipData.amount,
+      memo: tipData.memo || tipData.message || '',
+      timestamp: Date.now(),
+      category: tipData.category ?? null,
+      txId: `0x${Math.random().toString(16).slice(2, 66)}`, // Simulate txId
+    };
+
+    setDemoTips((currentTips) => [newTip, ...currentTips]);
+    
+    // Deduct from mock balance
+    setDemoBalance(prev => prev - tipData.amount);
+
+    // Update mock stats
+    setDemoStats(prev => ({
+      ...prev,
+      totalVolume: prev.totalVolume + tipData.amount,
+      totalTips: prev.totalTips + 1
+    }));
+  };
+
+  const markNotificationRead = (id) => {
+    setDemoNotifications(current => 
+      current.map(n => n.id === id ? { ...n, read: true } : n)
+    );
   };
 
   const clearDemoHistory = () => {
     setDemoTips([]);
+    setDemoNotifications([]);
   };
 
   const value = {
@@ -78,10 +101,14 @@ export function DemoProvider({ children }) {
     demoBalance,
     setDemoBalance,
     demoTips,
+    demoNotifications,
+    demoStats,
     addDemoTip,
+    markNotificationRead,
     clearDemoHistory,
     resetDemoState,
   };
+
 
   return (
     <DemoContext.Provider value={value}>
