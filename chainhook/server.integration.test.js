@@ -1,8 +1,11 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { MAX_BODY_SIZE } from './validation.js';
 
 process.env.NODE_ENV = 'test';
+process.env.CHAINHOOK_AUTH_TOKEN = '';
+process.env.METRICS_AUTH_TOKEN = '';
 
 const { server } = await import('./server.js');
 
@@ -34,6 +37,38 @@ function request({ method, path, body, headers = {} }) {
     req.on('error', reject);
     if (payload) {
       req.write(payload);
+    }
+    req.end();
+  });
+}
+
+function requestChunked({ method, path, chunks, headers = {} }) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port: server.address().port,
+        path,
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Transfer-Encoding': 'chunked',
+          ...headers,
+        },
+      },
+      (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          const parsed = data ? JSON.parse(data) : null;
+          resolve({ status: res.statusCode, body: parsed, headers: res.headers });
+        });
+      },
+    );
+
+    req.on('error', reject);
+    for (const chunk of chunks) {
+      req.write(chunk);
     }
     req.end();
   });
@@ -312,6 +347,30 @@ describe('chainhook server integration', () => {
     assert.strictEqual(invalid.body.message, 'invalid payload');
     assert.ok(invalid.body.request_id);
     assert.ok(invalid.headers['x-request-id']);
+  });
+
+  it('rejects oversized chunked ingest bodies during streaming', async () => {
+    const body = JSON.stringify({
+      apply: [
+        {
+          block_identifier: { index: 777 },
+          timestamp: 1700000000000,
+          transactions: [],
+        },
+      ],
+      padding: 'x'.repeat(MAX_BODY_SIZE),
+    });
+
+    const response = await requestChunked({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      chunks: [body.slice(0, Math.ceil(body.length / 2)), body.slice(Math.ceil(body.length / 2))],
+    });
+
+    assert.strictEqual(response.status, 413);
+    assert.strictEqual(response.body.error, 'payload_too_large');
+    assert.strictEqual(response.body.message, 'payload too large');
+    assert.ok(response.headers['x-request-id']);
   });
 
   it('returns health with storage details', async () => {
