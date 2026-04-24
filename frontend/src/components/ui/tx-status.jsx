@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { STACKS_API_BASE } from '../../config/contracts';
+import { useDemoMode } from '../../context/DemoContext';
 
 const API_BASE = STACKS_API_BASE;
 
@@ -43,6 +44,7 @@ const STATUS_CONFIG = {
  *                                          when the transaction fails.
  */
 export default function TxStatus({ txId, onConfirmed, onFailed }) {
+  const { demoEnabled } = useDemoMode();
   const [status, setStatus] = useState('pending');
   const [pollCount, setPollCount] = useState(0);
 
@@ -60,6 +62,16 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
    * terminal state (success or abort).
    */
   const checkStatus = useCallback(async () => {
+    // Handle demo transaction confirmation simulation
+    if (demoEnabled && txId.startsWith('0x')) {
+      // Simulate success after a few "polls" or immediately
+      if (pollCount >= 1) {
+        setStatus('confirmed');
+        onConfirmedRef.current?.({ tx_status: 'success', tx_id: txId });
+      }
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE}/extended/v1/tx/${txId}`);
       if (!response.ok) return;
@@ -77,7 +89,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
     } catch {
       // Network error, keep polling
     }
-  }, [txId]);
+  }, [txId, demoEnabled, pollCount]);
 
   // Schedule the next poll using setTimeout (not setInterval) so the
   // effect correctly cleans up when the component unmounts or when a
@@ -85,20 +97,23 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
   useEffect(() => {
     if (status !== 'pending' || pollCount >= MAX_POLLS) return;
 
+    // Use a much shorter interval for demo mode confirmation simulation
+    const interval = demoEnabled ? 2000 : POLL_INTERVAL;
+
     const timer = setTimeout(() => {
       checkStatus();
       setPollCount((c) => c + 1);
-    }, POLL_INTERVAL);
+    }, interval);
 
     return () => clearTimeout(timer);
-  }, [status, pollCount, checkStatus]);
+  }, [status, pollCount, checkStatus, demoEnabled]);
 
   useEffect(() => {
     Promise.resolve().then(() => checkStatus());
   }, [checkStatus]);
 
   const config = STATUS_CONFIG[status];
-  const explorerUrl = `${EXPLORER_BASE_URL}/${txId}?chain=mainnet`;
+  const explorerUrl = demoEnabled ? '#' : `${EXPLORER_BASE_URL}/${txId}?chain=mainnet`;
 
   return (
     <div data-testid="tx-status" data-status={status} aria-busy={status === 'pending'} className={`mt-4 p-4 rounded-xl border ${config.color}`} role="status" aria-live="polite">
@@ -112,19 +127,21 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
       <div className="mt-2 flex items-center gap-2">
         <a
           href={explorerUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs font-mono underline break-all hover:opacity-80 transition-opacity"
+          target={demoEnabled ? undefined : "_blank"}
+          rel={demoEnabled ? undefined : "noopener noreferrer"}
+          onClick={demoEnabled ? (e) => e.preventDefault() : undefined}
+          className={`text-xs font-mono underline break-all hover:opacity-80 transition-opacity ${demoEnabled ? 'cursor-default' : ''}`}
         >
           {txId.slice(0, 10)}...{txId.slice(-8)}
         </a>
+        {demoEnabled && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-tighter">Mock TX</span>}
       </div>
       {status === 'pending' && pollCount >= MAX_POLLS && (
         <p className="mt-2 text-xs opacity-70 dark:opacity-60">
           Still waiting. Check the explorer for the latest status.
         </p>
       )}
-      {status === 'pending' && pollCount > 0 && pollCount < MAX_POLLS && (
+      {status === 'pending' && pollCount > 0 && pollCount < MAX_POLLS && !demoEnabled && (
         <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
           Stacks blocks typically take 10-30 minutes.
         </p>
@@ -132,3 +149,4 @@ export default function TxStatus({ txId, onConfirmed, onFailed }) {
     </div>
   );
 }
+
