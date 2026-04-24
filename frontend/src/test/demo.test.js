@@ -16,7 +16,7 @@ describe('Demo Mode Configuration', () => {
     expect(DEMO_CONFIG).toBeDefined();
     expect(DEMO_CONFIG.mockWalletAddress).toBeDefined();
     expect(DEMO_CONFIG.mockBalance).toBe(5000);
-    expect(DEMO_CONFIG.mockTransactionDelay).toBe(800);
+    expect(DEMO_CONFIG.mockTransactionDelay).toBe(1200);
   });
 
   it('should initialize with demo disabled', () => {
@@ -47,9 +47,15 @@ describe('Demo Mode Configuration', () => {
   });
 
   it('should have mock tips configured', () => {
-    expect(DEMO_CONFIG.mockTips).toHaveLength(2);
+    expect(DEMO_CONFIG.mockTips.length).toBeGreaterThanOrEqual(3);
     expect(DEMO_CONFIG.mockTips[0]).toHaveProperty('sender');
     expect(DEMO_CONFIG.mockTips[0]).toHaveProperty('recipient');
     expect(DEMO_CONFIG.mockTips[0]).toHaveProperty('amount');
   });
+
+  it('should have mock notifications configured', () => {
+    expect(DEMO_CONFIG.mockNotifications).toBeDefined();
+    expect(DEMO_CONFIG.mockNotifications.length).toBeGreaterThan(0);
+  });
 });
+
