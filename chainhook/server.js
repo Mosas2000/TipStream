@@ -52,23 +52,33 @@ function parseBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
+    let settled = false;
+
     req.on("data", (chunk) => {
+      if (settled) return;
       size += chunk.length;
       if (size > MAX_BODY_SIZE) {
-        req.destroy();
+        settled = true;
+        req.pause();
         reject(new Error("Request body too large"));
         return;
       }
       chunks.push(chunk);
     });
     req.on("end", () => {
+      if (settled) return;
+      settled = true;
       try {
         resolve(JSON.parse(Buffer.concat(chunks).toString()));
       } catch (err) {
         reject(err);
       }
     });
-    req.on("error", reject);
+    req.on("error", (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    });
   });
 }
 
