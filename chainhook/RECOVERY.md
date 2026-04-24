@@ -40,6 +40,7 @@ curl http://localhost:3100/health
 - Events no longer being persisted
 - ENOSPC errors in logs
 - API returns 500 errors during ingestion
+- Oversized chunked uploads are rejected with `413 payload_too_large`
 
 **Recovery Steps:**
 
