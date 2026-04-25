@@ -132,9 +132,11 @@ export function useStxPrice() {
         clearInterval(timerRef.current);
       }
     };
+    // fetchPrice is stable (useCallback), so this only runs once on mount
   }, [fetchPrice]);
 
   useEffect(() => {
+    // Only re-run the backoff logic if the error state specifically indicates a rate limit
     if (!error || !error.includes('429')) return;
     
     const controller = new AbortController();
