@@ -61,6 +61,7 @@ export default defineConfig({
     ...POOL_CONFIG,
     ...TIMEOUT_CONFIG,
     include: ["tests/**/*.test.ts"],
+    slowTestThreshold: 5000, // Highlight tests taking longer than 5s
     reporters: ['default'],
     passWithNoTests: true,
     globals: true,
