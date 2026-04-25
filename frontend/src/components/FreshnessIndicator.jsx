@@ -63,12 +63,16 @@ export function FreshnessIndicator({ source, metadata, loading, onRetry }) {
   }, [demoEnabled, source, loading]);
 
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${statusColor}`}>
+    <div 
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${statusColor}`}
+      title={demoEnabled ? "Sandbox data is simulated locally and not synced with the blockchain." : undefined}
+    >
       <span className={`h-2 w-2 rounded-full ${iconDot}`} aria-hidden="true" />
       <span className={textColor}>
         {statusText}
         {timeText && <span className="ml-1 opacity-75">({timeText})</span>}
       </span>
+
       {!demoEnabled && source === 'cache' && onRetry && (
         <button
           onClick={onRetry}
