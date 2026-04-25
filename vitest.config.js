@@ -27,7 +27,7 @@ const POOL_CONFIG = {
   poolOptions: {
     forks: {
       singleFork: true, // Forces sequential execution to avoid simnet race conditions
-      isolate: false,
+      isolate: false,   // Prevents worker re-initialization overhead
     },
   },
   maxWorkers: 1,
