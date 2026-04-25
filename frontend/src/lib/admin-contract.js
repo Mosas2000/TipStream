@@ -28,16 +28,17 @@ export async function fetchCurrentBlockHeight() {
  *
  * @param {string} functionName - The read-only function name
  * @param {Array} args - Clarity function arguments (hex-encoded)
- * @returns {Promise<object>} Decoded contract response
+ * @returns {Promise<{result: string}>} Decoded contract response
  */
 async function callReadOnly(functionName, args = []) {
+    const clarityArgs = Array.isArray(args) ? args : [];
     const url = `${STACKS_API_BASE}/v2/contracts/call-read/${CONTRACT_ADDRESS}/${CONTRACT_NAME}/${functionName}`;
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             sender: CONTRACT_ADDRESS,
-            arguments: args,
+            arguments: clarityArgs,
         }),
     });
 
@@ -45,7 +46,11 @@ async function callReadOnly(functionName, args = []) {
         throw new Error(`Read-only call failed: ${response.statusText}`);
     }
 
-    return response.json();
+    try {
+        return await response.json();
+    } catch (err) {
+        throw new Error(`Failed to parse contract response: ${err.message}`);
+    }
 }
 
 /**
@@ -54,32 +59,49 @@ async function callReadOnly(functionName, args = []) {
  * @returns {Promise<{ isPaused: boolean, pendingPause: boolean|null, effectiveHeight: number }>}
  */
 export async function fetchPauseState() {
-    const pendingData = await callReadOnly('get-pending-pause-change');
+    try {
+        // Fetch both pending and current state in parallel for consistency
+        const [pendingData, currentData] = await Promise.all([
+            callReadOnly('get-pending-pause-change'),
+            callReadOnly('is-paused')
+        ]);
 
-    // Parse the Clarity tuple response
-    // The response contains pending-pause (optional bool) and effective-height (uint)
-    const result = parseClarityValue(pendingData.result);
+        const result = parseClarityValue(pendingData.result);
+        const isPaused = parseClarityValue(currentData.result);
 
-    return {
-        pendingPause: result['pending-pause'],
-        effectiveHeight: result['effective-height'] || 0,
-    };
+        return {
+            isPaused: !!isPaused,
+            pendingPause: result['pending-pause'],
+            effectiveHeight: result['effective-height'] || 0,
+        };
+    } catch (err) {
+        throw new Error(`Failed to fetch pause state: ${err.message}`);
+    }
 }
 
 /**
  * Fetch the current fee basis points and any pending fee change.
  *
- * @returns {Promise<{ currentFee: number, pendingFee: number|null, effectiveHeight: number }>}
+ * @returns {Promise<{ currentFeeBasisPoints: number, pendingFee: number|null, effectiveHeight: number }>}
  */
 export async function fetchFeeState() {
-    const pendingData = await callReadOnly('get-pending-fee-change');
+    try {
+        // Fetch both pending and current state in parallel for consistency
+        const [pendingData, currentFee] = await Promise.all([
+            callReadOnly('get-pending-fee-change'),
+            fetchCurrentFee()
+        ]);
 
-    const result = parseClarityValue(pendingData.result);
+        const result = parseClarityValue(pendingData.result);
 
-    return {
-        pendingFee: result['pending-fee'],
-        effectiveHeight: result['effective-height'] || 0,
-    };
+        return {
+            currentFeeBasisPoints: currentFee,
+            pendingFee: result['pending-fee'],
+            effectiveHeight: result['effective-height'] || 0,
+        };
+    } catch (err) {
+        throw new Error(`Failed to fetch fee state: ${err.message}`);
+    }
 }
 
 /**
@@ -88,9 +110,13 @@ export async function fetchFeeState() {
  * @returns {Promise<string>} Contract owner principal
  */
 export async function fetchContractOwner() {
-    const data = await callReadOnly('get-contract-owner');
-    const result = parseClarityValue(data.result);
-    return result;
+    try {
+        const data = await callReadOnly('get-contract-owner');
+        const result = parseClarityValue(data.result);
+        return result;
+    } catch (err) {
+        throw new Error(`Failed to fetch contract owner: ${err.message}`);
+    }
 }
 
 /**
@@ -99,9 +125,13 @@ export async function fetchContractOwner() {
  * @returns {Promise<string|null>} Multisig principal or null
  */
 export async function fetchMultisig() {
-    const data = await callReadOnly('get-multisig');
-    const result = parseClarityValue(data.result);
-    return result;
+    try {
+        const data = await callReadOnly('get-multisig');
+        const result = parseClarityValue(data.result);
+        return result;
+    } catch (err) {
+        throw new Error(`Failed to fetch multisig address: ${err.message}`);
+    }
 }
 
 /**
@@ -110,9 +140,13 @@ export async function fetchMultisig() {
  * @returns {Promise<number>} Current fee in basis points
  */
 export async function fetchCurrentFee() {
-    const data = await callReadOnly(FN_GET_CURRENT_FEE_BASIS_POINTS);
-    const result = parseClarityValue(data.result);
-    return typeof result === 'number' ? result : 0;
+    try {
+        const data = await callReadOnly(FN_GET_CURRENT_FEE_BASIS_POINTS);
+        const result = parseClarityValue(data.result);
+        return typeof result === 'number' ? result : 0;
+    } catch (err) {
+        throw new Error(`Failed to fetch current fee: ${err.message}`);
+    }
 }
 
 /**
@@ -170,6 +204,10 @@ function decodeClarityHex(hex) {
         case 0x08: { // err
             return null;
         }
+        case 0x05: // standard principal
+            return hex.slice(0, 44); // 1 byte type + 1 byte version + 20 bytes hash = 22 bytes = 44 hex chars
+        case 0x06: // contract principal
+            return hex; // Complex, just return hex for now
         case 0x0c: { // tuple
             const numFields = parseInt(hex.slice(2, 10), 16);
             const result = {};
@@ -233,6 +271,10 @@ function decodeClarityHexWithSize(hex) {
             const inner = decodeClarityHexWithSize(hex.slice(2));
             return { value: null, consumed: 2 + inner.consumed };
         }
+        case 0x05: // standard principal
+            return { value: hex.slice(0, 44), consumed: 44 };
+        case 0x06: // contract principal
+            return { value: hex, consumed: hex.length }; // Placeholder
         default:
             return { value: null, consumed: 2 };
     }

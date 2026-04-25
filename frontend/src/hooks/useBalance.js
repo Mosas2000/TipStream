@@ -6,6 +6,26 @@ import { useDemoMode } from '../context/DemoContext';
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
 
+/**
+ * Promise-based delay that can be cancelled via AbortSignal.
+ * @param {number} ms - Milliseconds to wait
+ * @param {AbortSignal} [signal] - Optional signal to cancel the delay
+ * @returns {Promise<void>}
+ */
+const delay = (ms, signal) => new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+        signal?.removeEventListener('abort', abortHandler);
+        resolve();
+    }, ms);
+
+    const abortHandler = () => {
+        clearTimeout(timeout);
+        reject(new Error('Aborted'));
+    };
+
+    signal?.addEventListener('abort', abortHandler, { once: true });
+});
+
 function normalizeMicroStxBalance(rawBalance) {
     if (typeof rawBalance === 'number') {
         if (!Number.isFinite(rawBalance) || !Number.isInteger(rawBalance) || rawBalance < 0) {
@@ -28,16 +48,33 @@ function normalizeMicroStxBalance(rawBalance) {
  * Includes automatic retry on transient failures.
  *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
- * @returns {{ balance: string|null, balanceStx: number|null, loading: boolean, error: string|null, lastFetched: number|null, refetch: () => Promise<void> }}
+ * @returns {{
+ *   balance: string|null,
+ *   balanceStx: number|null,
+ *   loading: boolean,
+ *   error: string|null,
+ *   lastFetched: number|null,
+ *   refetch: () => Promise<void>
+ * }} Hook state and refetch helper.
  */
 export function useBalance(address) {
     const { demoEnabled, demoBalance } = useDemoMode();
+    const isMounted = useRef(true);
     const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [lastFetched, setLastFetched] = useState(null);
 
     const retryCount = useRef(0);
+    /** @type {import('react').MutableRefObject<AbortController|null>} */
+    const abortControllerRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            isMounted.current = false;
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+        };
+    }, []);
 
     const fetchBalance = useCallback(async () => {
         if (!address) {
@@ -61,9 +98,15 @@ export function useBalance(address) {
         retryCount.current = 0;
 
         const attempt = async () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            abortControllerRef.current = new AbortController();
+
             try {
                 const res = await fetch(
-                    `${STACKS_API_BASE}/extended/v1/address/${address}/stx`
+                    `${STACKS_API_BASE}/extended/v1/address/${address}/stx`,
+                    { signal: abortControllerRef.current.signal }
                 );
 
                 if (!res.ok) {
@@ -71,6 +114,7 @@ export function useBalance(address) {
                 }
 
                 const data = await res.json();
+                if (!isMounted.current) return;
 
                 const normalized = normalizeMicroStxBalance(data?.balance);
                 if (normalized === null) {
@@ -81,9 +125,17 @@ export function useBalance(address) {
                 setLastFetched(Date.now());
                 setLoading(false);
             } catch (err) {
+                if (err.name === 'AbortError') return;
+                if (!isMounted.current) return;
+
                 if (retryCount.current < MAX_RETRIES) {
                     retryCount.current += 1;
-                    await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+                    try {
+                        await delay(RETRY_DELAY_MS, abortControllerRef.current.signal);
+                    } catch (delayErr) {
+                        return;
+                    }
+                    if (!isMounted.current) return;
                     return attempt();
                 }
                 console.error('Failed to fetch balance:', err.message);
