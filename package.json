@@ -6,6 +6,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "pretest": "clarinet check",
     "test": "vitest run",
     "test:verbose": "VERBOSE=true vitest run",
     "test:coverage": "vitest run --coverage",
