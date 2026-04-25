@@ -7,6 +7,16 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+/**
+ * Manual chunking strategy to optimize bundle size and improve cacheability.
+ * 
+ * We isolate heavy dependencies into dedicated chunks:
+ * - React/DOM: Stable core that changes infrequently.
+ * - Stacks: Blockchain logic, separated from UI.
+ * - WalletConnect/Reown: Heavy auth modules, lazy-loaded via @stacks/connect.
+ * - Viem: Transaction/utility library.
+ * - UI Icons: Specialized chunk for lucide-react (highly tree-shakable).
+ */
 function getManualChunk(id) {
   if (!id.includes('node_modules')) {
     return undefined;
