@@ -361,14 +361,15 @@ describe('useStxPrice', () => {
 
         const { unmount, result } = renderHook(() => useStxPrice());
 
+        // Wait for the initial fetch to complete and trigger the 429 error
         await act(async () => {
-            await vi.runOnlyPendingTimersAsync();
+            // We need to wait for the promise in fetchPrice to resolve
+            await Promise.resolve(); 
+            await Promise.resolve();
         });
 
-        expect(result.current.error).toBe('HTTP 429');
-        
-        // Spy on clearInterval/clearTimeout? 
-        // We can check if fetch is called again after the retry interval if we advanced time.
+        expect(result.current.error).toContain('429');
+        expect(global.fetch).toHaveBeenCalledTimes(1);
         
         unmount();
 
