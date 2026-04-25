@@ -72,11 +72,20 @@ export function useStxPrice() {
   }, []);
 
   useEffect(() => {
-    fetchPrice();
+    const controller = new AbortController();
+    
+    fetchPrice(false, controller.signal);
+    
     intervalRef.current = setInterval(() => {
-      fetchPrice(true);
+      fetchPrice(true, controller.signal);
     }, REFRESH_INTERVAL);
-    return () => clearInterval(intervalRef.current);
+
+    return () => {
+      controller.abort();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [fetchPrice]);
 
   useEffect(() => {
