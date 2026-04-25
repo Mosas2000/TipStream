@@ -55,6 +55,7 @@ export function useStxPrice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const timerRef = useRef(null);
+  const isMountedRef = useRef(true);
 
   /**
    * Internal fetcher that handles cache logic, API keys, and signal abortion.
@@ -66,9 +67,11 @@ export function useStxPrice() {
       if (!forceNetwork) {
         const cached = readCachedPrice();
         if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
-          setPrice(cached.price);
-          setError(null);
-          setLoading(false);
+          if (isMountedRef.current) {
+            setPrice(cached.price);
+            setError(null);
+            setLoading(false);
+          }
           return;
         }
       }
@@ -80,17 +83,24 @@ export function useStxPrice() {
       const data = await res.json();
       const usd = data?.stacks?.usd;
       if (typeof usd !== "number") throw new Error("Invalid price data");
-      setPrice(usd);
-      writeCachedPrice(usd);
-      setError(null);
+      
+      if (isMountedRef.current) {
+        setPrice(usd);
+        writeCachedPrice(usd);
+        setError(null);
+      }
     } catch (err) {
       if (err.name === 'AbortError') return;
-      setError(err.message);
-      if (err.message === "HTTP 429") {
-        console.warn("CoinGecko rate limit reached. Retrying with backoff.");
+      if (isMountedRef.current) {
+        setError(err.message);
+        if (err.message === "HTTP 429") {
+          console.warn("CoinGecko rate limit reached. Retrying with backoff.");
+        }
       }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -104,6 +114,7 @@ export function useStxPrice() {
     }, REFRESH_INTERVAL);
 
     return () => {
+      isMountedRef.current = false;
       controller.abort();
       if (timerRef.current) {
         clearInterval(timerRef.current);
