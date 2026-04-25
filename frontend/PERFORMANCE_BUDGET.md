@@ -3,25 +3,26 @@
 ## Bundle Size Targets
 
 ### Initial Load (Gzipped)
-- **Main bundle (app shell)**: < 80KB (Currently: ~76KB)
-- **Vendor React chunk**: < 20KB (Currently: ~17KB)
-- **Vendor Stacks chunk**: < 40KB (Currently: ~34KB)
-- **Total initial JS before interaction**: < 130KB
+- **Main bundle (index)**: < 25KB (Currently: ~19KB)
+- **Vendor React chunk**: < 65KB (Currently: ~60KB)
+- **Vendor Stacks chunk**: < 50KB (Currently: ~48KB)
+- **Total initial JS before interaction**: < 150KB
 
 ### Deferred Chunks (Gzipped)
-- **@stacks/connect (wallet)**: ~235KB - loaded on first auth attempt
+- **@walletconnect/universal-provider**: ~105KB - loaded on first auth attempt
+- **@reown/appkit**: ~58KB - loaded on first auth attempt
 - **Route components**: 2-7KB each - loaded on navigation
 
 ### Route Chunks (Gzipped)
-- SendTip: < 6KB
-- BatchTip: < 5KB
-- RecentTips: < 6KB
-- Admin routes: < 8KB each
+- SendTip: ~5.7KB
+- RecentTips: ~5.6KB
+- TipHistory: ~4.5KB
+- TelemetryDashboard: ~6.7KB
 
 ### Third-party Libraries
 - Wallet connect modules: Lazy loaded on auth
 - @stacks/connect: Dynamically imported
-- framer-motion: Removed (replaced with CSS)
+- @reown/appkit: Dynamically imported via @stacks/connect
 - web-vitals: Deferred to after render
 
 ## Performance Metrics (Target / Current)
