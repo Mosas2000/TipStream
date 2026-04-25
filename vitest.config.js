@@ -44,5 +44,9 @@ export default defineConfig({
         // add or override options
       },
     },
+    onConsoleLog(log) {
+      // Suppress noisy Clarinet print events to reduce IPC overhead
+      if (log.includes('event: "') && log.includes(' (tipstream')) return false;
+    },
   },
 });
