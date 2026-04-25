@@ -11,11 +11,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 const COINGECKO_URL =
   "https://api.coingecko.com/api/v3/simple/price?ids=stacks&vs_currencies=usd";
+
 const REFRESH_INTERVAL = 120_000;
 const RATE_LIMIT_RETRY_MS = 300_000;
 const CACHE_KEY = "tipstream:stx-price";
 const CACHE_TTL_MS = 120_000;
 
+/**
+ * Reads the last known price from local storage.
+ * @returns {object|null}
+ */
 function readCachedPrice() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
