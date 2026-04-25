@@ -61,6 +61,10 @@ export default defineConfig({
     ...POOL_CONFIG,
     ...TIMEOUT_CONFIG,
     include: ["tests/**/*.test.ts"],
+    sequence: {
+      forceTracing: true, // Improves stack traces on worker hangs
+      shuffle: false,    // Maintain consistent execution order
+    },
     environment: "clarinet",
     setupFiles: [
       vitestSetupFilePath,
