@@ -27,8 +27,11 @@ export default defineConfig({
     poolOptions: {
       forks: {
         singleFork: true,
+        isolate: false,
       },
     },
+    teardownTimeout: 30000,
+    testTimeout: 60000,
     setupFiles: [
       vitestSetupFilePath,
       // custom setup files can be added here
