@@ -19,21 +19,26 @@ import { vitestSetupFilePath, getClarinetVitestsArgv } from "@hirosystems/clarin
     - vitest run -- --coverage --costs          # collect coverage and cost reports
 */
 
+// Centralized pool configuration to maximize worker stability.
+// Using 'forks' instead of 'threads' prevents native module isolation issues 
+// that can lead to 'onTaskUpdate' timeouts during long-running contract tests.
+const POOL_CONFIG = {
+  pool: "forks",
+  poolOptions: {
+    forks: {
+      singleFork: true,
+      isolate: false,
+    },
+  },
+  maxWorkers: 1,
+  workerIdleTimeout: 60000,
+};
+
 export default defineConfig({
   test: {
+    ...POOL_CONFIG,
     include: ["tests/**/*.test.ts"],
     environment: "clarinet", // use vitest-environment-clarinet
-    pool: "forks",
-    poolOptions: {
-      forks: {
-        singleFork: true,
-        isolate: false,
-      },
-    },
-    teardownTimeout: 60000,
-    testTimeout: 120000,
-    workerIdleTimeout: 60000,
-    maxWorkers: 1,
     setupFiles: [
       vitestSetupFilePath,
       // custom setup files can be added here
