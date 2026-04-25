@@ -125,6 +125,11 @@ export function useStxPrice() {
     };
   }, [error, fetchPrice]);
 
+  /**
+   * Converts a given STX amount to its USD equivalent based on the current price.
+   * @param {number|string} stxAmount 
+   * @returns {string|null} Fixed-point string with 2 decimal places, or null if price not loaded.
+   */
   const toUsd = useCallback(
     (stxAmount) => {
       if (price === null || stxAmount === null || stxAmount === undefined) return null;
