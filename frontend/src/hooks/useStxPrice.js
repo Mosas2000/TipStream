@@ -111,9 +111,13 @@ export function useStxPrice() {
     
     fetchPrice(false, controller.signal);
     
-    timerRef.current = setInterval(() => {
-      fetchPrice(true, controller.signal);
-    }, REFRESH_INTERVAL);
+    const startPolling = () => {
+      timerRef.current = setInterval(() => {
+        fetchPrice(true, controller.signal);
+      }, REFRESH_INTERVAL);
+    };
+
+    startPolling();
 
     return () => {
       isMountedRef.current = false;
