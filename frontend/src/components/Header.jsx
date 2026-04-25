@@ -27,7 +27,7 @@ const NotificationBell = lazy(() => import('./NotificationBell'));
  * @param {Function} props.onMarkNotificationsRead - Callback to mark all read.
  * @param {boolean} props.notificationsLoading - Whether notifications are loading.
  */
-export default function Header({ userData, onAuth, authLoading, demoEnabled, notifications, unreadCount, lastSeenTimestamp, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
+export default function Header({ userData, onAuth, onTryDemo, authLoading, demoLoading, demoEnabled, notifications, unreadCount, lastSeenTimestamp, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
     const { theme, toggleTheme } = useTheme();
     const isOnline = useOnlineStatus();
 
@@ -118,10 +118,21 @@ export default function Header({ userData, onAuth, authLoading, demoEnabled, not
                         )}
 
 
+                        {/* Demo Button for non-authenticated users */}
+                        {!userData && !demoEnabled && (
+                            <button
+                                onClick={onTryDemo}
+                                disabled={demoLoading || authLoading}
+                                className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-amber-500 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-50"
+                            >
+                                Try Demo
+                            </button>
+                        )}
+
                         {/* Connect / Disconnect */}
                         <button
                             onClick={onAuth}
-                            disabled={authLoading}
+                            disabled={authLoading || demoLoading}
                             className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${
                                 userData
                                     ? 'bg-red-500/10 text-red-300 border border-red-500/20 hover:bg-red-500/20'
@@ -136,3 +147,4 @@ export default function Header({ userData, onAuth, authLoading, demoEnabled, not
         </nav>
     );
 }
+

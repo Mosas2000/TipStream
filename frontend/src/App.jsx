@@ -203,7 +203,9 @@ function App() {
       <Header
         userData={userData}
         onAuth={handleAuth}
+        onTryDemo={handleTryDemo}
         authLoading={authLoading}
+        demoLoading={demoLoading}
         demoEnabled={demoEnabled}
         notifications={notifications}
         unreadCount={unreadCount}
@@ -212,6 +214,7 @@ function App() {
         notificationsLoading={notificationsLoading}
         apiReachable={healthy}
       />
+
 
       <main id="main-content" tabIndex={-1} className="flex-1">
         {/* Show landing hero only if user has not connected AND is on home route */}
