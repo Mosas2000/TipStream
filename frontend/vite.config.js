@@ -196,6 +196,7 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 600,
+    // Target modern engines for better performance and smaller polyfill footprint
     target: 'esnext',
     minify: 'esbuild',
     sourcemap: false,
