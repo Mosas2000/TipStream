@@ -90,10 +90,16 @@ export function useStxPrice() {
 
   useEffect(() => {
     if (error !== "HTTP 429") return;
+    
+    const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      fetchPrice(true);
+      fetchPrice(true, controller.signal);
     }, RATE_LIMIT_RETRY_MS);
-    return () => clearTimeout(timeoutId);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [error, fetchPrice]);
 
   const toUsd = useCallback(
