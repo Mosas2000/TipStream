@@ -46,7 +46,14 @@ const TIMEOUT_CONFIG = {
  * the worker and the Vitest reporter.
  */
 function isContractEvent(log) {
-  return /\{.*event: ".*" \}/.test(log) && log.includes(' (tipstream');
+  if (!log) return false;
+  const trimmedLog = log.trim();
+  // Match Clarinet's standard print event output format
+  return (
+    trimmedLog.startsWith('{') && 
+    trimmedLog.includes('event: "') && 
+    trimmedLog.includes(' (tipstream')
+  );
 }
 
 export default defineConfig({
