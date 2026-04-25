@@ -69,3 +69,5 @@ Deferred until needed:
 - Wallet connection (@stacks/connect)
 - Route components
 - web-vitals reporting
+
+## Last Review: 2026-04-25
