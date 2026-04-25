@@ -54,7 +54,7 @@ export function useStxPrice() {
   const [price, setPrice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const intervalRef = useRef(null);
+  const timerRef = useRef(null);
 
   /**
    * Internal fetcher that handles cache logic, API keys, and signal abortion.
@@ -99,14 +99,14 @@ export function useStxPrice() {
     
     fetchPrice(false, controller.signal);
     
-    intervalRef.current = setInterval(() => {
+    timerRef.current = setInterval(() => {
       fetchPrice(true, controller.signal);
     }, REFRESH_INTERVAL);
 
     return () => {
       controller.abort();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
     };
   }, [fetchPrice]);
