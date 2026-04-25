@@ -89,21 +89,23 @@ function App() {
   }, [location.pathname]);
 
   const handleAuth = async () => {
+    let wasInDemo = false;
     if (demoEnabled) {
+      wasInDemo = true;
       deactivateDemo();
       toggleDemo(false);
       setDemoLoading(false);
-      navigate(ROUTE_FEED, { replace: true });
-      addToast('Demo mode exited.', 'info');
-      return;
+      addToast('Demo mode exited. Connecting real wallet...', 'info');
+      // Continue to authenticate
     }
 
-    if (userData) {
+    if (userData && !wasInDemo) {
       disconnect();
       setUserData(null);
       analytics.trackWalletDisconnect();
       return;
     }
+
     setAuthLoading(true);
     try {
       const data = await authenticate();
@@ -115,19 +117,29 @@ function App() {
       }
       setUserData(data);
       analytics.trackWalletConnect();
+      if (wasInDemo) {
+        navigate(ROUTE_SEND, { replace: true });
+      }
     } catch (error) {
       // User cancelled is not a real error
       if (error.message?.includes('cancelled')) {
         console.log('Wallet connection cancelled by user');
+        if (wasInDemo) {
+           navigate(ROUTE_FEED, { replace: true });
+        }
       } else {
         console.error('Authentication failed:', error.message || error);
         addToast(error.message || 'Failed to connect wallet. Please try again.', 'error');
         analytics.trackAuthError(error.message || 'unknown');
+        if (wasInDemo) {
+           navigate(ROUTE_FEED, { replace: true });
+        }
       }
     } finally {
       setAuthLoading(false);
     }
   };
+
 
   const handleTryDemo = () => {
     setDemoLoading(true);
@@ -191,7 +203,9 @@ function App() {
       <Header
         userData={userData}
         onAuth={handleAuth}
+        onTryDemo={handleTryDemo}
         authLoading={authLoading}
+        demoLoading={demoLoading}
         demoEnabled={demoEnabled}
         notifications={notifications}
         unreadCount={unreadCount}
@@ -200,6 +214,7 @@ function App() {
         notificationsLoading={notificationsLoading}
         apiReachable={healthy}
       />
+
 
       <main id="main-content" tabIndex={-1} className="flex-1">
         {/* Show landing hero only if user has not connected AND is on home route */}

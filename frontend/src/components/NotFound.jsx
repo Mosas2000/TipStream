@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { DEFAULT_AUTHENTICATED_ROUTE } from '../config/routes';
+import { useDemoMode } from '../context/DemoContext';
 
 /**
  * 404 -- Not Found page.
@@ -10,6 +11,7 @@ import { DEFAULT_AUTHENTICATED_ROUTE } from '../config/routes';
  */
 export default function NotFound() {
   const location = useLocation();
+  const { demoEnabled } = useDemoMode();
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
@@ -30,11 +32,12 @@ export default function NotFound() {
 
         <Link
           to={DEFAULT_AUTHENTICATED_ROUTE}
-          className="inline-flex items-center gap-2 mt-6 px-6 py-2.5 bg-gray-900 dark:bg-amber-500 text-white dark:text-black text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-2 mt-6 px-6 py-2.5 bg-gray-900 dark:bg-amber-500 text-white dark:text-black text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
         >
-          Go to Send Tip
+          {demoEnabled ? 'Back to Sandbox Home' : 'Back to App'}
         </Link>
       </div>
     </div>
   );
 }
+

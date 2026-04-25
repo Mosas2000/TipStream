@@ -51,29 +51,31 @@ export function TipProvider({ children }) {
   const fetchIdRef = useRef(0);
 
   const demoEvents = useCallback(() => {
-    return demoTips.map((tip, index) => ({
+    return demoTips.map((tip) => ({
       event: 'tip-sent',
-      tipId: tip.id || `demo-tip-${index}`,
+      tipId: tip.id,
       sender: tip.sender,
       recipient: tip.recipient,
       amount: String(tip.amount),
       fee: '0',
-      message: tip.memo || '',
+      message: tip.memo || tip.message || '',
       category: tip.category ?? null,
-      timestamp: tip.timestamp || Date.now(),
-      txId: tip.id || `demo-tip-${index}`,
+      timestamp: tip.timestamp ? Math.floor(tip.timestamp / 1000) : Math.floor(Date.now() / 1000),
+      txId: tip.txId || tip.id,
     }));
   }, [demoTips]);
+
 
   /**
    * Fetch contract events from the Stacks API and update the shared cache.
    * Uses a fetchId counter to discard stale responses when a newer fetch
    * has already been triggered (e.g. from a rapid manual refresh).
-   *
-   * Also invalidates page cache to ensure fresh pagination data.
    */
   const refreshEvents = useCallback(async () => {
     if (demoEnabled) {
+      setEventsLoading(true);
+      // Brief delay to simulate network feel
+      await new Promise(r => setTimeout(r, 600));
       const demoEventData = demoEvents();
       setEvents(demoEventData);
       setEventsMeta({ apiOffset: demoEventData.length, total: demoEventData.length, hasMore: false });
@@ -101,6 +103,7 @@ export function TipProvider({ children }) {
       if (id === fetchIdRef.current) setEventsLoading(false);
     }
   }, [demoEnabled, demoEvents]);
+
 
   /**
    * Load the next batch of events beyond the current apiOffset.

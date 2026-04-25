@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
-import { microToStx } from '../lib/balance-utils';
+import { microToStx, stxToMicro } from '../lib/balance-utils';
+import { useDemoMode } from '../context/DemoContext';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
@@ -46,15 +47,6 @@ function normalizeMicroStxBalance(rawBalance) {
  * Fetch and track the STX balance for a Stacks address.
  * Includes automatic retry on transient failures.
  *
- * The balance is stored as a normalized non-negative integer string
- * representing micro-STX, derived from `/extended/v1/address/:addr/stx`.
- * Consumers
- * should use the balance-utils helpers (`microToStx`, `formatBalance`) to
- * convert for display rather than dividing by a magic number.
- *
- * On error the hook retries up to MAX_RETRIES times before setting the
- * error state. Call refetch() to manually retry after a failure.
- *
  * @param {string|null} address - Stacks principal to query. Pass null to skip.
  * @returns {{
  *   balance: string|null,
@@ -66,6 +58,7 @@ function normalizeMicroStxBalance(rawBalance) {
  * }} Hook state and refetch helper.
  */
 export function useBalance(address) {
+    const { demoEnabled, demoBalance } = useDemoMode();
     const isMounted = useRef(true);
     const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -86,6 +79,17 @@ export function useBalance(address) {
     const fetchBalance = useCallback(async () => {
         if (!address) {
             setBalance(null);
+            return;
+        }
+
+        // Handle demo mode
+        if (demoEnabled) {
+            setLoading(true);
+            // Simulate network delay
+            await new Promise(r => setTimeout(r, 400));
+            setBalance(stxToMicro(demoBalance).toString());
+            setLastFetched(Date.now());
+            setLoading(false);
             return;
         }
 
@@ -141,7 +145,7 @@ export function useBalance(address) {
         };
 
         await attempt();
-    }, [address]);
+    }, [address, demoEnabled, demoBalance]);
 
     useEffect(() => {
         fetchBalance();
@@ -152,3 +156,4 @@ export function useBalance(address) {
 
     return { balance, balanceStx, loading, error, lastFetched, refetch: fetchBalance };
 }
+

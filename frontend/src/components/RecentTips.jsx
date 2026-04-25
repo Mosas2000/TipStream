@@ -157,7 +157,19 @@ export default function RecentTips({ addToast }) {
      * @param {Object} tip - The tip event to reciprocate.
      */
     const handleTipBack = async (tip) => {
+        const error = validateTipBackAmount(tipBackAmount);
+        if (error) {
+            setTipBackError(error);
+            addToast?.(error, 'warning');
+            return;
+        }
+
+        setSending(true);
+
         if (demoEnabled) {
+            // Simulate network delay for demo tip-back
+            await new Promise(r => setTimeout(r, 1500));
+            
             const microSTX = toMicroSTX(tipBackAmount);
             setDemoBalance((prev) => Math.max(0, prev - microSTX));
             addDemoTip({
@@ -166,6 +178,7 @@ export default function RecentTips({ addToast }) {
                 message: tipBackMessage || 'Tipping back!',
                 category: tip.category,
             });
+            
             setSending(false);
             closeTipBackModal();
             setTipBackMessage('');
@@ -173,19 +186,14 @@ export default function RecentTips({ addToast }) {
             return;
         }
 
-        if (!userSession.isUserSignedIn()) return;
-
-        // Validate the amount before opening the wallet prompt (Issue #233).
-        const error = validateTipBackAmount(tipBackAmount);
-        if (error) {
-            setTipBackError(error);
-            addToast?.(error, 'warning');
+        if (!userSession.isUserSignedIn()) {
+            setSending(false);
             return;
         }
 
         const microSTX = toMicroSTX(tipBackAmount);
         const senderAddress = getSenderAddress();
-        setSending(true);
+        
         try {
             await openContractCall({
                 network, appDetails,
@@ -208,6 +216,7 @@ export default function RecentTips({ addToast }) {
             setSending(false);
         }
     };
+
 
     if (eventsLoading) return (
         <div className="space-y-4 animate-pulse">
@@ -320,12 +329,13 @@ export default function RecentTips({ addToast }) {
                                     ) : messagesLoading ? (
                                         <span className="inline-block h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                                     ) : null}
-                                    {userSession.isUserSignedIn() && (
+                                    {(userSession.isUserSignedIn() || demoEnabled) && (
                                         <button onClick={() => { setTipBackError(''); setTipBackAmount('0.5'); setTipBackMessage(''); setTipBackTarget(tip); }}
                                             className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-lg transition-all sm:opacity-0 sm:group-hover:opacity-100">
                                             Tip Back
                                         </button>
                                     )}
+
                                 </div>
                             </div>
                         ))}

@@ -44,7 +44,7 @@ function parseUtf8(repr) {
  * @param {string} props.userAddress - The STX address of the logged-in user.
  */
 export default function TipHistory({ userAddress }) {
-    const { demoEnabled, getDemoData } = useDemoMode();
+    const { demoEnabled, getDemoData, demoTips: contextDemoTips } = useDemoMode();
     const [tips, setTips] = useState([]);
     const [tipsLoading, setTipsLoading] = useState(true);
     const [tipsError, setTipsError] = useState(null);
@@ -61,20 +61,22 @@ export default function TipHistory({ userAddress }) {
 
     const buildDemoTips = useCallback(() => {
         const walletAddress = demoWalletAddress;
-        return getDemoData().mockTips
+        // Use contextDemoTips which reflects real-time sandbox activity
+        return contextDemoTips
             .filter((tip) => tip.sender === walletAddress || tip.recipient === walletAddress)
             .map((tip) => ({
                 tipId: tip.id,
-                txId: tip.id,
+                txId: tip.id || tip.txId,
                 sender: tip.sender,
                 recipient: tip.recipient,
                 amount: String(tip.amount),
-                message: tip.memo || '',
+                message: tip.memo || tip.message || '',
                 category: tip.category ?? null,
                 direction: tip.sender === walletAddress ? 'sent' : 'received',
                 timestamp: tip.timestamp || null,
             }));
-    }, [demoWalletAddress, getDemoData]);
+    }, [demoWalletAddress, contextDemoTips]);
+
 
     const fetchTips = useCallback(async (reset = true) => {
         if (demoEnabled) {

@@ -5,25 +5,24 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PLATFORM_STATS } from '../confi
 import { formatSTX } from '../lib/utils';
 import { useTipContext } from '../context/TipContext';
 import { useDemoMode } from '../context/DemoContext';
-import { useDemoStats } from '../hooks/useDemoStats';
 
 export default function PlatformStats() {
     const { refreshCounter } = useTipContext();
-    const { demoEnabled } = useDemoMode();
-    const { getDemoStats } = useDemoStats();
+    const { demoEnabled, demoStats } = useDemoMode();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [lastRefresh, setLastRefresh] = useState(null);
 
-    const demoStats = demoEnabled ? getDemoStats() : null;
-
     const fetchPlatformStats = useCallback(async () => {
         if (demoEnabled) {
+            setLoading(true);
+            // Simulate API delay
+            await new Promise(r => setTimeout(r, 600));
             setStats({
-                'total-tips': { value: demoStats?.platformStats.totalTipsOnPlatform ?? 0 },
-                'total-volume': { value: demoStats?.totalAmount ?? 0 },
-                'platform-fees': { value: Math.round((demoStats?.totalAmount ?? 0) * 0.005) },
+                'total-tips': { value: demoStats.totalTips },
+                'total-volume': { value: demoStats.totalVolume },
+                'platform-fees': { value: Math.round(demoStats.totalVolume * 0.005) },
             });
             setLoading(false);
             setError(null);
@@ -50,6 +49,7 @@ export default function PlatformStats() {
             setLoading(false);
         }
     }, [demoEnabled, demoStats]);
+
 
     useEffect(() => { 
         Promise.resolve().then(() => fetchPlatformStats()); 

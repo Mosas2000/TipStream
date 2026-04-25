@@ -27,7 +27,7 @@ const NotificationBell = lazy(() => import('./NotificationBell'));
  * @param {Function} props.onMarkNotificationsRead - Callback to mark all read.
  * @param {boolean} props.notificationsLoading - Whether notifications are loading.
  */
-export default function Header({ userData, onAuth, authLoading, demoEnabled, notifications, unreadCount, lastSeenTimestamp, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
+export default function Header({ userData, onAuth, onTryDemo, authLoading, demoLoading, demoEnabled, notifications, unreadCount, lastSeenTimestamp, onMarkNotificationsRead, notificationsLoading, apiReachable = null }) {
     const { theme, toggleTheme } = useTheme();
     const isOnline = useOnlineStatus();
 
@@ -90,7 +90,7 @@ export default function Header({ userData, onAuth, authLoading, demoEnabled, not
                         </button>
 
                         {/* Notifications */}
-                        {userData && (
+                        {(userData || demoEnabled) && (
                             <Suspense fallback={<div className="w-8 h-8" />}>
                                 <NotificationBell
                                     notifications={notifications}
@@ -102,20 +102,37 @@ export default function Header({ userData, onAuth, authLoading, demoEnabled, not
                             </Suspense>
                         )}
 
-                        {/* Wallet address */}
-                        {userData && getMainnetAddress(userData) && (
+                        {/* Wallet address / Demo address */}
+                        {(userData || demoEnabled) && (
                             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                                 <p className="text-xs font-mono text-gray-300">
-                                    {formatAddress(getMainnetAddress(userData), 6, 4)}
+                                    {demoEnabled 
+                                        ? formatAddress('SP2DEMOADDRESS0000000000000000000000', 6, 4)
+                                        : formatAddress(getMainnetAddress(userData), 6, 4)}
                                 </p>
-                                <CopyButton text={getMainnetAddress(userData)} className="text-gray-500 hover:text-white" />
+                                <CopyButton 
+                                    text={demoEnabled ? 'SP2DEMOADDRESS0000000000000000000000' : getMainnetAddress(userData)} 
+                                    className="text-gray-500 hover:text-white" 
+                                />
                             </div>
+                        )}
+
+
+                        {/* Demo Button for non-authenticated users */}
+                        {!userData && !demoEnabled && (
+                            <button
+                                onClick={onTryDemo}
+                                disabled={demoLoading || authLoading}
+                                className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-amber-500 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-50"
+                            >
+                                Try Demo
+                            </button>
                         )}
 
                         {/* Connect / Disconnect */}
                         <button
                             onClick={onAuth}
-                            disabled={authLoading}
+                            disabled={authLoading || demoLoading}
                             className={`px-4 sm:px-6 py-2 rounded-lg font-semibold text-sm transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${
                                 userData
                                     ? 'bg-red-500/10 text-red-300 border border-red-500/20 hover:bg-red-500/20'
@@ -130,3 +147,4 @@ export default function Header({ userData, onAuth, authLoading, demoEnabled, not
         </nav>
     );
 }
+
