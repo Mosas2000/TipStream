@@ -100,7 +100,7 @@ export function useStxPrice() {
       if (err.name === 'AbortError') return;
       if (isMountedRef.current) {
         if (err.message.includes('429')) {
-          setError('Rate limit exceeded. Retrying soon...');
+          setError('Rate limit exceeded (429). Retrying soon...');
           console.warn("CoinGecko rate limit reached. Retrying with backoff.");
         } else {
           setError(err.message || 'Failed to fetch price');
