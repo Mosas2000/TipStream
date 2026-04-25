@@ -90,7 +90,7 @@ export default function Header({ userData, onAuth, authLoading, demoEnabled, not
                         </button>
 
                         {/* Notifications */}
-                        {userData && (
+                        {(userData || demoEnabled) && (
                             <Suspense fallback={<div className="w-8 h-8" />}>
                                 <NotificationBell
                                     notifications={notifications}
@@ -102,15 +102,21 @@ export default function Header({ userData, onAuth, authLoading, demoEnabled, not
                             </Suspense>
                         )}
 
-                        {/* Wallet address */}
-                        {userData && getMainnetAddress(userData) && (
+                        {/* Wallet address / Demo address */}
+                        {(userData || demoEnabled) && (
                             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5">
                                 <p className="text-xs font-mono text-gray-300">
-                                    {formatAddress(getMainnetAddress(userData), 6, 4)}
+                                    {demoEnabled 
+                                        ? formatAddress('SP2DEMOADDRESS0000000000000000000000', 6, 4)
+                                        : formatAddress(getMainnetAddress(userData), 6, 4)}
                                 </p>
-                                <CopyButton text={getMainnetAddress(userData)} className="text-gray-500 hover:text-white" />
+                                <CopyButton 
+                                    text={demoEnabled ? 'SP2DEMOADDRESS0000000000000000000000' : getMainnetAddress(userData)} 
+                                    className="text-gray-500 hover:text-white" 
+                                />
                             </div>
                         )}
+
 
                         {/* Connect / Disconnect */}
                         <button
