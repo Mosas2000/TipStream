@@ -56,6 +56,11 @@ export function useStxPrice() {
   const [error, setError] = useState(null);
   const intervalRef = useRef(null);
 
+  /**
+   * Internal fetcher that handles cache logic, API keys, and signal abortion.
+   * @param {boolean} forceNetwork - If true, bypasses the TTL check for local cache.
+   * @param {AbortSignal} signal - Signal to abort the fetch if the component unmounts.
+   */
   const fetchPrice = useCallback(async (forceNetwork = false, signal = null) => {
     try {
       if (!forceNetwork) {
