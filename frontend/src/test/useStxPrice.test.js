@@ -381,4 +381,29 @@ describe('useStxPrice', () => {
         // If it wasn't unmounted, it would have been called again.
         expect(global.fetch).toHaveBeenCalledTimes(1);
     });
+
+    it('aborts manual refetch on subsequent refetch', async () => {
+        let signals = [];
+        global.fetch = vi.fn().mockImplementation((url, options) => {
+            signals.push(options.signal);
+            return new Promise(() => {}); // Never resolves
+        });
+
+        const { result } = renderHook(() => useStxPrice());
+        
+        await act(async () => {
+            result.current.refetch();
+        });
+        
+        expect(signals.length).toBe(2); // 1 for mount, 1 for refetch
+        expect(signals[1].aborted).toBe(false);
+
+        await act(async () => {
+            result.current.refetch();
+        });
+
+        expect(signals.length).toBe(3);
+        expect(signals[1].aborted).toBe(true);
+        expect(signals[2].aborted).toBe(false);
+    });
 });
