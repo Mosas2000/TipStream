@@ -30,7 +30,8 @@ import {
 /**
  * TelemetryDashboard -- displays application performance metrics and error logs.
  * Note: Shared sub-components (MetricCard, AlertPanel, etc.) must be defined
- * at the top level to avoid symbol re-declaration errors during build optimization.
+ * at the top level to avoid "symbol has already been declared" errors during
+ * Vite/Rollup transformation when build optimizations are enabled.
  */
 export default function TelemetryDashboard({ addToast }) {
   const { demoEnabled } = useDemoMode();
