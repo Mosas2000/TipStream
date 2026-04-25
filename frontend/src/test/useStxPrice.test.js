@@ -334,4 +334,50 @@ describe('useStxPrice', () => {
 
         expect(result.current.toUsd(0)).toBe('0.00');
     });
+    it('aborts in-flight requests on unmount', async () => {
+        let signal;
+        global.fetch = vi.fn().mockImplementation((url, options) => {
+            signal = options.signal;
+            return new Promise(() => {}); // Never resolves
+        });
+
+        const { unmount } = renderHook(() => useStxPrice());
+        
+        // Ensure fetch was called
+        expect(global.fetch).toHaveBeenCalled();
+        expect(signal).toBeInstanceOf(AbortSignal);
+        expect(signal.aborted).toBe(false);
+
+        unmount();
+
+        expect(signal.aborted).toBe(true);
+    });
+
+    it('clears 429 retry timeout on unmount', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 429,
+        });
+
+        const { unmount, result } = renderHook(() => useStxPrice());
+
+        await act(async () => {
+            await vi.runOnlyPendingTimersAsync();
+        });
+
+        expect(result.current.error).toBe('HTTP 429');
+        
+        // Spy on clearInterval/clearTimeout? 
+        // We can check if fetch is called again after the retry interval if we advanced time.
+        
+        unmount();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(300_000); // RATE_LIMIT_RETRY_MS
+        });
+
+        // The first call was for mount. 
+        // If it wasn't unmounted, it would have been called again.
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
 });
