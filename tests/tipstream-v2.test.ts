@@ -1,3 +1,9 @@
+/**
+ * TipStream V2 Contract Tests
+ * 
+ * Verifies V2-specific enhancements including emergency authorities, 
+ * cooldown enforcement, and extended pause controls.
+ */
 import { describe, expect, it } from "vitest";
 import { Cl } from "@stacks/transactions";
 
