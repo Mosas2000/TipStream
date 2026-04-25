@@ -62,6 +62,7 @@ export function useStxPrice() {
   const [error, setError] = useState(null);
   const timerRef = useRef(null);
   const isMountedRef = useRef(true);
+  const manualAbortRef = useRef(null);
 
   /**
    * Internal fetcher that handles cache logic, API keys, and signal abortion.
@@ -128,6 +129,9 @@ export function useStxPrice() {
     return () => {
       isMountedRef.current = false;
       controller.abort();
+      if (manualAbortRef.current) {
+        manualAbortRef.current.abort();
+      }
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -163,5 +167,17 @@ export function useStxPrice() {
     [price]
   );
 
-  return { price, loading, error, toUsd, refetch: () => fetchPrice(true) };
+  const handleRefetch = useCallback(() => {
+    if (manualAbortRef.current) manualAbortRef.current.abort();
+    manualAbortRef.current = new AbortController();
+    return fetchPrice(true, manualAbortRef.current.signal);
+  }, [fetchPrice]);
+
+  return { 
+    price, 
+    loading, 
+    error, 
+    toUsd, 
+    refetch: handleRefetch
+  };
 }
