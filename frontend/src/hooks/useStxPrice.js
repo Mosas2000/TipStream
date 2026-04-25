@@ -18,8 +18,14 @@ const CACHE_KEY = "tipstream:stx-price";
 const CACHE_TTL_MS = 120_000;
 
 /**
+ * @typedef {Object} PriceCache
+ * @property {number} price
+ * @property {number} cachedAt
+ */
+
+/**
  * Reads the last known price from local storage.
- * @returns {object|null}
+ * @returns {PriceCache|null}
  */
 function readCachedPrice() {
   try {
