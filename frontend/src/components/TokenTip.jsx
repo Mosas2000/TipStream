@@ -14,11 +14,13 @@ import {
 import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_TOKEN_WHITELISTED, FN_SEND_TOKEN_TIP } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
-import { Coins, CheckCircle, XCircle, Loader2, Send } from 'lucide-react';
+import { Coins, CheckCircle, XCircle, Loader2, Send, Zap } from 'lucide-react';
 import ConfirmDialog from './ui/confirm-dialog';
 import { useSenderAddress } from '../hooks/useSenderAddress';
+import { useDemoMode } from '../context/DemoContext';
 
 export default function TokenTip({ addToast }) {
+    const { demoEnabled, addDemoTip } = useDemoMode();
     const [tokenContract, setTokenContract] = useState('');
     const [recipient, setRecipient] = useState('');
     const [amount, setAmount] = useState('');
@@ -83,6 +85,14 @@ export default function TokenTip({ addToast }) {
         setTokenError('');
         setHasCheckedWhitelist(true);
 
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 700));
+            // Simulate that any valid contract ID is whitelisted in demo
+            setWhitelistStatus(true);
+            setCheckingWhitelist(false);
+            return;
+        }
+
         try {
             const result = await fetchCallReadOnlyFunction({
                 network,
@@ -106,7 +116,7 @@ export default function TokenTip({ addToast }) {
         } finally {
             setCheckingWhitelist(false);
         }
-    }, [senderAddress, tokenContract]);
+    }, [demoEnabled, senderAddress, tokenContract]);
 
     useEffect(() => {
         validateRecipient(recipient);
@@ -177,8 +187,28 @@ export default function TokenTip({ addToast }) {
 
     const handleSendTokenTip = async () => {
         setShowConfirm(false);
-
         setSending(true);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 1500));
+            
+            const mockTxId = `0x${Math.random().toString(16).slice(2, 66)}`;
+            
+            addDemoTip({
+                recipient: recipient.trim(),
+                amount: 0, // Mock STX amount is 0 for token tips in history
+                message: `${message || 'Token tip'} (Sent ${amount} tokens)`,
+                category: 1 // Token tip category
+            });
+
+            setSending(false);
+            setRecipient('');
+            setAmount('');
+            setMessage('');
+            addToast?.(`Demo token tip sent! Mock Tx: ${mockTxId}`, 'success');
+            return;
+        }
+
         try {
             const { address: tokenAddr, name: tokenName } = parseContractId(tokenContract.trim());
             const parsedAmount = parseInt(amount, 10);
@@ -225,6 +255,14 @@ export default function TokenTip({ addToast }) {
 
     return (
         <div className="max-w-md mx-auto">
+            {demoEnabled && (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
+                    <Zap className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Sandbox Mode:</strong> Token tips are simulated and will not move real assets.
+                    </p>
+                </div>
+            )}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white">
@@ -233,7 +271,7 @@ export default function TokenTip({ addToast }) {
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Token Tip</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Send tips using whitelisted SIP-010 tokens
+                            {demoEnabled ? 'Simulated token tipping' : 'Send tips using whitelisted SIP-010 tokens'}
                         </p>
                     </div>
                 </div>
@@ -389,3 +427,4 @@ export default function TokenTip({ addToast }) {
         </div>
     );
 }
+
