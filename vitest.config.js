@@ -26,7 +26,7 @@ const POOL_CONFIG = {
   pool: "forks",
   poolOptions: {
     forks: {
-      singleFork: true,
+      singleFork: true, // Forces sequential execution to avoid simnet race conditions
       isolate: false,
     },
   },
