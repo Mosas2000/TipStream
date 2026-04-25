@@ -436,6 +436,7 @@ function TimelockNotice() {
 }
 
 function PendingChangeCard({ label, status, effectiveHeight, onExecute, onCancel, submitting }) {
+    const { demoEnabled } = useDemoMode();
     const isReady = status.status === TimelockStatus.READY;
     const progress = typeof status.blocksLeft === 'number' && typeof effectiveHeight === 'number' && typeof status.blocksTotal === 'number'
         ? 1 - (status.blocksLeft / status.blocksTotal)
@@ -448,7 +449,14 @@ function PendingChangeCard({ label, status, effectiveHeight, onExecute, onCancel
                 : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
         }`}>
             <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-gray-900 dark:text-white">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 dark:text-white">{label}</span>
+                    {demoEnabled && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-[9px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tighter">
+                            Sandbox
+                        </span>
+                    )}
+                </div>
                 {isReady ? (
                     <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
                         <CheckCircle className="w-4 h-4" /> Ready
@@ -459,6 +467,7 @@ function PendingChangeCard({ label, status, effectiveHeight, onExecute, onCancel
                     </span>
                 )}
             </div>
+
 
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 Effective at block {formatBlockHeight(effectiveHeight)}
