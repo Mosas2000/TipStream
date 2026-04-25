@@ -64,6 +64,7 @@ export default defineConfig({
       },
     },
     onConsoleLog(log) {
+      if (process.env.VERBOSE === 'true') return true;
       if (isContractEvent(log)) return false;
     },
   },
