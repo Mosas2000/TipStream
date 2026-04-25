@@ -4,12 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTE_SEND } from '../config/routes';
 
 export function DemoIndicator() {
-  const { demoEnabled, toggleDemo, demoBalance } = useDemoMode();
+  const { demoEnabled, toggleDemo, resetDemoState, demoBalance } = useDemoMode();
   const navigate = useNavigate();
 
   if (!demoEnabled) {
     return null;
   }
+
+  const handleReset = () => {
+    resetDemoState();
+    navigate(ROUTE_SEND);
+  };
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 text-sm text-gray-900 dark:text-gray-100 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
@@ -31,8 +36,15 @@ export function DemoIndicator() {
         
         <div className="flex items-center gap-2">
           <button
+            onClick={handleReset}
+            className="hidden sm:flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold rounded-xl hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all text-xs"
+            title="Reset sandbox state"
+          >
+            Reset
+          </button>
+          <button
             onClick={() => navigate(ROUTE_SEND)}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all text-xs"
+            className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all text-xs"
           >
             Try a Tip
           </button>
@@ -42,9 +54,10 @@ export function DemoIndicator() {
             title="Exit Demo Mode"
           >
             <X className="w-3.5 h-3.5" />
-            <span>Exit Demo</span>
+            <span>Exit</span>
           </button>
         </div>
+
       </div>
     </div>
   );
