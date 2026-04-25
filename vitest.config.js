@@ -32,6 +32,8 @@ export default defineConfig({
     },
     teardownTimeout: 30000,
     testTimeout: 60000,
+    workerIdleTimeout: 60000,
+    maxWorkers: 1,
     setupFiles: [
       vitestSetupFilePath,
       // custom setup files can be added here
