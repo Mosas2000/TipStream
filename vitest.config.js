@@ -61,6 +61,7 @@ export default defineConfig({
     ...POOL_CONFIG,
     ...TIMEOUT_CONFIG,
     include: ["tests/**/*.test.ts"],
+    retry: 1, // Add resilience against transient worker communication failures
     sequence: {
       forceTracing: true, // Improves stack traces on worker hangs
       shuffle: false,    // Maintain consistent execution order
