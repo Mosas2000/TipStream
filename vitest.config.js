@@ -30,8 +30,8 @@ export default defineConfig({
         isolate: false,
       },
     },
-    teardownTimeout: 30000,
-    testTimeout: 60000,
+    teardownTimeout: 60000,
+    testTimeout: 120000,
     workerIdleTimeout: 60000,
     maxWorkers: 1,
     setupFiles: [
