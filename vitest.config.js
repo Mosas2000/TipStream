@@ -62,6 +62,9 @@ export default defineConfig({
     ...TIMEOUT_CONFIG,
     include: ["tests/**/*.test.ts"],
     retry: 1, // Add resilience against transient worker communication failures
+    diff: {
+      truncateThreshold: 0, // Show full diffs for complex contract responses
+    },
     sequence: {
       forceTracing: true, // Improves stack traces on worker hangs
       shuffle: false,    // Maintain consistent execution order
