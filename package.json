@@ -6,9 +6,13 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "pretest": "clarinet check --use-on-disk-deployment-plan",
     "test": "vitest run",
+    "test:verbose": "VERBOSE=true vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:report": "vitest run -- --coverage --costs",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\"",
+    "test:watch:verbose": "VERBOSE=true chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:verbose\"",
     "validate:csp": "node scripts/validate-csp.cjs"
   },
   "author": "Mosas2000",
@@ -20,5 +24,8 @@
     "chokidar-cli": "^3.0.0",
     "vitest": "^3.2.4",
     "vitest-environment-clarinet": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

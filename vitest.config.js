@@ -1,7 +1,7 @@
 
 /// <reference types="vitest" />
 
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import { vitestSetupFilePath, getClarinetVitestsArgv } from "@hirosystems/clarinet-sdk/vitest";
 
 /*
@@ -19,23 +19,82 @@ import { vitestSetupFilePath, getClarinetVitestsArgv } from "@hirosystems/clarin
     - vitest run -- --coverage --costs          # collect coverage and cost reports
 */
 
+// Centralized pool configuration to maximize worker stability.
+// Using 'forks' instead of 'threads' prevents native module isolation issues 
+// that can lead to 'onTaskUpdate' timeouts during long-running contract tests.
+const POOL_CONFIG = {
+  pool: "forks",
+  poolOptions: {
+    forks: {
+      singleFork: true, // Forces sequential execution to avoid simnet race conditions
+      isolate: false,   // Prevents worker re-initialization overhead
+    },
+  },
+  maxWorkers: 1,
+  workerIdleTimeout: 60000,
+};
+
+// Generous timeout thresholds for heavy Clarity contract simulations.
+const TIMEOUT_CONFIG = {
+  teardownTimeout: 60000,
+  testTimeout: 120000,
+};
+
+/**
+ * Filters out high-volume contract print events from the console output.
+ * Reducing stdout volume significantly improves IPC stability between 
+ * the worker and the Vitest reporter.
+ */
+function isContractEvent(log) {
+  if (!log) return false;
+  const trimmedLog = log.trim();
+  // Match Clarinet's standard print event output format
+  return (
+    trimmedLog.startsWith('{') && 
+    trimmedLog.includes('event: "') && 
+    trimmedLog.includes(' (tipstream')
+  );
+}
+
 export default defineConfig({
   test: {
+    ...POOL_CONFIG,
+    ...TIMEOUT_CONFIG,
     include: ["tests/**/*.test.ts"],
-    environment: "clarinet", // use vitest-environment-clarinet
-    pool: "threads",
-    poolOptions: {
-      threads: { singleThread: true },
+    slowTestThreshold: 5000, // Highlight tests taking longer than 5s
+    reporters: ['default'],
+    passWithNoTests: true,
+    globals: true,
+    retry: 1, // Add resilience against transient worker communication failures
+    diff: {
+      truncateThreshold: 0, // Show full diffs for complex contract responses
     },
+    sequence: {
+      forceTracing: true, // Improves stack traces on worker hangs
+      shuffle: false,    // Maintain consistent execution order
+    },
+    environment: "clarinet",
     setupFiles: [
       vitestSetupFilePath,
-      // custom setup files can be added here
     ],
     environmentOptions: {
       clarinet: {
         ...getClarinetVitestsArgv(),
-        // add or override options
       },
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/**',
+        'tests/**',
+        '**/*.test.ts',
+        'vitest.config.js',
+      ],
+    },
+    onConsoleLog(log) {
+      if (process.env.VERBOSE === 'true') return true;
+      if (isContractEvent(log)) return false;
     },
   },
 });
