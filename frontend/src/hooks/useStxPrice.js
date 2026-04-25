@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const COINGECKO_URL =
   "https://api.coingecko.com/api/v3/simple/price?ids=stacks&vs_currencies=usd";
 
-const REFRESH_INTERVAL = 120_000;
+const POLLING_INTERVAL_MS = 120_000;
 const RATE_LIMIT_RETRY_MS = 300_000;
 const CACHE_KEY = "tipstream:stx-price";
 const CACHE_TTL_MS = 120_000;
@@ -121,7 +121,7 @@ export function useStxPrice() {
     const startPolling = () => {
       timerRef.current = setInterval(() => {
         fetchPrice(true, controller.signal);
-      }, REFRESH_INTERVAL);
+      }, POLLING_INTERVAL_MS);
     };
 
     startPolling();
