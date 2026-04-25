@@ -6,7 +6,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "pretest": "clarinet check",
+    "pretest": "clarinet check --use-on-disk-deployment-plan",
     "test": "vitest run",
     "test:verbose": "VERBOSE=true vitest run",
     "test:coverage": "vitest run --coverage",
