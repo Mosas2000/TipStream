@@ -27,6 +27,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
+/**
+ * TelemetryDashboard -- displays application performance metrics and error logs.
+ * Note: Shared sub-components (MetricCard, AlertPanel, etc.) must be defined
+ * at the top level to avoid symbol re-declaration errors during build optimization.
+ */
 export default function TelemetryDashboard({ addToast }) {
   const { demoEnabled } = useDemoMode();
   const [summary, setSummary] = useState(null);
