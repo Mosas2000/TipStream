@@ -63,6 +63,16 @@ export default defineConfig({
         ...getClarinetVitestsArgv(),
       },
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/**',
+        'tests/**',
+        '**/*.test.ts',
+        'vitest.config.js',
+      ],
+    },
     onConsoleLog(log) {
       if (process.env.VERBOSE === 'true') return true;
       if (isContractEvent(log)) return false;
