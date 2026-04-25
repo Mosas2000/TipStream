@@ -187,13 +187,15 @@ constants instead of hard-coding path strings.
 | `is-paused` | Emergency pause |
 | `current-fee-basis-points` | Fee rate (default 50 = 0.5%) |
 
-## Testing
+### Testing
 
 ```bash
-npm test
+npm test              # Run tests in optimized mode (recommended)
+npm run test:verbose  # Run tests with full contract print logs
+npm run test:coverage # Generate test coverage report
 ```
 
-Comprehensive test suite with 88 contract tests and 40+ frontend unit tests covering:
+Comprehensive test suite with 99 contract tests and 40+ frontend unit tests covering:
 
 - Tip sending and fee calculation
 - Self-tip rejection and minimum amount enforcement
