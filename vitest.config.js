@@ -61,6 +61,7 @@ export default defineConfig({
     ...POOL_CONFIG,
     ...TIMEOUT_CONFIG,
     include: ["tests/**/*.test.ts"],
+    passWithNoTests: true,
     globals: true,
     retry: 1, // Add resilience against transient worker communication failures
     diff: {
