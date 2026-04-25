@@ -7,6 +7,16 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+/**
+ * Manual chunking strategy to optimize bundle size and improve cacheability.
+ * 
+ * We isolate heavy dependencies into dedicated chunks:
+ * - React/DOM: Stable core that changes infrequently.
+ * - Stacks: Blockchain logic, separated from UI.
+ * - WalletConnect/Reown: Heavy auth modules, lazy-loaded via @stacks/connect.
+ * - Viem: Transaction/utility library.
+ * - UI Icons: Specialized chunk for lucide-react (highly tree-shakable).
+ */
 function getManualChunk(id) {
   if (!id.includes('node_modules')) {
     return undefined;
@@ -17,83 +27,70 @@ function getManualChunk(id) {
     return undefined;
   }
 
-  const packageName = modulePath.startsWith('@')
-    ? modulePath.split('/').slice(0, 2).join('/')
-    : modulePath.split('/')[0];
+  // Handle nested node_modules
+  const actualModulePath = modulePath.includes('node_modules/') 
+    ? modulePath.split('node_modules/').pop() 
+    : modulePath;
+
+  const packageName = actualModulePath.startsWith('@')
+    ? actualModulePath.split('/').slice(0, 2).join('/')
+    : actualModulePath.split('/')[0];
 
   if (
     packageName === 'react' ||
     packageName === 'react-dom' ||
-    packageName === 'react-router-dom'
+    packageName === 'react-router-dom' ||
+    packageName === 'scheduler'
   ) {
     return 'vendor-react';
   }
 
-  if (
-    packageName === '@stacks/network' ||
-    packageName === '@stacks/transactions' ||
-    packageName === '@stacks/wallet-sdk' ||
-    packageName === 'c32check' ||
-    packageName === '@noble/hashes' ||
-    packageName === '@noble/curves'
-  ) {
-    return 'vendor-stacks';
-  }
-
-  if (
-    packageName === '@stacks/connect'
-  ) {
+  if (id.includes('node_modules/@stacks/connect')) {
     return 'vendor-stacks-connect';
   }
 
   if (
-    packageName.startsWith('@walletconnect/')
+    id.includes('node_modules/@stacks/') ||
+    id.includes('node_modules/c32check') ||
+    id.includes('node_modules/@noble/')
   ) {
+    return 'vendor-stacks';
+  }
+
+  if (id.includes('node_modules/@walletconnect/')) {
     return 'vendor-walletconnect';
   }
 
-  if (
-    packageName.startsWith('@reown/')
-  ) {
+  if (id.includes('node_modules/@reown/')) {
     return 'vendor-reown';
   }
 
-  if (
-    packageName === 'viem'
-  ) {
+  if (id.includes('node_modules/viem') || id.includes('node_modules/@viem/')) {
     return 'vendor-viem';
   }
 
-  if (
-    packageName === 'ox'
-  ) {
-    return 'vendor-ox';
+  if (packageName === 'ox' || packageName === 'qrcode' || packageName === 'dijkstrajs') {
+    return 'vendor-utils';
+  }
+
+  if (id.includes('node_modules/lucide-react')) {
+    return 'vendor-ui-icons';
   }
 
   if (
-    packageName === 'qrcode'
+    id.includes('node_modules/@radix-ui') ||
+    id.includes('node_modules/class-variance-authority') ||
+    id.includes('node_modules/clsx') ||
+    id.includes('node_modules/tailwind-merge')
   ) {
-    return 'vendor-qrcode';
+    return 'vendor-ui-core';
   }
 
-  if (
-    packageName === '@tanstack'
-  ) {
-    return 'vendor-tanstack';
+  if (id.includes('node_modules/web-vitals')) {
+    return 'vendor-metrics';
   }
 
-  if (
-    packageName === '@radix-ui/react-slot' ||
-    packageName === 'class-variance-authority' ||
-    packageName === 'clsx' ||
-    packageName === 'tailwind-merge' ||
-    packageName === 'lucide-react' ||
-    packageName === 'web-vitals'
-  ) {
-    return 'vendor-ui';
-  }
-
-  return undefined;
+  return 'vendor-others';
 }
 
 // https://vite.dev/config/
@@ -199,8 +196,17 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 600,
+    // Target modern engines for better performance and smaller polyfill footprint
     target: 'esnext',
     minify: 'esbuild',
+    sourcemap: false,
+    reportCompressedSize: true,
+    cssCodeSplit: true,
+    assetsInlineLimit: 4096,
+  },
+  esbuild: {
+    drop: ['console', 'debugger'],
+    legalComments: 'none',
   },
   optimizeDeps: {
     include: ['@stacks/network', '@stacks/transactions'],

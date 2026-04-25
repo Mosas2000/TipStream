@@ -1,3 +1,7 @@
+/**
+ * Dynamic import wrapper for @stacks/connect to prevent heavy wallet
+ * dependencies from being included in the initial app shell.
+ */
 export async function loadWalletConnect() {
     const StacksConnect = await import('@stacks/connect');
     return StacksConnect;
