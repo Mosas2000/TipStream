@@ -38,7 +38,7 @@ export function useStxPrice() {
   const [error, setError] = useState(null);
   const intervalRef = useRef(null);
 
-  const fetchPrice = useCallback(async (forceNetwork = false) => {
+  const fetchPrice = useCallback(async (forceNetwork = false, signal = null) => {
     try {
       if (!forceNetwork) {
         const cached = readCachedPrice();
@@ -52,7 +52,7 @@ export function useStxPrice() {
 
       const demoKey = import.meta.env?.VITE_COINGECKO_DEMO_API_KEY;
       const headers = demoKey ? { "x-cg-demo-api-key": demoKey } : undefined;
-      const res = await fetch(COINGECKO_URL, { headers });
+      const res = await fetch(COINGECKO_URL, { headers, signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const usd = data?.stacks?.usd;
@@ -61,6 +61,7 @@ export function useStxPrice() {
       writeCachedPrice(usd);
       setError(null);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setError(err.message);
       if (err.message === "HTTP 429") {
         console.warn("CoinGecko rate limit reached. Retrying with backoff.");
