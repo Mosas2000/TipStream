@@ -247,10 +247,12 @@ settings/
 The frontend is optimized for fast loading and excellent user experience:
 
 ### Bundle Optimization
-- **Initial bundle**: 73KB gzipped (app shell + core utilities)
-- **Wallet chunk**: 235KB gzipped (loaded only when connecting wallet)
-- **Route splitting**: All components lazy loaded (2-7KB each)
-- **Vendor chunking**: React (17KB) and Stacks libraries (34KB) cached separately
+- **Initial bundle**: ~19KB gzipped (index shell)
+- **Vendor React chunk**: ~60KB gzipped (React & DOM core)
+- **Vendor Stacks chunk**: ~48KB gzipped (Blockchain & crypto logic)
+- **Wallet chunks**: Isolated @walletconnect (~105KB) and @reown (~58KB) modules
+- **Route splitting**: All components lazy loaded (4-13KB each)
+- **Asset Isolation**: Lucide icons (~10KB) and metrics (~5KB) separated for caching
 
 ### Loading Strategy
 - **Critical path**: CSS animations instead of JavaScript for hero section
