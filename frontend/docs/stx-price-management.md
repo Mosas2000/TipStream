@@ -24,3 +24,5 @@ To ensure the application remains performant and free of memory leaks, the `useS
 
 ## 4. Manual Refresh
 Users can manually trigger a price refresh. These manual actions are also cancellable and integrated into the overall cleanup logic.
+
+Last updated: 2026-04-25
