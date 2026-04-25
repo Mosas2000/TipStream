@@ -45,8 +45,9 @@ export default defineConfig({
       },
     },
     onConsoleLog(log) {
-      // Suppress noisy Clarinet print events to reduce IPC overhead
-      if (log.includes('event: "') && log.includes(' (tipstream')) return false;
+      // Suppress noisy Clarinet print events to reduce IPC overhead during contract simulations.
+      // These events typically contain Clarity maps and function origins.
+      if (/\{.*event: ".*" \}/.test(log) && log.includes(' (tipstream')) return false;
     },
   },
 });
