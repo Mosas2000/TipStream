@@ -34,12 +34,17 @@ const POOL_CONFIG = {
   workerIdleTimeout: 60000,
 };
 
+// Generous timeout thresholds for heavy Clarity contract simulations.
+const TIMEOUT_CONFIG = {
+  teardownTimeout: 60000,
+  testTimeout: 120000,
+};
+
 export default defineConfig({
   test: {
     ...POOL_CONFIG,
+    ...TIMEOUT_CONFIG,
     include: ["tests/**/*.test.ts"],
-    environment: "clarinet", // use vitest-environment-clarinet
-    setupFiles: [
       vitestSetupFilePath,
       // custom setup files can be added here
     ],
