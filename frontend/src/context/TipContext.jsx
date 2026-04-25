@@ -58,12 +58,13 @@ export function TipProvider({ children }) {
       recipient: tip.recipient,
       amount: String(tip.amount),
       fee: '0',
-      message: tip.memo || '',
+      message: tip.memo || tip.message || '',
       category: tip.category ?? null,
       timestamp: tip.timestamp ? Math.floor(tip.timestamp / 1000) : Math.floor(Date.now() / 1000),
       txId: tip.txId || tip.id,
     }));
   }, [demoTips]);
+
 
   /**
    * Fetch contract events from the Stacks API and update the shared cache.
