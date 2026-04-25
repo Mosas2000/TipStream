@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAdmin } from '../hooks/useAdmin';
+import { useDemoMode } from '../context/DemoContext';
 import {
     TimelockStatus,
     formatBlockHeight,
@@ -24,6 +25,7 @@ import {
     CheckCircle,
     XCircle,
     Loader2,
+    Zap,
 } from 'lucide-react';
 
 /**
@@ -39,6 +41,7 @@ import {
  * @param {Function} props.addToast - Toast notification function
  */
 export default function AdminDashboard({ userAddress, addToast }) {
+    const { demoEnabled } = useDemoMode();
     const {
         contractOwner,
         isOwner,
@@ -84,6 +87,14 @@ export default function AdminDashboard({ userAddress, addToast }) {
 
     const handleProposePause = async (paused) => {
         setSubmitting(true);
+        
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 1000));
+            addToast?.(`Demo: Pause ${paused ? 'enable' : 'disable'} proposed. This is a simulation.`, 'success');
+            setSubmitting(false);
+            return;
+        }
+
         try {
             await proposePauseChange(paused, {
                 onFinish: () => {
@@ -106,6 +117,14 @@ export default function AdminDashboard({ userAddress, addToast }) {
 
     const handleExecutePause = async () => {
         setSubmitting(true);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 1000));
+            addToast?.('Demo: Pause change executed (simulated).', 'success');
+            setSubmitting(false);
+            return;
+        }
+
         try {
             await executePauseChange({
                 onFinish: () => {
@@ -131,6 +150,15 @@ export default function AdminDashboard({ userAddress, addToast }) {
         }
 
         setSubmitting(true);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 1000));
+            addToast?.(`Demo: Fee change to ${formatBasisPoints(feeValue)} proposed (simulated).`, 'success');
+            setNewFee('');
+            setSubmitting(false);
+            return;
+        }
+
         try {
             await proposeFeeChange(feeValue, {
                 onFinish: () => {
@@ -154,6 +182,14 @@ export default function AdminDashboard({ userAddress, addToast }) {
 
     const handleExecuteFee = async () => {
         setSubmitting(true);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 1000));
+            addToast?.('Demo: Fee change executed (simulated).', 'success');
+            setSubmitting(false);
+            return;
+        }
+
         try {
             await executeFeeChange({
                 onFinish: () => {
@@ -173,6 +209,14 @@ export default function AdminDashboard({ userAddress, addToast }) {
 
     const handleCancelFee = async () => {
         setSubmitting(true);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 800));
+            addToast?.('Demo: Fee change proposal cancelled (simulated).', 'info');
+            setSubmitting(false);
+            return;
+        }
+
         try {
             await cancelFeeChange({
                 onFinish: () => {
@@ -199,6 +243,11 @@ export default function AdminDashboard({ userAddress, addToast }) {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                         Admin Dashboard
                     </h1>
+                    {demoEnabled && (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                            Demo Sandbox
+                        </span>
+                    )}
                 </div>
                 <button
                     onClick={refresh}
@@ -210,6 +259,15 @@ export default function AdminDashboard({ userAddress, addToast }) {
                     Refresh
                 </button>
             </div>
+
+            {demoEnabled && (
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
+                    <Zap className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Sandbox Mode:</strong> Administrative actions are simulated for demonstration purposes.
+                    </p>
+                </div>
+            )}
 
             {error && (
                 <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
@@ -442,3 +500,4 @@ function PendingChangeCard({ label, status, effectiveHeight, onExecute, onCancel
         </div>
     );
 }
+
