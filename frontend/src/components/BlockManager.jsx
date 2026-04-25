@@ -9,10 +9,12 @@ import {
 import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_USER_BLOCKED, FN_TOGGLE_BLOCK_USER } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
-import { ShieldBan, Search, UserX, UserCheck, Loader2 } from 'lucide-react';
+import { ShieldBan, Search, UserX, UserCheck, Loader2, Zap } from 'lucide-react';
 import { useSenderAddress } from '../hooks/useSenderAddress';
+import { useDemoMode } from '../context/DemoContext';
 
 export default function BlockManager({ addToast }) {
+    const { demoEnabled } = useDemoMode();
     const [addressInput, setAddressInput] = useState('');
     const [checkResult, setCheckResult] = useState(null);
     const [checking, setChecking] = useState(false);
@@ -30,7 +32,7 @@ export default function BlockManager({ addToast }) {
 
     const handleCheckBlocked = async () => {
         const target = addressInput.trim();
-        if (!target || !senderAddress) return;
+        if (!target || (!senderAddress && !demoEnabled)) return;
 
         if (!isValidStacksAddress(target)) {
             addToast?.('Enter a valid Stacks address', 'warning');
@@ -44,6 +46,14 @@ export default function BlockManager({ addToast }) {
 
         setChecking(true);
         setCheckResult(null);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 600));
+            const isBlocked = blockedList.includes(target);
+            setCheckResult({ address: target, blocked: isBlocked });
+            setChecking(false);
+            return;
+        }
 
         try {
             const result = await fetchCallReadOnlyFunction({
@@ -67,9 +77,31 @@ export default function BlockManager({ addToast }) {
     };
 
     const handleToggleBlock = async (targetAddress) => {
-        if (!senderAddress || !targetAddress) return;
+        if ((!senderAddress && !demoEnabled) || !targetAddress) return;
 
         setToggling(true);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 800));
+            const wasBlocked = blockedList.includes(targetAddress);
+            
+            if (wasBlocked) {
+                setBlockedList((prev) => prev.filter((a) => a !== targetAddress));
+                if (checkResult?.address === targetAddress) {
+                    setCheckResult(prev => ({ ...prev, blocked: false }));
+                }
+                addToast?.(`Unblocked ${formatAddress(targetAddress, 6, 4)} in demo.`, 'success');
+            } else {
+                setBlockedList((prev) => [...prev, targetAddress]);
+                if (checkResult?.address === targetAddress) {
+                    setCheckResult(prev => ({ ...prev, blocked: true }));
+                }
+                addToast?.(`Blocked ${formatAddress(targetAddress, 6, 4)} in demo.`, 'success');
+            }
+            setToggling(false);
+            return;
+        }
+
         try {
             await openContractCall({
                 network,
@@ -108,6 +140,14 @@ export default function BlockManager({ addToast }) {
 
     return (
         <div className="max-w-md mx-auto">
+            {demoEnabled && (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
+                    <Zap className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Sandbox Mode:</strong> Block actions are simulated and will not be recorded on-chain.
+                    </p>
+                </div>
+            )}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white">
@@ -116,7 +156,7 @@ export default function BlockManager({ addToast }) {
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Block Manager</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Block or unblock users from sending you tips
+                            {demoEnabled ? 'Simulated blocking/unblocking' : 'Block or unblock users from sending you tips'}
                         </p>
                     </div>
                 </div>
@@ -203,7 +243,7 @@ export default function BlockManager({ addToast }) {
                     {blockedList.length > 0 && (
                         <div>
                             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                Recently Blocked
+                                Recently Blocked {demoEnabled ? '(Local)' : ''}
                             </h3>
                             <div className="space-y-1">
                                 {blockedList.map((addr) => (
@@ -231,3 +271,4 @@ export default function BlockManager({ addToast }) {
         </div>
     );
 }
+
