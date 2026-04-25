@@ -3,6 +3,7 @@ import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transa
 import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
+import { getTipRowKey } from '../lib/tipRowKey';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
 import { useDemoMode } from '../context/DemoContext';
@@ -43,7 +44,7 @@ function parseUtf8(repr) {
  * @param {string} props.userAddress - The STX address of the logged-in user.
  */
 export default function TipHistory({ userAddress }) {
-    const { demoEnabled, getDemoData } = useDemoMode();
+    const { demoEnabled, getDemoData, demoTips: contextDemoTips } = useDemoMode();
     const [tips, setTips] = useState([]);
     const [tipsLoading, setTipsLoading] = useState(true);
     const [tipsError, setTipsError] = useState(null);
@@ -60,20 +61,22 @@ export default function TipHistory({ userAddress }) {
 
     const buildDemoTips = useCallback(() => {
         const walletAddress = demoWalletAddress;
-        return getDemoData().mockTips
+        // Use contextDemoTips which reflects real-time sandbox activity
+        return contextDemoTips
             .filter((tip) => tip.sender === walletAddress || tip.recipient === walletAddress)
             .map((tip) => ({
                 tipId: tip.id,
-                txId: tip.id,
+                txId: tip.id || tip.txId,
                 sender: tip.sender,
                 recipient: tip.recipient,
                 amount: String(tip.amount),
-                message: tip.memo || '',
+                message: tip.memo || tip.message || '',
                 category: tip.category ?? null,
                 direction: tip.sender === walletAddress ? 'sent' : 'received',
                 timestamp: tip.timestamp || null,
             }));
-    }, [demoWalletAddress, getDemoData]);
+    }, [demoWalletAddress, contextDemoTips]);
+
 
     const fetchTips = useCallback(async (reset = true) => {
         if (demoEnabled) {
@@ -293,8 +296,8 @@ export default function TipHistory({ userAddress }) {
                     </div>
                 ) : (
                     <div id="tip-history-panel" role="tabpanel" className="space-y-2">
-                        {filteredTips.map((tip, i) => (
-                            <div key={tip.tipId || i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
+                        {filteredTips.map((tip) => (
+                            <div key={getTipRowKey(tip)} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${tip.direction === 'sent' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>
                                         {tip.direction === 'sent' ? '-' : '+'}
