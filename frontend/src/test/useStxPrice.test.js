@@ -1,3 +1,14 @@
+/**
+ * Unit tests for the useStxPrice hook.
+ * 
+ * Tests cover:
+ * - Initial state and data fetching
+ * - Caching and TTL logic
+ * - Polling intervals and refresh behavior
+ * - Rate limit (429) backoff and retry
+ * - Request abortion and timer cleanup on unmount
+ * - State safety (no updates after unmount)
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useStxPrice } from '../hooks/useStxPrice';
@@ -333,5 +344,77 @@ describe('useStxPrice', () => {
         });
 
         expect(result.current.toUsd(0)).toBe('0.00');
+    });
+    it('aborts in-flight requests on unmount', async () => {
+        let signal;
+        global.fetch = vi.fn().mockImplementation((url, options) => {
+            signal = options.signal;
+            return new Promise(() => {}); // Never resolves
+        });
+
+        const { unmount } = renderHook(() => useStxPrice());
+        
+        // Ensure fetch was called
+        expect(global.fetch).toHaveBeenCalled();
+        expect(signal).toBeInstanceOf(AbortSignal);
+        expect(signal.aborted).toBe(false);
+
+        unmount();
+
+        expect(signal.aborted).toBe(true);
+    });
+
+    it('clears 429 retry timeout on unmount', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 429,
+        });
+
+        const { unmount, result } = renderHook(() => useStxPrice());
+
+        // Wait for the initial fetch to complete and trigger the 429 error
+        await act(async () => {
+            // We need to wait for the promise in fetchPrice to resolve
+            await Promise.resolve(); 
+            await Promise.resolve();
+        });
+
+        expect(result.current.error).toContain('429');
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        
+        unmount();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(300_000); // RATE_LIMIT_RETRY_MS
+        });
+
+        // The first call was for mount. 
+        // If it wasn't unmounted, it would have been called again.
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('aborts manual refetch on subsequent refetch', async () => {
+        let signals = [];
+        global.fetch = vi.fn().mockImplementation((url, options) => {
+            signals.push(options.signal);
+            return new Promise(() => {}); // Never resolves
+        });
+
+        const { result } = renderHook(() => useStxPrice());
+        
+        await act(async () => {
+            result.current.refetch();
+        });
+        
+        expect(signals.length).toBe(2); // 1 for mount, 1 for refetch
+        expect(signals[1].aborted).toBe(false);
+
+        await act(async () => {
+            result.current.refetch();
+        });
+
+        expect(signals.length).toBe(3);
+        expect(signals[1].aborted).toBe(true);
+        expect(signals[2].aborted).toBe(false);
     });
 });
