@@ -1,3 +1,9 @@
+/**
+ * TipStream Core Contract Tests
+ * 
+ * This suite verifies the core tipping logic, profile management, and admin controls.
+ * Optimized for Vitest with the 'forks' pool and sequential execution.
+ */
 import { describe, expect, it } from "vitest";
 import { Cl } from "@stacks/transactions";
 
