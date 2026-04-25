@@ -10,6 +10,7 @@ import { validateTipBackAmount, MIN_TIP_STX, MAX_TIP_STX } from '../lib/tipBackV
 import { useTipContext } from '../context/TipContext';
 import { useDemoMode } from '../context/DemoContext';
 import { useFilteredAndPaginatedEvents } from '../hooks/useFilteredAndPaginatedEvents';
+import { getTipRowKey } from '../lib/tipRowKey';
 import { Zap, Search } from 'lucide-react';
 import CopyButton from './ui/copy-button';
 
@@ -156,7 +157,19 @@ export default function RecentTips({ addToast }) {
      * @param {Object} tip - The tip event to reciprocate.
      */
     const handleTipBack = async (tip) => {
+        const error = validateTipBackAmount(tipBackAmount);
+        if (error) {
+            setTipBackError(error);
+            addToast?.(error, 'warning');
+            return;
+        }
+
+        setSending(true);
+
         if (demoEnabled) {
+            // Simulate network delay for demo tip-back
+            await new Promise(r => setTimeout(r, 1500));
+            
             const microSTX = toMicroSTX(tipBackAmount);
             setDemoBalance((prev) => Math.max(0, prev - microSTX));
             addDemoTip({
@@ -165,6 +178,7 @@ export default function RecentTips({ addToast }) {
                 message: tipBackMessage || 'Tipping back!',
                 category: tip.category,
             });
+            
             setSending(false);
             closeTipBackModal();
             setTipBackMessage('');
@@ -172,19 +186,14 @@ export default function RecentTips({ addToast }) {
             return;
         }
 
-        if (!userSession.isUserSignedIn()) return;
-
-        // Validate the amount before opening the wallet prompt (Issue #233).
-        const error = validateTipBackAmount(tipBackAmount);
-        if (error) {
-            setTipBackError(error);
-            addToast?.(error, 'warning');
+        if (!userSession.isUserSignedIn()) {
+            setSending(false);
             return;
         }
 
         const microSTX = toMicroSTX(tipBackAmount);
         const senderAddress = getSenderAddress();
-        setSending(true);
+        
         try {
             await openContractCall({
                 network, appDetails,
@@ -207,6 +216,7 @@ export default function RecentTips({ addToast }) {
             setSending(false);
         }
     };
+
 
     if (eventsLoading) return (
         <div className="space-y-4 animate-pulse">
@@ -296,8 +306,8 @@ export default function RecentTips({ addToast }) {
                     </div>
                 ) : (
                     <div className="space-y-2" aria-live="polite" aria-relevant="additions text">
-                        {allEnrichedTips.map((tip, i) => (
-                            <div key={tip.tipId || i} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
+                        {allEnrichedTips.map((tip) => (
+                            <div key={getTipRowKey(tip)} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
                                     <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shrink-0">
                                         <Zap className="w-4 h-4" aria-hidden="true" />
@@ -319,12 +329,13 @@ export default function RecentTips({ addToast }) {
                                     ) : messagesLoading ? (
                                         <span className="inline-block h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                                     ) : null}
-                                    {userSession.isUserSignedIn() && (
+                                    {(userSession.isUserSignedIn() || demoEnabled) && (
                                         <button onClick={() => { setTipBackError(''); setTipBackAmount('0.5'); setTipBackMessage(''); setTipBackTarget(tip); }}
                                             className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-lg transition-all sm:opacity-0 sm:group-hover:opacity-100">
                                             Tip Back
                                         </button>
                                     )}
+
                                 </div>
                             </div>
                         ))}
