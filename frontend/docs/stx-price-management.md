@@ -26,3 +26,5 @@ To ensure the application remains performant and free of memory leaks, the `useS
 Users can manually trigger a price refresh. These manual actions are also cancellable and integrated into the overall cleanup logic.
 
 Last updated: 2026-04-25
+
+Note: Error messages now include explicit status codes (e.g., 429) to assist in troubleshooting.
