@@ -1,3 +1,14 @@
+/**
+ * Unit tests for the useStxPrice hook.
+ * 
+ * Tests cover:
+ * - Initial state and data fetching
+ * - Caching and TTL logic
+ * - Polling intervals and refresh behavior
+ * - Rate limit (429) backoff and retry
+ * - Request abortion and timer cleanup on unmount
+ * - State safety (no updates after unmount)
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useStxPrice } from '../hooks/useStxPrice';
