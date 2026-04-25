@@ -7,6 +7,11 @@ describe('Frontend Utils', () => {
             expect(formatSTX(1000000)).toBe('1.000000');
             expect(formatSTX(500000, 2)).toBe('0.50');
             expect(formatSTX(0)).toBe('0.000000');
+            expect(formatSTX(100)).toBe('0.000100');
+        });
+
+        it('should handle large amounts', () => {
+            expect(formatSTX(1000000000)).toBe('1000.000000');
         });
     });
 
