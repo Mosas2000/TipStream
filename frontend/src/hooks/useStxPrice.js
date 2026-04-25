@@ -92,9 +92,11 @@ export function useStxPrice() {
     } catch (err) {
       if (err.name === 'AbortError') return;
       if (isMountedRef.current) {
-        setError(err.message);
-        if (err.message === "HTTP 429") {
+        if (err.message.includes('429')) {
+          setError('Rate limit exceeded. Retrying soon...');
           console.warn("CoinGecko rate limit reached. Retrying with backoff.");
+        } else {
+          setError(err.message || 'Failed to fetch price');
         }
       }
     } finally {
@@ -123,7 +125,7 @@ export function useStxPrice() {
   }, [fetchPrice]);
 
   useEffect(() => {
-    if (error !== "HTTP 429") return;
+    if (!error || !error.includes('429')) return;
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
