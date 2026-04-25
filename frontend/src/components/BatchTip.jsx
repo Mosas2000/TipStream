@@ -18,7 +18,8 @@ import { summarizeBatchTipResult, buildBatchTipOutcomeMessage } from '../lib/bat
 import { useBalance } from '../hooks/useBalance';
 import { useSenderAddress } from '../hooks/useSenderAddress';
 import { useTipContext } from '../context/TipContext';
-import { Users, Plus, Trash2, Send, Loader2, AlertTriangle } from 'lucide-react';
+import { useDemoMode } from '../context/DemoContext';
+import { Users, Plus, Trash2, Send, Loader2, AlertTriangle, Zap } from 'lucide-react';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
 
@@ -30,7 +31,8 @@ function emptyRecipient() {
 }
 
 export default function BatchTip({ addToast }) {
-    const { notifyTipSent } = useTipContext();
+    const { notifyTipSent, addDemoTip } = useTipContext();
+    const { demoEnabled, setDemoBalance } = useDemoMode();
     const [recipients, setRecipients] = useState([emptyRecipient()]);
     const [strictMode, setStrictMode] = useState(false);
     const [sending, setSending] = useState(false);
@@ -206,6 +208,33 @@ export default function BatchTip({ addToast }) {
         analytics.trackBatchSize(recipients.length);
 
         setSending(true);
+
+        if (demoEnabled) {
+            // Simulate batch simulation in demo mode
+            await new Promise(r => setTimeout(r, 1800));
+            
+            const mockTxId = `0x${Math.random().toString(16).slice(2, 66)}`;
+            
+            // Add tips to context
+            recipients.forEach(r => {
+                addDemoTip({
+                    recipient: r.address.trim(),
+                    amount: toMicroSTX(r.amount),
+                    message: r.message || 'Batch tip via TipStream sandbox',
+                    category: 0
+                });
+            });
+
+            setDemoBalance(prev => prev - totalAmountMicro);
+            
+            setSending(false);
+            setPendingTx({ txId: mockTxId, totalRecipients: recipients.length, strictMode });
+            setRecipients([emptyRecipient()]);
+            setErrors({});
+            addToast?.(`Demo batch submitted! Mock Tx: ${mockTxId}`, 'success');
+            return;
+        }
+
         try {
             const tipsList = recipients.map((r) =>
                 tupleCV({
@@ -276,6 +305,14 @@ export default function BatchTip({ addToast }) {
 
     return (
         <div className="max-w-2xl mx-auto">
+            {demoEnabled && (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
+                    <Zap className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Sandbox Mode:</strong> Batch tips are simulated using your mock balance.
+                    </p>
+                </div>
+            )}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white">
@@ -284,13 +321,13 @@ export default function BatchTip({ addToast }) {
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Batch Tips</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Send tips to multiple recipients in a single transaction
+                            {demoEnabled ? 'Simulated batch tipping' : 'Send tips to multiple recipients in a single transaction'}
                         </p>
                     </div>
                 </div>
 
                 {/* Balance */}
-                {senderAddress && (
+                {(senderAddress || demoEnabled) && (
                     <div className="mb-5 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-100 dark:border-gray-700">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Your Balance</p>
@@ -499,3 +536,4 @@ export default function BatchTip({ addToast }) {
         </div>
     );
 }
+
