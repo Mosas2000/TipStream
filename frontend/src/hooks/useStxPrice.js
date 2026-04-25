@@ -1,3 +1,12 @@
+/**
+ * Hook to fetch and poll for the current STX price in USD from CoinGecko.
+ * 
+ * Features:
+ * - Automatic polling every 120s
+ * - Exponential backoff/retry on 429 rate limits
+ * - LocalStorage caching to reduce API load
+ * - Proper cleanup of in-flight requests and timers on unmount
+ */
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const COINGECKO_URL =
