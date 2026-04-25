@@ -35,6 +35,10 @@ function readCachedPrice() {
   }
 }
 
+/**
+ * Persists a new price point to local storage with a timestamp.
+ * @param {number} nextPrice 
+ */
 function writeCachedPrice(nextPrice) {
   try {
     localStorage.setItem(
