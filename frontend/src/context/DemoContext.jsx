@@ -34,14 +34,10 @@ export function DemoProvider({ children }) {
   const toggleDemo = (enabled) => {
     setDemoMode(enabled);
     setDemoEnabled(enabled);
-    if (enabled) {
-      resetDemoState();
-    } else {
-      // Clean exit state
-      setDemoTips([]);
-      setDemoNotifications([]);
-    }
+    // Always reset to initial config state on toggle to ensure freshness
+    resetDemoState();
   };
+
 
   const getDemoData = () => {
     return getDemo();
