@@ -78,7 +78,8 @@ describe("TipStream V2 Contract Tests", () => {
 
         const secondPause = simnet.callPublicFn("tipstream-v2", "emergency-pause", [], wallet1);
         expect(secondPause.result).toBeErr(Cl.uint(109));
-
+        // Mine 2016 blocks (approx 2 weeks) to satisfy the emergency cooldown period.
+        // This is a high-latency operation in the simnet.
         simnet.mineEmptyBlocks(2016);
 
         const thirdPause = simnet.callPublicFn("tipstream-v2", "emergency-pause", [], wallet1);
