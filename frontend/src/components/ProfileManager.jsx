@@ -9,15 +9,12 @@ import {
 } from '@stacks/transactions';
 import { network, appDetails } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_PROFILE, FN_UPDATE_PROFILE } from '../config/contracts';
-import { User, Save, Loader2, ImageOff } from 'lucide-react';
+import { User, Save, Loader2, ImageOff, Zap } from 'lucide-react';
 import { useSenderAddress } from '../hooks/useSenderAddress';
+import { useDemoMode } from '../context/DemoContext';
 
 /**
  * Validate that a URL is safe to render as an avatar image.
- * Only HTTPS URLs are accepted to prevent tracking pixels,
- * data: URI abuse, and internal network probes.
- * @param {string} url
- * @returns {boolean}
  */
 function isValidAvatarUrl(url) {
     if (!url) return false;
@@ -30,6 +27,7 @@ function isValidAvatarUrl(url) {
 }
 
 export default function ProfileManager({ addToast }) {
+    const { demoEnabled } = useDemoMode();
     const [displayName, setDisplayName] = useState('');
     const [bio, setBio] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
@@ -46,8 +44,24 @@ export default function ProfileManager({ addToast }) {
         setProfileLoaded(false);
     }, []);
 
-    /** Fetch the existing on-chain profile for the connected wallet. */
+    /** Fetch the existing on-chain profile or mock data if in demo. */
     const fetchProfile = useCallback(async () => {
+        if (demoEnabled) {
+            setLoading(true);
+            await new Promise(r => setTimeout(r, 800));
+            setDisplayName('Demo User');
+            setBio('Exploring the TipStream sandbox. No real funds involved!');
+            setAvatarUrl('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=128&h=128&q=80');
+            setProfileLoaded(true);
+            setLoading(false);
+            return;
+        }
+
+        if (!senderAddress) {
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             const result = await fetchCallReadOnlyFunction({
@@ -74,16 +88,11 @@ export default function ProfileManager({ addToast }) {
         } finally {
             setLoading(false);
         }
-    }, [senderAddress, clearProfile]);
+    }, [senderAddress, clearProfile, demoEnabled]);
 
     useEffect(() => {
-        if (!senderAddress) {
-            clearProfile();
-            setLoading(false);
-            return;
-        }
         void fetchProfile();
-    }, [senderAddress, fetchProfile, clearProfile]);
+    }, [fetchProfile]);
 
     /** Validate all form fields before submission. */
     const validateForm = () => {
@@ -110,11 +119,20 @@ export default function ProfileManager({ addToast }) {
         return true;
     };
 
-    /** Submit the profile update transaction to the wallet. */
+    /** Submit the profile update transaction or simulate it in demo. */
     const handleSaveProfile = async () => {
         if (!validateForm()) return;
 
         setSaving(true);
+
+        if (demoEnabled) {
+            await new Promise(r => setTimeout(r, 1200));
+            setSaving(false);
+            setProfileLoaded(true);
+            addToast?.('Demo profile updated locally!', 'success');
+            return;
+        }
+
         try {
             await openContractCall({
                 network,
@@ -156,6 +174,14 @@ export default function ProfileManager({ addToast }) {
 
     return (
         <div className="max-w-md mx-auto">
+            {demoEnabled && (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
+                    <Zap className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Sandbox Mode:</strong> Profile changes are simulated and will not be saved to the blockchain.
+                    </p>
+                </div>
+            )}
             <div role="form" aria-label="Profile settings" className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white">
@@ -166,7 +192,7 @@ export default function ProfileManager({ addToast }) {
                             {profileLoaded ? 'Edit Profile' : 'Create Profile'}
                         </h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Stored on-chain via the TipStream contract
+                            {demoEnabled ? 'Simulated profile storage' : 'Stored on-chain via the TipStream contract'}
                         </p>
                     </div>
                 </div>
@@ -284,3 +310,4 @@ export default function ProfileManager({ addToast }) {
         </div>
     );
 }
+
