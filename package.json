@@ -7,6 +7,7 @@
   "private": true,
   "scripts": {
     "test": "vitest run",
+    "test:verbose": "VERBOSE=true vitest run",
     "test:report": "vitest run -- --coverage --costs",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\"",
     "validate:csp": "node scripts/validate-csp.cjs"
