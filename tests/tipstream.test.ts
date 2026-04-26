@@ -15,6 +15,7 @@ const wallet2 = accounts.get("wallet_2")!;
 const MOCK_TIP_AMOUNT = 1_000_000;
 const MOCK_FEE_AMOUNT = 5_000;
 const MOCK_NET_TIP_AMOUNT = MOCK_TIP_AMOUNT - MOCK_FEE_AMOUNT;
+const MIN_TIP_AMOUNT = 1_000;
 
 describe("TipStream Contract Tests", () => {
     it("can send tip successfully", () => {
@@ -82,7 +83,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(999),
+                Cl.uint(MIN_TIP_AMOUNT - 1),
                 Cl.stringUtf8("Too small")
             ],
             wallet1
@@ -97,7 +98,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000),
+                Cl.uint(MIN_TIP_AMOUNT),
                 Cl.stringUtf8("Minimum tip")
             ],
             wallet1
