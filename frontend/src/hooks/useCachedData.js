@@ -79,8 +79,8 @@ export function useCachedData(
     } catch (err) {
       if (cancelledRef.current) return;
 
-      console.warn(`Failed to fetch data for "${cacheKey}":`, err.message);
-      setError(err.message || 'Failed to load data');
+      console.warn(`[useCachedData] Failed to fetch live data for "${cacheKey}":`, err.message || err);
+      setError(err.message || 'Failed to load live data');
 
       const cachedData = getCacheEntry(cacheKey);
       if (cachedData) {
