@@ -1,3 +1,12 @@
+/**
+ * @module hooks/useBlockCheck
+ *
+ * Hook for checking whether the current user is blocked by a given recipient.
+ *
+ * Uses a call-id counter to discard stale responses from in-flight requests
+ * when the recipient address changes rapidly.
+ */
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
 import { network, getSenderAddress } from '../utils/stacks';
@@ -6,11 +15,11 @@ import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_IS_USER_BLOCKED } from '../config/c
 /**
  * Hook that checks whether the current user is blocked by a given address.
  *
- * Returns:
- *  - blocked: boolean | null  (null = not yet checked)
- *  - checking: boolean
- *  - checkBlocked: (recipientAddress: string) => void
- *  - reset: () => void
+ * @returns {Object} result
+ * @returns {boolean|null} result.blocked - Block state; null means not yet checked.
+ * @returns {boolean} result.checking - Whether a block check is in progress.
+ * @returns {Function} result.checkBlocked - Trigger a block check for a recipient address.
+ * @returns {Function} result.reset - Cancel any pending check and reset state to null.
  */
 export function useBlockCheck() {
     const [blocked, setBlocked] = useState(null);
