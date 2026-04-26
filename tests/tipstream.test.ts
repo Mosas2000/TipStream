@@ -301,7 +301,7 @@ describe("TipStream Contract Tests", () => {
                 wallet2
             );
 
-            expect(result).toBeErr(Cl.uint(104));
+            expect(result).toBeErr(Cl.uint(ERR_NOT_FOUND));
         });
     });
 
