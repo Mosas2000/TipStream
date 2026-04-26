@@ -38,15 +38,20 @@ export function useCachedData(
   const cancelledRef = useRef(false);
 
   const fetchWithTimeout = useCallback(async () => {
-    return Promise.race([
-      fetchFn(),
-      new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Fetch timeout')),
-          timeout
-        )
-      ),
-    ]);
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(
+        () => reject(new Error('Fetch timeout')),
+        timeout
+      );
+    });
+
+    try {
+      const result = await Promise.race([fetchFn(), timeoutPromise]);
+      return result;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
   }, [fetchFn, timeout]);
 
   const loadData = useCallback(async () => {
