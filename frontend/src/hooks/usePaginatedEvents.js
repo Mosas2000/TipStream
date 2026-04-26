@@ -17,7 +17,17 @@ const PAGE_SIZE = 10;
 /**
  * Hook for paginated event loading.
  *
- * @returns {Object} Pagination state and actions.
+ * @returns {Object} result
+ * @returns {Array} result.events - Events for the current page.
+ * @returns {boolean} result.loading - Whether a page load is in progress.
+ * @returns {string|null} result.error - Error message if page load failed.
+ * @returns {number} result.currentOffset - Current page offset.
+ * @returns {number} result.totalCount - Total number of events available.
+ * @returns {boolean} result.hasMore - Whether more pages are available.
+ * @returns {*} result.cursor - Stable cursor from the last event on the current page.
+ * @returns {Function} result.nextPage - Advance to the next page.
+ * @returns {Function} result.loadPage - Load a specific offset page.
+ * @returns {Function} result.resetPagination - Clear cache and reload from offset 0.
  */
 export function usePaginatedEvents() {
   const [events, setEvents] = useState([]);
