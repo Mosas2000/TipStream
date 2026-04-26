@@ -15,6 +15,11 @@ const wallet2 = accounts.get("wallet_2")!;
 const DEFAULT_FEE_BPS = 50;
 const MOCK_TIP_AMOUNT = 1_000_000;
 
+const ERR_EMERGENCY_PAUSED = 107;
+const ERR_COOLDOWN_ACTIVE = 109;
+const ERR_NO_PROPOSAL = 110;
+const ERR_UNAUTHORIZED = 111;
+
 describe("TipStream V2 Contract Tests", () => {
     it("exposes the current fee basis points via read-only", () => {
         const { result } = simnet.callReadOnlyFn("tipstream-v2", "get-current-fee-basis-points", [], deployer);
