@@ -17,6 +17,8 @@ const MOCK_FEE_AMOUNT = 5_000;
 const MOCK_NET_TIP_AMOUNT = MOCK_TIP_AMOUNT - MOCK_FEE_AMOUNT;
 const MIN_TIP_AMOUNT = 1_000;
 
+const ERR_INVALID_AMOUNT = 101;
+
 describe("TipStream Contract Tests", () => {
     it("can send tip successfully", () => {
         const { result, events } = simnet.callPublicFn(
@@ -74,7 +76,7 @@ describe("TipStream Contract Tests", () => {
             wallet1
         );
 
-        expect(result).toBeErr(Cl.uint(101));
+        expect(result).toBeErr(Cl.uint(ERR_INVALID_AMOUNT));
     });
 
     it("rejects tips below minimum amount", () => {
@@ -89,7 +91,7 @@ describe("TipStream Contract Tests", () => {
             wallet1
         );
 
-        expect(result).toBeErr(Cl.uint(101));
+        expect(result).toBeErr(Cl.uint(ERR_INVALID_AMOUNT));
     });
 
     it("accepts tips at exactly the minimum amount", () => {
