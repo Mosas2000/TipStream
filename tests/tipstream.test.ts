@@ -17,7 +17,12 @@ const MOCK_FEE_AMOUNT = 5_000;
 const MOCK_NET_TIP_AMOUNT = MOCK_TIP_AMOUNT - MOCK_FEE_AMOUNT;
 const MIN_TIP_AMOUNT = 1_000;
 
+const ERR_UNAUTHORIZED = 100;
 const ERR_INVALID_AMOUNT = 101;
+const ERR_NOT_FOUND = 104;
+const ERR_INVALID_NAME = 105;
+const ERR_USER_BLOCKED = 106;
+const ERR_EMERGENCY_PAUSED = 107;
 
 describe("TipStream Contract Tests", () => {
     it("can send tip successfully", () => {
@@ -256,7 +261,7 @@ describe("TipStream Contract Tests", () => {
                 wallet1
             );
 
-            expect(result).toBeErr(Cl.uint(105));
+            expect(result).toBeErr(Cl.uint(ERR_INVALID_NAME));
         });
     });
 
