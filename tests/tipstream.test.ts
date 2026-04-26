@@ -13,6 +13,8 @@ const wallet1 = accounts.get("wallet_1")!;
 const wallet2 = accounts.get("wallet_2")!;
 
 const MOCK_TIP_AMOUNT = 1_000_000;
+const MOCK_FEE_AMOUNT = 5_000;
+const MOCK_NET_TIP_AMOUNT = MOCK_TIP_AMOUNT - MOCK_FEE_AMOUNT;
 
 describe("TipStream Contract Tests", () => {
     it("can send tip successfully", () => {
@@ -49,12 +51,12 @@ describe("TipStream Contract Tests", () => {
         expect(transfers).toHaveLength(2);
 
         const recipientTransfer = transfers[0];
-        expect(recipientTransfer.data.amount).toBe("995000");
+        expect(recipientTransfer.data.amount).toBe(MOCK_NET_TIP_AMOUNT.toString());
         expect(recipientTransfer.data.recipient).toBe(wallet2);
         expect(recipientTransfer.data.sender).toBe(wallet1);
 
         const feeTransfer = transfers[1];
-        expect(feeTransfer.data.amount).toBe("5000");
+        expect(feeTransfer.data.amount).toBe(MOCK_FEE_AMOUNT.toString());
         expect(feeTransfer.data.recipient).toBe(deployer);
         expect(feeTransfer.data.sender).toBe(wallet1);
     });
