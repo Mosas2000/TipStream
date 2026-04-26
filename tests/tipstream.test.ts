@@ -1035,7 +1035,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream-token",
                 "mint",
-                [Cl.uint(1000000), Cl.principal(wallet1)],
+                [Cl.uint(MOCK_TIP_AMOUNT), Cl.principal(wallet1)],
                 deployer
             );
 
@@ -1069,7 +1069,7 @@ describe("TipStream Contract Tests", () => {
                 "send-categorized-tip",
                 [
                     Cl.principal(wallet2),
-                    Cl.uint(1000000),
+                    Cl.uint(MOCK_TIP_AMOUNT),
                     Cl.stringUtf8("Great open-source work!"),
                     Cl.uint(2) // category-open-source
                 ],
@@ -1084,7 +1084,7 @@ describe("TipStream Contract Tests", () => {
                 "send-categorized-tip",
                 [
                     Cl.principal(wallet2),
-                    Cl.uint(1000000),
+                    Cl.uint(MOCK_TIP_AMOUNT),
                     Cl.stringUtf8("Bad category"),
                     Cl.uint(99) // invalid category
                 ],
@@ -1098,13 +1098,13 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream",
                 "send-categorized-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Edu tip 1"), Cl.uint(5)],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Edu tip 1"), Cl.uint(5)],
                 wallet1
             );
             simnet.callPublicFn(
                 "tipstream",
                 "send-categorized-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Edu tip 2"), Cl.uint(5)],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Edu tip 2"), Cl.uint(5)],
                 wallet1
             );
 
