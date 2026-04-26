@@ -12,12 +12,18 @@ const deployer = accounts.get("deployer")!;
 const wallet1 = accounts.get("wallet_1")!;
 const wallet2 = accounts.get("wallet_2")!;
 
+/** Default fee basis points for the protocol */
 const DEFAULT_FEE_BPS = 50;
+/** Standard mock tip amount for positive test cases */
 const MOCK_TIP_AMOUNT = 1_000_000;
 
+/** Error code: Unauthorized access attempt */
 const ERR_EMERGENCY_PAUSED = 107;
+/** Error code: Cooldown period is still active */
 const ERR_COOLDOWN_ACTIVE = 109;
+/** Error code: No proposal found for the requested operation */
 const ERR_NO_PROPOSAL = 110;
+/** Error code: Action rejected by authority check */
 const ERR_UNAUTHORIZED = 111;
 
 describe("TipStream V2 Contract Tests", () => {
