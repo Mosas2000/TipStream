@@ -149,11 +149,11 @@ describe("TipStream Contract Tests", () => {
         const { result } = simnet.callReadOnlyFn(
             "tipstream",
             "get-fee-for-amount",
-            [Cl.uint(1000000)],
+            [Cl.uint(MOCK_TIP_AMOUNT)],
             wallet1
         );
 
-        expect(result).toBeOk(Cl.uint(5000));
+        expect(result).toBeOk(Cl.uint(MOCK_FEE_AMOUNT));
     });
 
     it("updates the current fee basis points when the owner changes it", () => {
