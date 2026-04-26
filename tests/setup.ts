@@ -1,3 +1,13 @@
+/**
+ * Vitest Worker Setup
+ * 
+ * This file monkey-patches console.log to filter out high-volume Clarinet contract 
+ * print events before they cross the IPC boundary between the worker and the 
+ * main process. 
+ * 
+ * Reducing the IPC traffic prevents the "Timeout calling onTaskUpdate" error 
+ * which occurs when the main thread is overwhelmed by console log processing.
+ */
 import { beforeAll, afterAll } from 'vitest';
 
 const originalConsoleLog = console.log;
