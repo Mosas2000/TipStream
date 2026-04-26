@@ -151,7 +151,7 @@ describe('Admin Contract Helpers', () => {
                 json: () => Promise.resolve({ result: mockOwnerHex })
             });
 
-            const owner = await fetchContractOwner();
+            await fetchContractOwner();
             // Since we don't have principal decoding yet, it might return null or the hex
             // For now, let's just check that it's called.
         });
