@@ -40,18 +40,14 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     [visibleTips]
   );
 
-  // Compute whether the visible set has changed compared to our last fetch
-  const hasNewIds = useMemo(
-    () => visibleTipIds.length !== previousIdsRef.current.length ||
-           visibleTipIds.some((id, i) => id !== previousIdsRef.current[i]),
-    [visibleTipIds] // Only recalculate when visibleTipIds changes
-  );
-
   useEffect(() => {
     if (visibleTipIds.length === 0) {
       setLoading(false);
       return;
     }
+
+    const hasNewIds = visibleTipIds.length !== previousIdsRef.current.length ||
+                     visibleTipIds.some((id, i) => id !== previousIdsRef.current[i]);
 
     if (!hasNewIds) {
       return;
@@ -66,11 +62,6 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     Promise.resolve().then(() => {
       if (cancelled || cancelledRef.current) return;
       
-      /** 
-       * Reconcile state: If the new visible set has NO overlap with the previous set,
-       * we treat this as a material change (e.g. navigation, filtering, or deep jump).
-       * We clear the stale messages to prevent memory bloat and stale mappings.
-       */
       const prevSet = new Set(previousIdsRef.current);
       const hasOverlap = visibleTipIds.some(id => prevSet.has(id));
       if (!hasOverlap && previousIdsRef.current.length > 0) {
@@ -106,7 +97,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
       cancelled = true;
       cancelledRef.current = true;
     };
-  }, [visibleTipIds, hasNewIds]);
+  }, [visibleTipIds]);
 
   /**
    * Re-map the visible tips to include their fetched messages.
