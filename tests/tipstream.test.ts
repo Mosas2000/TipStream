@@ -725,7 +725,7 @@ describe("TipStream Contract Tests", () => {
             expect(w1Stats).toBeTuple({
                 "tips-sent": Cl.uint(1),
                 "tips-received": Cl.uint(1),
-                "total-sent": Cl.uint(1000000),
+                "total-sent": Cl.uint(MOCK_TIP_AMOUNT),
                 "total-received": Cl.uint(2000000)
             });
 
@@ -745,21 +745,21 @@ describe("TipStream Contract Tests", () => {
 
             const { result: r1 } = simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("First")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("First")],
                 wallet1
             );
             expect(r1).toBeOk(Cl.uint(0));
 
             const { result: r2 } = simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet1), Cl.uint(1000000), Cl.stringUtf8("Second")],
+                [Cl.principal(wallet1), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Second")],
                 wallet2
             );
             expect(r2).toBeOk(Cl.uint(1));
 
             const { result: r3 } = simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet1), Cl.uint(1000000), Cl.stringUtf8("Third")],
+                [Cl.principal(wallet1), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Third")],
                 wallet3
             );
             expect(r3).toBeOk(Cl.uint(2));
