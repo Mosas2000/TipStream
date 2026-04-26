@@ -1,6 +1,8 @@
 /**
+ * @module hooks/useStxPrice
+ *
  * Hook to fetch and poll for the current STX price in USD from CoinGecko.
- * 
+ *
  * Features:
  * - Automatic polling every 120s
  * - Exponential backoff/retry on 429 rate limits
@@ -173,11 +175,16 @@ export function useStxPrice() {
     return fetchPrice(true, manualAbortRef.current.signal);
   }, [fetchPrice]);
 
-  return { 
-    price, 
-    loading, 
-    error, 
-    toUsd, 
+  return {
+    /** Current STX price in USD, or null while loading. */
+    price,
+    /** Whether the initial price fetch is in progress. */
+    loading,
+    /** Error message if the last fetch failed, or null on success. */
+    error,
+    /** Convert an STX amount to a USD string (2 decimal places), or null. */
+    toUsd,
+    /** Manually trigger a fresh network fetch, bypassing the cache. */
     refetch: handleRefetch
   };
 }
