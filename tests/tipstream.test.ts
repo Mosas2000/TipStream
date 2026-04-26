@@ -178,7 +178,7 @@ describe("TipStream Contract Tests", () => {
         const { result } = simnet.callReadOnlyFn(
             "tipstream",
             "get-fee-for-amount",
-            [Cl.uint(1000)],
+            [Cl.uint(MIN_TIP_AMOUNT)],
             wallet1
         );
 
