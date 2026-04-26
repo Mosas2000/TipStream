@@ -13,6 +13,7 @@ const wallet1 = accounts.get("wallet_1")!;
 const wallet2 = accounts.get("wallet_2")!;
 
 const DEFAULT_FEE_BPS = 50;
+const MOCK_TIP_AMOUNT = 1_000_000;
 
 describe("TipStream V2 Contract Tests", () => {
     it("exposes the current fee basis points via read-only", () => {
@@ -79,7 +80,7 @@ describe("TipStream V2 Contract Tests", () => {
         const { result: pausedTip } = simnet.callPublicFn(
             "tipstream-v2",
             "send-tip",
-            [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Emergency paused")],
+            [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Emergency paused")],
             wallet2,
         );
         expect(pausedTip).toBeErr(Cl.uint(107));
