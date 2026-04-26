@@ -51,10 +51,6 @@ export function useContractHealth() {
         { signal: controller.signal }
       );
 
-      clearTimeout(timeoutId);
-      timeoutIdRef.current = null;
-      abortControllerRef.current = null;
-
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error(
@@ -84,11 +80,6 @@ export function useContractHealth() {
       setHealthy(true);
       setError(null);
     } catch (err) {
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-        timeoutIdRef.current = null;
-      }
-      
       if (!isMounted.current) return;
 
       const isAbort = err.name === 'AbortError';
@@ -103,6 +94,10 @@ export function useContractHealth() {
       setHealthy(false);
       setError(message);
     } finally {
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
       if (isMounted.current) {
         setChecking(false);
       }
