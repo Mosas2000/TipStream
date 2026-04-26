@@ -857,7 +857,7 @@ describe("TipStream Contract Tests", () => {
             const { result: tipResult } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Should fail")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Should fail")],
                 wallet1
             );
             expect(tipResult).toBeErr(Cl.uint(107));
@@ -886,7 +886,7 @@ describe("TipStream Contract Tests", () => {
             const { result: feeResult } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
             expect(feeResult).toBeOk(Cl.uint(10000));
@@ -996,7 +996,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream-token",
                 "mint",
-                [Cl.uint(1000000), Cl.principal(wallet1)],
+                [Cl.uint(MOCK_TIP_AMOUNT), Cl.principal(wallet1)],
                 deployer
             );
 
