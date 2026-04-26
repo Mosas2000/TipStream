@@ -12,6 +12,18 @@ const deployer = accounts.get("deployer")!;
 const wallet1 = accounts.get("wallet_1")!;
 const wallet2 = accounts.get("wallet_2")!;
 
+const MOCK_TIP_AMOUNT = 1_000_000;
+const MOCK_FEE_AMOUNT = 5_000;
+const MOCK_NET_TIP_AMOUNT = MOCK_TIP_AMOUNT - MOCK_FEE_AMOUNT;
+const MIN_TIP_AMOUNT = 1_000;
+
+const ERR_UNAUTHORIZED = 100;
+const ERR_INVALID_AMOUNT = 101;
+const ERR_NOT_FOUND = 104;
+const ERR_INVALID_NAME = 105;
+const ERR_USER_BLOCKED = 106;
+const ERR_EMERGENCY_PAUSED = 107;
+
 describe("TipStream Contract Tests", () => {
     it("can send tip successfully", () => {
         const { result, events } = simnet.callPublicFn(
@@ -19,7 +31,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Great content!")
             ],
             wallet1
@@ -35,7 +47,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Verify amounts")
             ],
             wallet1
@@ -47,12 +59,12 @@ describe("TipStream Contract Tests", () => {
         expect(transfers).toHaveLength(2);
 
         const recipientTransfer = transfers[0];
-        expect(recipientTransfer.data.amount).toBe("995000");
+        expect(recipientTransfer.data.amount).toBe(MOCK_NET_TIP_AMOUNT.toString());
         expect(recipientTransfer.data.recipient).toBe(wallet2);
         expect(recipientTransfer.data.sender).toBe(wallet1);
 
         const feeTransfer = transfers[1];
-        expect(feeTransfer.data.amount).toBe("5000");
+        expect(feeTransfer.data.amount).toBe(MOCK_FEE_AMOUNT.toString());
         expect(feeTransfer.data.recipient).toBe(deployer);
         expect(feeTransfer.data.sender).toBe(wallet1);
     });
@@ -63,13 +75,13 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet1),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Tipping myself")
             ],
             wallet1
         );
 
-        expect(result).toBeErr(Cl.uint(101));
+        expect(result).toBeErr(Cl.uint(ERR_INVALID_AMOUNT));
     });
 
     it("rejects tips below minimum amount", () => {
@@ -78,13 +90,13 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(999),
+                Cl.uint(MIN_TIP_AMOUNT - 1),
                 Cl.stringUtf8("Too small")
             ],
             wallet1
         );
 
-        expect(result).toBeErr(Cl.uint(101));
+        expect(result).toBeErr(Cl.uint(ERR_INVALID_AMOUNT));
     });
 
     it("accepts tips at exactly the minimum amount", () => {
@@ -93,7 +105,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000),
+                Cl.uint(MIN_TIP_AMOUNT),
                 Cl.stringUtf8("Minimum tip")
             ],
             wallet1
@@ -108,7 +120,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Tip 1")
             ],
             wallet1
@@ -124,7 +136,7 @@ describe("TipStream Contract Tests", () => {
         expect(result).toBeTuple({
             "tips-sent": Cl.uint(1),
             "tips-received": Cl.uint(0),
-            "total-sent": Cl.uint(1000000),
+            "total-sent": Cl.uint(MOCK_TIP_AMOUNT),
             "total-received": Cl.uint(0)
         });
     });
@@ -144,11 +156,11 @@ describe("TipStream Contract Tests", () => {
         const { result } = simnet.callReadOnlyFn(
             "tipstream",
             "get-fee-for-amount",
-            [Cl.uint(1000000)],
+            [Cl.uint(MOCK_TIP_AMOUNT)],
             wallet1
         );
 
-        expect(result).toBeOk(Cl.uint(5000));
+        expect(result).toBeOk(Cl.uint(MOCK_FEE_AMOUNT));
     });
 
     it("updates the current fee basis points when the owner changes it", () => {
@@ -173,7 +185,7 @@ describe("TipStream Contract Tests", () => {
         const { result } = simnet.callReadOnlyFn(
             "tipstream",
             "get-fee-for-amount",
-            [Cl.uint(1000)],
+            [Cl.uint(MIN_TIP_AMOUNT)],
             wallet1
         );
 
@@ -188,7 +200,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Tip 1")
             ],
             wallet1
@@ -203,8 +215,8 @@ describe("TipStream Contract Tests", () => {
 
         expect(result).toBeTuple({
             "total-tips": Cl.uint(1),
-            "total-volume": Cl.uint(1000000),
-            "platform-fees": Cl.uint(5000)
+            "total-volume": Cl.uint(MOCK_TIP_AMOUNT),
+            "platform-fees": Cl.uint(MOCK_FEE_AMOUNT)
         });
     });
 
@@ -249,7 +261,7 @@ describe("TipStream Contract Tests", () => {
                 wallet1
             );
 
-            expect(result).toBeErr(Cl.uint(105));
+            expect(result).toBeErr(Cl.uint(ERR_INVALID_NAME));
         });
     });
 
@@ -258,7 +270,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("First Tip")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("First Tip")],
                 wallet1
             );
 
@@ -289,7 +301,7 @@ describe("TipStream Contract Tests", () => {
                 wallet2
             );
 
-            expect(result).toBeErr(Cl.uint(104));
+            expect(result).toBeErr(Cl.uint(ERR_NOT_FOUND));
         });
     });
 
@@ -317,10 +329,10 @@ describe("TipStream Contract Tests", () => {
             const { result: tipResult } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Let me tip you!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Let me tip you!")],
                 wallet1
             );
-            expect(tipResult).toBeErr(Cl.uint(106));
+            expect(tipResult).toBeErr(Cl.uint(ERR_USER_BLOCKED));
 
             // Wallet 2 unblocks Wallet 1
             const { result: unblockResult } = simnet.callPublicFn(
@@ -335,7 +347,7 @@ describe("TipStream Contract Tests", () => {
             const { result: retryTipResult } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Finally!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Finally!")],
                 wallet1
             );
             expect(retryTipResult).toBeOk(Cl.uint(0));
@@ -351,7 +363,7 @@ describe("TipStream Contract Tests", () => {
                 [Cl.bool(true)],
                 wallet1
             );
-            expect(failPause).toBeErr(Cl.uint(100));
+            expect(failPause).toBeErr(Cl.uint(ERR_UNAUTHORIZED));
 
             // Owner succeeds
             const { result: successPause } = simnet.callPublicFn(
@@ -366,10 +378,10 @@ describe("TipStream Contract Tests", () => {
             const { result: tipFail } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Fail!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Fail!")],
                 wallet1
             );
-            expect(tipFail).toBeErr(Cl.uint(107));
+            expect(tipFail).toBeErr(Cl.uint(ERR_EMERGENCY_PAUSED));
 
             // Owner unpauses
             simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
@@ -378,7 +390,7 @@ describe("TipStream Contract Tests", () => {
             const { result: tipSuccess } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Works!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Works!")],
                 wallet1
             );
             expect(tipSuccess).toBeOk(Cl.uint(0));
@@ -391,7 +403,7 @@ describe("TipStream Contract Tests", () => {
             const { result } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
 
@@ -410,7 +422,7 @@ describe("TipStream Contract Tests", () => {
             const { result: fee } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
             expect(fee).toBeOk(Cl.uint(100000));
@@ -438,7 +450,7 @@ describe("TipStream Contract Tests", () => {
             const { result: fee } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
             expect(fee).toBeOk(Cl.uint(0));
@@ -465,7 +477,7 @@ describe("TipStream Contract Tests", () => {
             const { result, events } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("No fee tip")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("No fee tip")],
                 wallet1
             );
 
@@ -481,7 +493,7 @@ describe("TipStream Contract Tests", () => {
     describe("Batch Tipping", () => {
         it("can send multiple tips in one transaction", () => {
             const tips = [
-                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(1000000), message: Cl.stringUtf8("Tip A") }),
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Tip A") }),
                 Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(2000000), message: Cl.stringUtf8("Tip B") })
             ];
 
@@ -517,7 +529,7 @@ describe("TipStream Contract Tests", () => {
     describe("Strict Batch Tipping", () => {
         it("sends all tips when all are valid", () => {
             const tips = [
-                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(1000000), message: Cl.stringUtf8("Strict A") }),
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Strict A") }),
                 Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(2000000), message: Cl.stringUtf8("Strict B") })
             ];
 
@@ -540,8 +552,8 @@ describe("TipStream Contract Tests", () => {
             );
 
             const tips = [
-                Cl.tuple({ recipient: Cl.principal(deployer), amount: Cl.uint(1000000), message: Cl.stringUtf8("Valid") }),
-                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(1000000), message: Cl.stringUtf8("Blocked") })
+                Cl.tuple({ recipient: Cl.principal(deployer), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Valid") }),
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Blocked") })
             ];
 
             const { result } = simnet.callPublicFn(
@@ -647,7 +659,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("test")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("test")],
                 wallet1
             );
 
@@ -662,14 +674,14 @@ describe("TipStream Contract Tests", () => {
                 Cl.tuple({
                     "tips-sent": Cl.uint(1),
                     "tips-received": Cl.uint(0),
-                    "total-sent": Cl.uint(1000000),
+                    "total-sent": Cl.uint(MOCK_TIP_AMOUNT),
                     "total-received": Cl.uint(0)
                 }),
                 Cl.tuple({
                     "tips-sent": Cl.uint(0),
                     "tips-received": Cl.uint(1),
                     "total-sent": Cl.uint(0),
-                    "total-received": Cl.uint(1000000)
+                    "total-received": Cl.uint(MOCK_TIP_AMOUNT)
                 })
             ]));
         });
@@ -681,7 +693,7 @@ describe("TipStream Contract Tests", () => {
 
             simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("User 1 tip")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("User 1 tip")],
                 wallet1
             );
 
@@ -713,7 +725,7 @@ describe("TipStream Contract Tests", () => {
             expect(w1Stats).toBeTuple({
                 "tips-sent": Cl.uint(1),
                 "tips-received": Cl.uint(1),
-                "total-sent": Cl.uint(1000000),
+                "total-sent": Cl.uint(MOCK_TIP_AMOUNT),
                 "total-received": Cl.uint(2000000)
             });
 
@@ -733,21 +745,21 @@ describe("TipStream Contract Tests", () => {
 
             const { result: r1 } = simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("First")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("First")],
                 wallet1
             );
             expect(r1).toBeOk(Cl.uint(0));
 
             const { result: r2 } = simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet1), Cl.uint(1000000), Cl.stringUtf8("Second")],
+                [Cl.principal(wallet1), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Second")],
                 wallet2
             );
             expect(r2).toBeOk(Cl.uint(1));
 
             const { result: r3 } = simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet1), Cl.uint(1000000), Cl.stringUtf8("Third")],
+                [Cl.principal(wallet1), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Third")],
                 wallet3
             );
             expect(r3).toBeOk(Cl.uint(2));
@@ -845,7 +857,7 @@ describe("TipStream Contract Tests", () => {
             const { result: tipResult } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Should fail")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Should fail")],
                 wallet1
             );
             expect(tipResult).toBeErr(Cl.uint(107));
@@ -874,7 +886,7 @@ describe("TipStream Contract Tests", () => {
             const { result: feeResult } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
             expect(feeResult).toBeOk(Cl.uint(10000));
@@ -984,7 +996,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream-token",
                 "mint",
-                [Cl.uint(1000000), Cl.principal(wallet1)],
+                [Cl.uint(MOCK_TIP_AMOUNT), Cl.principal(wallet1)],
                 deployer
             );
 
@@ -1023,7 +1035,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream-token",
                 "mint",
-                [Cl.uint(1000000), Cl.principal(wallet1)],
+                [Cl.uint(MOCK_TIP_AMOUNT), Cl.principal(wallet1)],
                 deployer
             );
 
@@ -1057,7 +1069,7 @@ describe("TipStream Contract Tests", () => {
                 "send-categorized-tip",
                 [
                     Cl.principal(wallet2),
-                    Cl.uint(1000000),
+                    Cl.uint(MOCK_TIP_AMOUNT),
                     Cl.stringUtf8("Great open-source work!"),
                     Cl.uint(2) // category-open-source
                 ],
@@ -1072,7 +1084,7 @@ describe("TipStream Contract Tests", () => {
                 "send-categorized-tip",
                 [
                     Cl.principal(wallet2),
-                    Cl.uint(1000000),
+                    Cl.uint(MOCK_TIP_AMOUNT),
                     Cl.stringUtf8("Bad category"),
                     Cl.uint(99) // invalid category
                 ],
@@ -1086,13 +1098,13 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream",
                 "send-categorized-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Edu tip 1"), Cl.uint(5)],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Edu tip 1"), Cl.uint(5)],
                 wallet1
             );
             simnet.callPublicFn(
                 "tipstream",
                 "send-categorized-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Edu tip 2"), Cl.uint(5)],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Edu tip 2"), Cl.uint(5)],
                 wallet1
             );
 
