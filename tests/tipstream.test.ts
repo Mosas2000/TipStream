@@ -12,6 +12,8 @@ const deployer = accounts.get("deployer")!;
 const wallet1 = accounts.get("wallet_1")!;
 const wallet2 = accounts.get("wallet_2")!;
 
+const MOCK_TIP_AMOUNT = 1_000_000;
+
 describe("TipStream Contract Tests", () => {
     it("can send tip successfully", () => {
         const { result, events } = simnet.callPublicFn(
@@ -19,7 +21,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Great content!")
             ],
             wallet1
