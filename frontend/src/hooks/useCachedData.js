@@ -18,7 +18,16 @@ import { setCacheEntry, getCacheEntry, getCacheMetadata } from '../lib/persisten
  * @param {Object} options - Configuration options.
  * @param {number} options.ttl - Cache TTL in milliseconds (default 5 mins).
  * @param {number} options.timeout - Fetch timeout in milliseconds (default 10 secs).
- * @returns {Object} { data, loading, error, source, metadata, retry, clearCache }
+ * @returns {Object} result
+ * @returns {*} result.data - The fetched or cached data.
+ * @returns {boolean} result.loading - Whether a fetch is in progress.
+ * @returns {string|null} result.error - Error message if fetch failed and no cache available.
+ * @returns {'live'|'cache'|'none'} result.source - The source of the current data.
+ * @returns {Object|null} result.metadata - Cache metadata (e.g. expiration).
+ * @returns {Function} result.retry - Manually trigger a re-fetch.
+ * @returns {Function} result.clearCache - Clear both state and persistent storage for this key.
+ * @returns {boolean} result.isCached - Convenience flag for source === 'cache'.
+ * @returns {boolean} result.isLive - Convenience flag for source === 'live'.
  */
 export function useCachedData(
   cacheKey,
