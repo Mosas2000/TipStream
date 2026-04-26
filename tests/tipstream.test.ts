@@ -113,7 +113,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Tip 1")
             ],
             wallet1
@@ -129,7 +129,7 @@ describe("TipStream Contract Tests", () => {
         expect(result).toBeTuple({
             "tips-sent": Cl.uint(1),
             "tips-received": Cl.uint(0),
-            "total-sent": Cl.uint(1000000),
+            "total-sent": Cl.uint(MOCK_TIP_AMOUNT),
             "total-received": Cl.uint(0)
         });
     });
