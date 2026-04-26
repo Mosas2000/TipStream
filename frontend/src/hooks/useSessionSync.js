@@ -33,12 +33,10 @@ export function useSessionSync(onSessionChange) {
      * Triggered when localStorage changes in another tab.
      */
     const handleStorageChange = (event) => {
-      // Watch for changes to the blockstack-session key
-      if (event.key === 'blockstack-session') {
-        const isSignedIn = userSession.isUserSignedIn();
-        const userData = isSignedIn ? userSession.loadUserData() : null;
-        onSessionChange({ isSignedIn, userData });
-      }
+      if (!event.key || event.key !== 'blockstack-session') return;
+      const isSignedIn = userSession.isUserSignedIn();
+      const userData = isSignedIn ? userSession.loadUserData() : null;
+      onSessionChange({ isSignedIn, userData });
     };
 
     /**

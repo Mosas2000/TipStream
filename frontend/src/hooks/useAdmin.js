@@ -82,11 +82,14 @@ export function useAdmin(userAddress, options = {}) {
     useEffect(() => {
         fetchAll();
 
-        intervalRef.current = setInterval(fetchAll, pollInterval);
+        if (pollInterval > 0) {
+            intervalRef.current = setInterval(fetchAll, pollInterval);
+        }
 
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
+                intervalRef.current = null;
             }
         };
     }, [fetchAll, pollInterval]);

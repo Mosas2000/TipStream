@@ -15,6 +15,7 @@ const API_PROBE_PATH = '/v2/info';
 const API_PROBE_INTERVAL_MS = 30_000;
 const API_PROBE_TIMEOUT_MS = 5_000;
 const API_DEGRADED_LATENCY_MS = 2_500;
+const API_PROBE_URL = `${STACKS_API_BASE}${API_PROBE_PATH}`;
 
 export function useFeedConnectionStatus() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -22,7 +23,7 @@ export function useFeedConnectionStatus() {
   const [failureCount, setFailureCount] = useState(0);
   const [lastSuccess, setLastSuccess] = useState(() => Date.now());
 
-  const apiProbeUrl = useMemo(() => `${STACKS_API_BASE}${API_PROBE_PATH}`, [STACKS_API_BASE]);
+  const apiProbeUrl = API_PROBE_URL;
   const [apiReachable, setApiReachable] = useState(null);
   const [apiLatencyMs, setApiLatencyMs] = useState(null);
   const [apiProbing, setApiProbing] = useState(false);

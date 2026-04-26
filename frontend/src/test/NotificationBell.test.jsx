@@ -358,7 +358,7 @@ describe('NotificationBell', () => {
                 amount: '1000000',
                 timestamp: Math.floor(Date.now() / 1000),
             };
-            const { container } = render(
+            render(
                 <NotificationBell
                     {...defaultProps}
                     notifications={[notificationWithoutTxId]}
@@ -377,7 +377,7 @@ describe('NotificationBell', () => {
                 timestamp: 1234567890,
             };
             const notifications = [notificationWithoutIdFields];
-            const { container } = render(
+            render(
                 <NotificationBell {...defaultProps} notifications={notifications} />
             );
             fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
@@ -419,7 +419,7 @@ describe('NotificationBell', () => {
                 },
                 makeNotification({ txId: '0xdef456' }),
             ];
-            const { container } = render(
+            render(
                 <NotificationBell {...defaultProps} notifications={notifications} />
             );
             fireEvent.click(screen.getByRole('button', { name: /notifications/i }));

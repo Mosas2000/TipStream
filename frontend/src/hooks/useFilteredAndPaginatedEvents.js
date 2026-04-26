@@ -93,6 +93,11 @@ export function useFilteredAndPaginatedEvents(baseEvents = []) {
     setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE));
   }, [offset, totalPages]);
 
+  const handleSetSearchQuery = useCallback((q) => { setSearchQuery(q); setOffset(0); }, []);
+  const handleSetMinAmount = useCallback((a) => { setMinAmount(a); setOffset(0); }, []);
+  const handleSetMaxAmount = useCallback((a) => { setMaxAmount(a); setOffset(0); }, []);
+  const handleSetSortBy = useCallback((s) => { setSortBy(s); setOffset(0); }, []);
+
   return {
     // Pagination state
     filteredTips,
@@ -113,10 +118,10 @@ export function useFilteredAndPaginatedEvents(baseEvents = []) {
     hasActiveFilters,
 
     // Actions
-    setSearchQuery: (q) => { setSearchQuery(q); setOffset(0); },
-    setMinAmount: (a) => { setMinAmount(a); setOffset(0); },
-    setMaxAmount: (a) => { setMaxAmount(a); setOffset(0); },
-    setSortBy: (s) => { setSortBy(s); setOffset(0); },
+    setSearchQuery: handleSetSearchQuery,
+    setMinAmount: handleSetMinAmount,
+    setMaxAmount: handleSetMaxAmount,
+    setSortBy: handleSetSortBy,
     setOffset,
     prevPage,
     nextPage,

@@ -132,7 +132,7 @@ export function useBalance(address) {
                     retryCount.current += 1;
                     try {
                         await delay(RETRY_DELAY_MS, abortControllerRef.current.signal);
-                    } catch (delayErr) {
+                    } catch {
                         return;
                     }
                     if (!isMounted.current) return;

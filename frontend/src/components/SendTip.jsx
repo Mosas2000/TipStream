@@ -118,7 +118,9 @@ export default function SendTip({ addToast }) {
     }, [checkBlocked, resetBlockCheck, senderAddress]);
 
     useEffect(() => {
-        validateRecipient(recipient);
+        Promise.resolve().then(() => {
+            validateRecipient(recipient);
+        });
     }, [recipient, validateRecipient]);
 
     const handleRecipientChange = (value) => {

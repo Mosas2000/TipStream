@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { openContractCall } from '@stacks/connect';
 import {
     fetchCallReadOnlyFunction,
@@ -19,6 +19,25 @@ import ConfirmDialog from './ui/confirm-dialog';
 import { useSenderAddress } from '../hooks/useSenderAddress';
 import { useDemoMode } from '../context/DemoContext';
 
+const isValidStacksAddress = (address) => {
+    if (!address) return false;
+    const trimmed = address.trim();
+    if (trimmed.length < 38 || trimmed.length > 41) return false;
+    return /^(SP|SM|ST)[0-9A-Z]{33,39}$/i.test(trimmed);
+};
+
+const isValidContractId = (id) => {
+    if (!id) return false;
+    const parts = id.trim().split('.');
+    if (parts.length !== 2) return false;
+    return isValidStacksAddress(parts[0]) && parts[1].length > 0;
+};
+
+const parseContractId = (id) => {
+    const parts = id.trim().split('.');
+    return { address: parts[0], name: parts[1] };
+};
+
 export default function TokenTip({ addToast }) {
     const { demoEnabled, addDemoTip } = useDemoMode();
     const [tokenContract, setTokenContract] = useState('');
@@ -35,25 +54,6 @@ export default function TokenTip({ addToast }) {
     const [hasCheckedWhitelist, setHasCheckedWhitelist] = useState(false);
 
     const senderAddress = useSenderAddress();
-
-    const isValidStacksAddress = (address) => {
-        if (!address) return false;
-        const trimmed = address.trim();
-        if (trimmed.length < 38 || trimmed.length > 41) return false;
-        return /^(SP|SM|ST)[0-9A-Z]{33,39}$/i.test(trimmed);
-    };
-
-    const isValidContractId = (id) => {
-        if (!id) return false;
-        const parts = id.trim().split('.');
-        if (parts.length !== 2) return false;
-        return isValidStacksAddress(parts[0]) && parts[1].length > 0;
-    };
-
-    const parseContractId = (id) => {
-        const parts = id.trim().split('.');
-        return { address: parts[0], name: parts[1] };
-    };
 
     const validateRecipient = useCallback((value) => {
         if (!value) {

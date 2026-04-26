@@ -17,7 +17,6 @@ import {
 export function useNotifications(userAddress) {
     const { events, eventsLoading } = useTipContext();
     const { demoEnabled, demoNotifications, markNotificationRead } = useDemoMode();
-    const [unreadCount, setUnreadCount] = useState(0);
     const network = NETWORK_NAME;
     const [now] = useState(() => Date.now() / 1000);
     
@@ -61,23 +60,20 @@ export function useNotifications(userAddress) {
             }));
     }, [events, userAddress, now, demoEnabled, demoNotifications]);
 
-    // Recompute unread count whenever notifications change.
-    useEffect(() => {
-        if (demoEnabled) {
-            setUnreadCount(demoNotifications.filter(n => !n.read).length);
-            return;
-        }
+    // Derive unread count from notifications and last seen timestamp.
+    const unreadCount = useMemo(() => {
+      if (demoEnabled) {
+        return demoNotifications.filter(n => !n.read).length;
+      }
 
-        const unread = notifications.filter(
-            t => t.timestamp > lastSeenRef.current
-        ).length;
-        setUnreadCount(unread);
-    }, [notifications, demoEnabled, demoNotifications]);
+      return notifications.filter(
+        t => t.timestamp > lastSeenTimestamp
+      ).length;
+    }, [notifications, demoEnabled, demoNotifications, lastSeenTimestamp]);
 
     const markAllRead = useCallback(() => {
         if (demoEnabled) {
             demoNotifications.forEach(n => markNotificationRead(n.id));
-            setUnreadCount(0);
             return;
         }
 
@@ -87,7 +83,6 @@ export function useNotifications(userAddress) {
         lastSeenRef.current = now;
         setLastSeenOverride(now);
         saveLastSeenTimestamp(userAddress, network, now);
-        setUnreadCount(0);
     }, [userAddress, network, demoEnabled, demoNotifications, markNotificationRead]);
 
     return { notifications, unreadCount, lastSeenTimestamp, loading: eventsLoading, markAllRead, refetch: () => {} };
