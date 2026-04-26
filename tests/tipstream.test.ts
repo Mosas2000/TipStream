@@ -270,7 +270,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("First Tip")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("First Tip")],
                 wallet1
             );
 
@@ -403,7 +403,7 @@ describe("TipStream Contract Tests", () => {
             const { result } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
 
@@ -422,7 +422,7 @@ describe("TipStream Contract Tests", () => {
             const { result: fee } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
             expect(fee).toBeOk(Cl.uint(100000));
@@ -450,7 +450,7 @@ describe("TipStream Contract Tests", () => {
             const { result: fee } = simnet.callReadOnlyFn(
                 "tipstream",
                 "get-fee-for-amount",
-                [Cl.uint(1000000)],
+                [Cl.uint(MOCK_TIP_AMOUNT)],
                 wallet1
             );
             expect(fee).toBeOk(Cl.uint(0));
@@ -477,7 +477,7 @@ describe("TipStream Contract Tests", () => {
             const { result, events } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("No fee tip")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("No fee tip")],
                 wallet1
             );
 
