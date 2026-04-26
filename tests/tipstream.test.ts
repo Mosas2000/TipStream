@@ -329,10 +329,10 @@ describe("TipStream Contract Tests", () => {
             const { result: tipResult } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Let me tip you!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Let me tip you!")],
                 wallet1
             );
-            expect(tipResult).toBeErr(Cl.uint(106));
+            expect(tipResult).toBeErr(Cl.uint(ERR_USER_BLOCKED));
 
             // Wallet 2 unblocks Wallet 1
             const { result: unblockResult } = simnet.callPublicFn(
@@ -347,7 +347,7 @@ describe("TipStream Contract Tests", () => {
             const { result: retryTipResult } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Finally!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Finally!")],
                 wallet1
             );
             expect(retryTipResult).toBeOk(Cl.uint(0));
@@ -363,7 +363,7 @@ describe("TipStream Contract Tests", () => {
                 [Cl.bool(true)],
                 wallet1
             );
-            expect(failPause).toBeErr(Cl.uint(100));
+            expect(failPause).toBeErr(Cl.uint(ERR_UNAUTHORIZED));
 
             // Owner succeeds
             const { result: successPause } = simnet.callPublicFn(
@@ -378,10 +378,10 @@ describe("TipStream Contract Tests", () => {
             const { result: tipFail } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Fail!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Fail!")],
                 wallet1
             );
-            expect(tipFail).toBeErr(Cl.uint(107));
+            expect(tipFail).toBeErr(Cl.uint(ERR_EMERGENCY_PAUSED));
 
             // Owner unpauses
             simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
@@ -390,7 +390,7 @@ describe("TipStream Contract Tests", () => {
             const { result: tipSuccess } = simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("Works!")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Works!")],
                 wallet1
             );
             expect(tipSuccess).toBeOk(Cl.uint(0));
