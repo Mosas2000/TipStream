@@ -659,7 +659,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn(
                 "tipstream",
                 "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("test")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("test")],
                 wallet1
             );
 
@@ -674,14 +674,14 @@ describe("TipStream Contract Tests", () => {
                 Cl.tuple({
                     "tips-sent": Cl.uint(1),
                     "tips-received": Cl.uint(0),
-                    "total-sent": Cl.uint(1000000),
+                    "total-sent": Cl.uint(MOCK_TIP_AMOUNT),
                     "total-received": Cl.uint(0)
                 }),
                 Cl.tuple({
                     "tips-sent": Cl.uint(0),
                     "tips-received": Cl.uint(1),
                     "total-sent": Cl.uint(0),
-                    "total-received": Cl.uint(1000000)
+                    "total-received": Cl.uint(MOCK_TIP_AMOUNT)
                 })
             ]));
         });
@@ -693,7 +693,7 @@ describe("TipStream Contract Tests", () => {
 
             simnet.callPublicFn(
                 "tipstream", "send-tip",
-                [Cl.principal(wallet2), Cl.uint(1000000), Cl.stringUtf8("User 1 tip")],
+                [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("User 1 tip")],
                 wallet1
             );
 
