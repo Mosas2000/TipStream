@@ -40,21 +40,6 @@ const TIMEOUT_CONFIG = {
   testTimeout: 120000,
 };
 
-/**
- * Filters out high-volume contract print events from the console output.
- * Reducing stdout volume significantly improves IPC stability between 
- * the worker and the Vitest reporter.
- */
-function isContractEvent(log) {
-  if (!log) return false;
-  const trimmedLog = log.trim();
-  // Match Clarinet's standard print event output format
-  return (
-    trimmedLog.startsWith('{') && 
-    trimmedLog.includes('event: "') && 
-    trimmedLog.includes(' (tipstream')
-  );
-}
 
 export default defineConfig({
   test: {
@@ -76,6 +61,7 @@ export default defineConfig({
     environment: "clarinet",
     setupFiles: [
       vitestSetupFilePath,
+      "./tests/setup.ts",
     ],
     environmentOptions: {
       clarinet: {
@@ -91,10 +77,6 @@ export default defineConfig({
         '**/*.test.ts',
         'vitest.config.js',
       ],
-    },
-    onConsoleLog(log) {
-      if (process.env.VERBOSE === 'true') return true;
-      if (isContractEvent(log)) return false;
     },
   },
 });
