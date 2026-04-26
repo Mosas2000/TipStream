@@ -12,11 +12,13 @@ const deployer = accounts.get("deployer")!;
 const wallet1 = accounts.get("wallet_1")!;
 const wallet2 = accounts.get("wallet_2")!;
 
+const DEFAULT_FEE_BPS = 50;
+
 describe("TipStream V2 Contract Tests", () => {
     it("exposes the current fee basis points via read-only", () => {
         const { result } = simnet.callReadOnlyFn("tipstream-v2", "get-current-fee-basis-points", [], deployer);
 
-        expect(result).toBeOk(Cl.uint(50));
+        expect(result).toBeOk(Cl.uint(DEFAULT_FEE_BPS));
     });
 
     it("reports the v2 contract version", () => {
