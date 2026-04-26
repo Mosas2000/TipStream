@@ -208,8 +208,8 @@ describe("TipStream Contract Tests", () => {
 
         expect(result).toBeTuple({
             "total-tips": Cl.uint(1),
-            "total-volume": Cl.uint(1000000),
-            "platform-fees": Cl.uint(5000)
+            "total-volume": Cl.uint(MOCK_TIP_AMOUNT),
+            "platform-fees": Cl.uint(MOCK_FEE_AMOUNT)
         });
     });
 
