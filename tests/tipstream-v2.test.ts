@@ -68,7 +68,7 @@ describe("TipStream V2 Contract Tests", () => {
 
         const { result } = simnet.callPublicFn("tipstream-v2", "emergency-pause", [], wallet2);
 
-        expect(result).toBeErr(Cl.uint(111));
+        expect(result).toBeErr(Cl.uint(ERR_UNAUTHORIZED));
     });
 
     it("pauses immediately through the emergency authority and enforces cooldown", () => {
@@ -88,10 +88,10 @@ describe("TipStream V2 Contract Tests", () => {
             [Cl.principal(wallet2), Cl.uint(MOCK_TIP_AMOUNT), Cl.stringUtf8("Emergency paused")],
             wallet2,
         );
-        expect(pausedTip).toBeErr(Cl.uint(107));
+        expect(pausedTip).toBeErr(Cl.uint(ERR_EMERGENCY_PAUSED));
 
         const secondPause = simnet.callPublicFn("tipstream-v2", "emergency-pause", [], wallet1);
-        expect(secondPause.result).toBeErr(Cl.uint(109));
+        expect(secondPause.result).toBeErr(Cl.uint(ERR_COOLDOWN_ACTIVE));
         // Mine enough blocks to satisfy the emergency cooldown period.
         // This is a high-latency operation in the simnet.
         const COOLDOWN_PERIOD_BLOCKS = 2016;
@@ -123,6 +123,6 @@ describe("TipStream V2 Contract Tests", () => {
         expect(cancel.result).toBeOk(Cl.bool(true));
 
         const execute = simnet.callPublicFn("tipstream-v2", "execute-pause-change", [], deployer);
-        expect(execute.result).toBeErr(Cl.uint(110));
+        expect(execute.result).toBeErr(Cl.uint(ERR_NO_PROPOSAL));
     });
 });
