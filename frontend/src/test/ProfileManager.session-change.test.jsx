@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import ProfileManager from '../components/ProfileManager';
-import * as senderHook from '../hooks/useSenderAddress';
 import * as transactions from '@stacks/transactions';
 
 let currentSenderAddress = 'SP1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
