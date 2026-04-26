@@ -42,7 +42,6 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
 
   useEffect(() => {
     if (visibleTipIds.length === 0) {
-      setLoading(false);
       return;
     }
 
