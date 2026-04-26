@@ -55,12 +55,12 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     let cancelled = false;
     cancelledRef.current = false;
     
-    setLoading(true);
-    setError(null);
-
     Promise.resolve().then(() => {
       if (cancelled || cancelledRef.current) return;
       
+      setLoading(true);
+      setError(null);
+
       const prevSet = new Set(previousIdsRef.current);
       const hasOverlap = visibleTipIds.some(id => prevSet.has(id));
       if (!hasOverlap && previousIdsRef.current.length > 0) {
