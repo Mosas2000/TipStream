@@ -65,33 +65,21 @@ export default function BatchTip({ addToast }) {
         return !hasSufficientMicroStx(balance, totalAmountMicro);
     }, [balance, balanceSTX, totalAmountMicro]);
 
-    useEffect(() => {
-        setErrors((prev) => {
-            let changed = false;
-            const next = { ...prev };
-
-            recipients.forEach((recipient, index) => {
-                const key = `${index}-address`;
-                const address = recipient.address.trim();
-                const isSelfTip = Boolean(address) && address === senderAddress;
-
-                if (isSelfTip) {
-                    if (next[key] !== 'Cannot tip yourself') {
-                        next[key] = 'Cannot tip yourself';
-                        changed = true;
-                    }
-                    return;
-                }
-
-                if (next[key] === 'Cannot tip yourself') {
-                    delete next[key];
-                    changed = true;
-                }
-            });
-
-            return changed ? next : prev;
+    const selfTipMap = useMemo(() => {
+        const map = {};
+        recipients.forEach((recipient, index) => {
+            const address = recipient.address.trim();
+            if (address && address === senderAddress) {
+                map[`${index}-address`] = 'Cannot tip yourself';
+            }
         });
+        return map;
     }, [recipients, senderAddress]);
+
+    const allErrors = useMemo(() => ({
+        ...errors,
+        ...selfTipMap
+    }), [errors, selfTipMap]);
 
     const isValidStacksAddress = (address) => {
         if (!address) return false;
@@ -409,14 +397,14 @@ export default function BatchTip({ addToast }) {
                                         value={r.address}
                                         onChange={(e) => updateRecipient(i, 'address', e.target.value)}
                                         className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                                            errors[`${i}-address`]
+                                            allErrors[`${i}-address`]
                                                 ? 'border-red-300 dark:border-red-600'
                                                 : 'border-gray-200 dark:border-gray-700'
                                         }`}
                                         placeholder="SP2... recipient address"
                                     />
-                                    {errors[`${i}-address`] && (
-                                        <p className="mt-0.5 text-xs text-red-500">{errors[`${i}-address`]}</p>
+                                    {allErrors[`${i}-address`] && (
+                                        <p className="mt-0.5 text-xs text-red-500">{allErrors[`${i}-address`]}</p>
                                     )}
                                 </div>
                                 <div>
@@ -429,7 +417,7 @@ export default function BatchTip({ addToast }) {
                                         value={r.amount}
                                         onChange={(e) => updateRecipient(i, 'amount', e.target.value)}
                                         className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                                            errors[`${i}-amount`]
+                                            allErrors[`${i}-amount`]
                                                 ? 'border-red-300 dark:border-red-600'
                                                 : 'border-gray-200 dark:border-gray-700'
                                         }`}
@@ -437,8 +425,8 @@ export default function BatchTip({ addToast }) {
                                         step="0.001"
                                         min={MIN_TIP_STX}
                                     />
-                                    {errors[`${i}-amount`] && (
-                                        <p className="mt-0.5 text-xs text-red-500">{errors[`${i}-amount`]}</p>
+                                    {allErrors[`${i}-amount`] && (
+                                        <p className="mt-0.5 text-xs text-red-500">{allErrors[`${i}-amount`]}</p>
                                     )}
                                 </div>
                             </div>
@@ -455,8 +443,8 @@ export default function BatchTip({ addToast }) {
                                     placeholder="Message (optional, max 280 chars)"
                                     maxLength={280}
                                 />
-                                {errors[`${i}-message`] && (
-                                    <p className="mt-0.5 text-xs text-red-500">{errors[`${i}-message`]}</p>
+                                {allErrors[`${i}-message`] && (
+                                    <p className="mt-0.5 text-xs text-red-500">{allErrors[`${i}-message`]}</p>
                                 )}
                             </div>
                         </fieldset>
