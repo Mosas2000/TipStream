@@ -493,7 +493,7 @@ describe("TipStream Contract Tests", () => {
     describe("Batch Tipping", () => {
         it("can send multiple tips in one transaction", () => {
             const tips = [
-                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(1000000), message: Cl.stringUtf8("Tip A") }),
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Tip A") }),
                 Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(2000000), message: Cl.stringUtf8("Tip B") })
             ];
 
@@ -529,7 +529,7 @@ describe("TipStream Contract Tests", () => {
     describe("Strict Batch Tipping", () => {
         it("sends all tips when all are valid", () => {
             const tips = [
-                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(1000000), message: Cl.stringUtf8("Strict A") }),
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Strict A") }),
                 Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(2000000), message: Cl.stringUtf8("Strict B") })
             ];
 
@@ -552,8 +552,8 @@ describe("TipStream Contract Tests", () => {
             );
 
             const tips = [
-                Cl.tuple({ recipient: Cl.principal(deployer), amount: Cl.uint(1000000), message: Cl.stringUtf8("Valid") }),
-                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(1000000), message: Cl.stringUtf8("Blocked") })
+                Cl.tuple({ recipient: Cl.principal(deployer), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Valid") }),
+                Cl.tuple({ recipient: Cl.principal(wallet2), amount: Cl.uint(MOCK_TIP_AMOUNT), message: Cl.stringUtf8("Blocked") })
             ];
 
             const { result } = simnet.callPublicFn(
