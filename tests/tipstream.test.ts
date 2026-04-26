@@ -193,7 +193,7 @@ describe("TipStream Contract Tests", () => {
             "send-tip",
             [
                 Cl.principal(wallet2),
-                Cl.uint(1000000),
+                Cl.uint(MOCK_TIP_AMOUNT),
                 Cl.stringUtf8("Tip 1")
             ],
             wallet1
