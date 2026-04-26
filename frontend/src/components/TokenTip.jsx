@@ -39,6 +39,21 @@ const parseContractId = (id) => {
 };
 
 export default function TokenTip({ addToast }) {
+    const { demoEnabled, addDemoTip } = useDemoMode();
+    const [tokenContract, setTokenContract] = useState('');
+    const [recipient, setRecipient] = useState('');
+    const [amount, setAmount] = useState('');
+    const [message, setMessage] = useState('');
+    const [whitelistStatus, setWhitelistStatus] = useState(null);
+    const [checkingWhitelist, setCheckingWhitelist] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [tokenError, setTokenError] = useState('');
+    const [recipientError, setRecipientError] = useState('');
+    const [amountError, setAmountError] = useState('');
+    const [hasCheckedWhitelist, setHasCheckedWhitelist] = useState(false);
+
+    const senderAddress = useSenderAddress();
 
     const validateRecipient = useCallback((value) => {
         if (!value) {
