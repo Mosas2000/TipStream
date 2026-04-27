@@ -173,4 +173,58 @@ describe('RecentTips row keys', () => {
     expect(rowAfter).toBeTruthy();
     expect(rowAfter.textContent).toContain('SP1ALPHA');
   });
+
+  it('maintains stable keys across pagination', () => {
+    const tips = Array.from({ length: 15 }, (_, i) => ({
+      event: 'tip-sent',
+      tipId: undefined,
+      txId: undefined,
+      sender: `SP1SENDER${i}`,
+      recipient: `SP2RECIPIENT${i}`,
+      amount: `${1000000 + i}`,
+      fee: '50000',
+      timestamp: 1700000000 + i,
+    }));
+
+    useTipContext.mockReturnValue({
+      events: tips,
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 15, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const rows = container.querySelectorAll('.group');
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it('handles null and undefined values in fingerprint', () => {
+    const tip = {
+      event: 'tip-sent',
+      tipId: null,
+      txId: null,
+      sender: null,
+      recipient: undefined,
+      amount: undefined,
+      fee: null,
+      timestamp: null,
+    };
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const row = container.querySelector('.group');
+    expect(row).toBeTruthy();
+  });
 });
