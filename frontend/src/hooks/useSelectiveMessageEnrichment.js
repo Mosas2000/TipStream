@@ -33,10 +33,10 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
 
   // Extract unique, non-zero tip IDs from the currently visible set
   const visibleTipIds = useMemo(
-    () => visibleTips
-      .map(t => t?.tipId)
-      .filter(id => id && id !== '0')
-      .filter((v, i, a) => a.indexOf(v) === i),
+    () => {
+      const ids = visibleTips.map(t => t?.tipId).filter(id => id && id !== '0');
+      return Array.from(new Set(ids));
+    },
     [visibleTips]
   );
 
