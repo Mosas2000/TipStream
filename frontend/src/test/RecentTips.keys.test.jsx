@@ -11,6 +11,13 @@ vi.mock('../context/TipContext', () => ({
   useTipContext: vi.fn(),
 }));
 
+vi.mock('../context/DemoContext', () => ({
+  useDemoMode: vi.fn(() => ({
+    demoEnabled: false,
+    setDemoBalance: vi.fn(),
+  })),
+}));
+
 vi.mock('../lib/fetchTipDetails', () => ({
   fetchTipMessages: vi.fn(() => Promise.resolve(new Map())),
   clearTipCache: vi.fn(),
