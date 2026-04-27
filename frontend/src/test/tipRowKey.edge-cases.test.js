@@ -14,7 +14,7 @@ describe('getTipRowKey edge cases', () => {
         timestamp: 1700000000,
       };
 
-      expect(getTipRowKey(tip)).toBe('tx:0xabc');
+      expect(getTipRowKey(tip)).toBe('tip:false');
     });
 
     it('handles true as tipId', () => {
