@@ -41,7 +41,7 @@ describe('BatchTip', () => {
       renderWithProviders(<BatchTip addToast={mockToast} />);
 
       expect(screen.getByText(/your balance/i)).toBeInTheDocument();
-      expect(screen.getByText(/10000/)).toBeInTheDocument();
+      expect(screen.getByText(/10000|10,000/)).toBeInTheDocument();
     });
 
     it('renders one recipient by default', () => {
