@@ -289,4 +289,46 @@ describe('getTipRowKey', () => {
 
     expect(getTipRowKey(tip)).toBe('tx:0xabc');
   });
+
+  it('handles numeric tipId', () => {
+    const tip = {
+      tipId: 42,
+      txId: '0xabc',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip)).toBe('tip:42');
+  });
+
+  it('handles zero as tipId', () => {
+    const tip = {
+      tipId: 0,
+      txId: '0xabc',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip)).toBe('tip:0');
+  });
+
+  it('handles large numeric tipId', () => {
+    const tip = {
+      tipId: 999999999,
+      txId: '0xabc',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip)).toBe('tip:999999999');
+  });
 });
