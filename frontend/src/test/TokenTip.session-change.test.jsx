@@ -79,8 +79,14 @@ describe('TokenTip session change behavior', () => {
 
   it('uses current sender address for post-conditions', async () => {
     const user = userEvent.setup();
-    const mockOpenContractCall = vi.fn();
+    const mockOpenContractCall = vi.fn(({ postConditions, onFinish }) => {
+      expect(postConditions).toBeDefined();
+      expect(postConditions.length).toBeGreaterThan(0);
+      onFinish({ txId: 'tx123' });
+    });
+    
     const { openContractCall } = await import('@stacks/connect');
+    openContractCall.mockImplementation(mockOpenContractCall);
     
     mockUseSenderAddress.mockReturnValue('SP1NEWADDRESS123456789ABCDEFGHIJK');
 
@@ -107,14 +113,6 @@ describe('TokenTip session change behavior', () => {
     await waitFor(() => {
       expect(screen.getByText(/confirm token tip/i)).toBeInTheDocument();
     });
-    
-    mockOpenContractCall.mockImplementation(({ postConditions, onFinish }) => {
-      expect(postConditions).toBeDefined();
-      expect(postConditions.length).toBeGreaterThan(0);
-      onFinish({ txId: 'tx123' });
-    });
-    
-    openContractCall.mockImplementation(mockOpenContractCall);
 
     const confirmButtons = screen.getAllByRole('button', { name: /send token tip/i });
     await user.click(confirmButtons[1]);
