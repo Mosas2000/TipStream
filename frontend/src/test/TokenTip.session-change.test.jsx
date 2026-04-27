@@ -30,7 +30,7 @@ describe('TokenTip session change behavior', () => {
     mockToast = createMockToast();
     vi.clearAllMocks();
     stacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue({});
-    stacksTransactions.cvToJSON.mockReturnValue({ value: { value: true } });
+    stacksTransactions.cvToJSON.mockReturnValue({ value: true });
   });
 
   it('updates self-tip validation when sender address changes', async () => {
