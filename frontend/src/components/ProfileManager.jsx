@@ -58,6 +58,7 @@ export default function ProfileManager({ addToast }) {
         }
 
         if (!senderAddress) {
+            clearProfile();
             setLoading(false);
             return;
         }
