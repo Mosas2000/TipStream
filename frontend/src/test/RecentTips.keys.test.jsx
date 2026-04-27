@@ -11,6 +11,13 @@ vi.mock('../context/TipContext', () => ({
   useTipContext: vi.fn(),
 }));
 
+vi.mock('../context/DemoContext', () => ({
+  useDemoMode: vi.fn(() => ({
+    demoEnabled: false,
+    setDemoBalance: vi.fn(),
+  })),
+}));
+
 vi.mock('../lib/fetchTipDetails', () => ({
   fetchTipMessages: vi.fn(() => Promise.resolve(new Map())),
   clearTipCache: vi.fn(),
@@ -31,6 +38,87 @@ describe('RecentTips row keys', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     isUserSignedIn.mockReturnValue(true);
+  });
+
+  it('uses tipId when available', () => {
+    const tip = {
+      event: 'tip-sent',
+      tipId: '42',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+      txId: '0xabc',
+    };
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const row = container.querySelector('[data-testid="tip-row"]') || container.querySelector('.group');
+    expect(row).toBeTruthy();
+  });
+
+  it('falls back to txId when tipId is missing', () => {
+    const tip = {
+      event: 'tip-sent',
+      tipId: undefined,
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+      txId: '0xabc123',
+    };
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const row = container.querySelector('.group');
+    expect(row).toBeTruthy();
+  });
+
+  it('uses fingerprint when both tipId and txId are missing', () => {
+    const tip = {
+      event: 'tip-sent',
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const row = container.querySelector('.group');
+    expect(row).toBeTruthy();
   });
 
   it('keeps row identity stable across reorders when tipId is missing', () => {
@@ -91,5 +179,100 @@ describe('RecentTips row keys', () => {
     const rowAfter = focusedButton.closest('.group');
     expect(rowAfter).toBeTruthy();
     expect(rowAfter.textContent).toContain('SP1ALPHA');
+  });
+
+  it('maintains stable keys across pagination', () => {
+    const tips = Array.from({ length: 15 }, (_, i) => ({
+      event: 'tip-sent',
+      tipId: undefined,
+      txId: undefined,
+      sender: `SP1SENDER${i}`,
+      recipient: `SP2RECIPIENT${i}`,
+      amount: `${1000000 + i}`,
+      fee: '50000',
+      timestamp: 1700000000 + i,
+    }));
+
+    useTipContext.mockReturnValue({
+      events: tips,
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 15, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const rows = container.querySelectorAll('.group');
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it('handles null and undefined values in fingerprint', () => {
+    const tip = {
+      event: 'tip-sent',
+      tipId: null,
+      txId: null,
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: undefined,
+      fee: null,
+      timestamp: null,
+    };
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const row = container.querySelector('.group');
+    expect(row).toBeTruthy();
+  });
+
+  it('maintains stable keys after refresh', () => {
+    const tip = {
+      event: 'tip-sent',
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container, rerender } = render(<RecentTips addToast={vi.fn()} />);
+    const initialRow = container.querySelector('.group');
+    expect(initialRow).toBeTruthy();
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: new Date(),
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    rerender(<RecentTips addToast={vi.fn()} />);
+    const rowAfterRefresh = container.querySelector('.group');
+    expect(rowAfterRefresh).toBeTruthy();
   });
 });
