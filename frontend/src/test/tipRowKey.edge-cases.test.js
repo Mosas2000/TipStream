@@ -77,4 +77,34 @@ describe('getTipRowKey edge cases', () => {
       expect(getTipRowKey(tip)).toContain('tip:');
     });
   });
+
+  describe('negative numbers', () => {
+    it('handles negative tipId', () => {
+      const tip = {
+        tipId: -1,
+        txId: '0xabc',
+        sender: 'SP1SENDER',
+        recipient: 'SP2RECIPIENT',
+        amount: '1000000',
+        fee: '50000',
+        timestamp: 1700000000,
+      };
+
+      expect(getTipRowKey(tip)).toBe('tip:-1');
+    });
+
+    it('handles negative amount in fingerprint', () => {
+      const tip = {
+        tipId: undefined,
+        txId: undefined,
+        sender: 'SP1SENDER',
+        recipient: 'SP2RECIPIENT',
+        amount: '-1000000',
+        fee: '50000',
+        timestamp: 1700000000,
+      };
+
+      expect(getTipRowKey(tip)).toBe('fp:SP1SENDER:SP2RECIPIENT:-1000000:50000:1700000000');
+    });
+  });
 });
