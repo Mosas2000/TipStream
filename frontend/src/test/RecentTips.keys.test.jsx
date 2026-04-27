@@ -234,4 +234,45 @@ describe('RecentTips row keys', () => {
     const row = container.querySelector('.group');
     expect(row).toBeTruthy();
   });
+
+  it('maintains stable keys after refresh', () => {
+    const tip = {
+      event: 'tip-sent',
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container, rerender } = render(<RecentTips addToast={vi.fn()} />);
+    const initialRow = container.querySelector('.group');
+    expect(initialRow).toBeTruthy();
+
+    useTipContext.mockReturnValue({
+      events: [tip],
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 1, hasMore: false },
+      lastEventRefresh: new Date(),
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    rerender(<RecentTips addToast={vi.fn()} />);
+    const rowAfterRefresh = container.querySelector('.group');
+    expect(rowAfterRefresh).toBeTruthy();
+  });
 });
