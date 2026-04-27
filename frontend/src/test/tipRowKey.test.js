@@ -331,4 +331,48 @@ describe('getTipRowKey', () => {
 
     expect(getTipRowKey(tip)).toBe('tip:999999999');
   });
+
+  it('handles special characters in sender address', () => {
+    const tip = {
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1.SENDER-TEST',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip)).toBe('fp:SP1.SENDER-TEST:SP2RECIPIENT:1000000:50000:1700000000');
+  });
+
+  it('handles special characters in recipient address', () => {
+    const tip = {
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1SENDER',
+      recipient: 'SP2.RECIPIENT-TEST',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip)).toBe('fp:SP1SENDER:SP2.RECIPIENT-TEST:1000000:50000:1700000000');
+  });
+
+  it('handles very long addresses', () => {
+    const tip = {
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1' + 'A'.repeat(100),
+      recipient: 'SP2' + 'B'.repeat(100),
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    const key = getTipRowKey(tip);
+    expect(key).toContain('SP1' + 'A'.repeat(100));
+    expect(key).toContain('SP2' + 'B'.repeat(100));
+  });
 });
