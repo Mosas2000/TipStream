@@ -53,3 +53,13 @@ npm test -- tipRowKey --run
 - ✅ Replace index fallback keys with stable identifier strategy
 - ✅ Keep row identity consistent across refreshes and pagination
 - ✅ Add coverage for rows without a tipId
+
+## Files Changed
+
+- `frontend/src/lib/tipRowKey.js` - Core key generation utility
+- `frontend/src/components/RecentTips.jsx` - Updated to use stable keys
+- `frontend/src/test/tipRowKey.test.js` - Unit tests
+- `frontend/src/test/tipRowKey.edge-cases.test.js` - Edge case tests
+- `frontend/src/test/RecentTips.keys.test.jsx` - Component tests
+- `frontend/src/test/RecentTips.integration.test.jsx` - Integration tests
+- Multiple documentation files in `frontend/docs/`
