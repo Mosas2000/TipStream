@@ -84,14 +84,14 @@ describe('BatchTip session change behavior', () => {
     const { openContractCall } = await import('@stacks/connect');
     openContractCall.mockImplementation(mockOpenContractCall);
     
-    mockUseSenderAddress.mockReturnValue('SP1NEWADDRESS123456789ABCDEFGHIJK');
+    mockUseSenderAddress.mockReturnValue('SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE');
 
     renderWithProviders(<BatchTip addToast={mockToast} />);
 
     const addressInput = screen.getByLabelText(/recipient 1 address/i);
     const amountInput = screen.getByLabelText(/recipient 1 amount/i);
 
-    await user.type(addressInput, 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE');
+    await user.type(addressInput, 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B');
     await user.type(amountInput, '1');
 
     const sendButtons = screen.getAllByRole('button', { name: /send 1 tip/i });

@@ -88,7 +88,7 @@ describe('TokenTip session change behavior', () => {
     const { openContractCall } = await import('@stacks/connect');
     openContractCall.mockImplementation(mockOpenContractCall);
     
-    mockUseSenderAddress.mockReturnValue('SP1NEWADDRESS123456789ABCDEFGHIJK');
+    mockUseSenderAddress.mockReturnValue('SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE');
 
     renderWithProviders(<TokenTip addToast={mockToast} />);
 
@@ -104,7 +104,7 @@ describe('TokenTip session change behavior', () => {
       expect(screen.getByText(/token is whitelisted/i)).toBeInTheDocument();
     });
 
-    await user.type(recipientInput, 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE');
+    await user.type(recipientInput, 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B');
     await user.type(amountInput, '1000000');
 
     const sendButtons = screen.getAllByRole('button', { name: /send token tip/i });
