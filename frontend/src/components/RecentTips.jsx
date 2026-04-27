@@ -306,7 +306,7 @@ export default function RecentTips({ addToast }) {
                     </div>
                 ) : (
                     <div className="space-y-2" aria-live="polite" aria-relevant="additions text">
-                        {allEnrichedTips.map((tip) => (
+                        {enrichedTips.map((tip) => (
                             <div key={getTipRowKey(tip)} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
                                     <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shrink-0">
