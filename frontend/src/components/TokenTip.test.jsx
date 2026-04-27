@@ -20,7 +20,7 @@ vi.mock('@stacks/connect', () => ({
 }));
 
 vi.mock('../hooks/useSenderAddress', () => ({
-  useSenderAddress: vi.fn(() => 'SP1SENDER123'),
+  useSenderAddress: vi.fn(() => 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B'),
 }));
 
 describe('TokenTip', () => {
@@ -163,7 +163,7 @@ describe('TokenTip', () => {
 
       const recipientInput = screen.getByLabelText(/recipient address/i);
 
-      await user.type(recipientInput, 'SP1SENDER123');
+      await user.type(recipientInput, 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B');
 
       await waitFor(() => {
         expect(screen.getByText(/cannot send a tip to yourself/i)).toBeInTheDocument();

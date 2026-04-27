@@ -20,7 +20,7 @@ vi.mock('@stacks/connect', () => ({
 }));
 
 vi.mock('../hooks/useSenderAddress', () => ({
-  useSenderAddress: vi.fn(() => 'SP1SENDER123'),
+  useSenderAddress: vi.fn(() => 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B'),
 }));
 
 describe('ProfileManager', () => {

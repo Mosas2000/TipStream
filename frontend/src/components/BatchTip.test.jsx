@@ -10,7 +10,7 @@ vi.mock('@stacks/connect', () => ({
 }));
 
 vi.mock('../hooks/useSenderAddress', () => ({
-  useSenderAddress: vi.fn(() => 'SP1SENDER123'),
+  useSenderAddress: vi.fn(() => 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B'),
 }));
 
 vi.mock('../hooks/useBalance', () => ({
@@ -145,7 +145,7 @@ describe('BatchTip', () => {
       const addressInput = screen.getByLabelText(/recipient 1 address/i);
       const amountInput = screen.getByLabelText(/recipient 1 amount/i);
 
-      await user.type(addressInput, 'SP1SENDER123');
+      await user.type(addressInput, 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B');
       await user.type(amountInput, '1');
 
       await waitFor(() => {

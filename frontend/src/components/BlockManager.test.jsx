@@ -20,7 +20,7 @@ vi.mock('@stacks/connect', () => ({
 }));
 
 vi.mock('../hooks/useSenderAddress', () => ({
-  useSenderAddress: vi.fn(() => 'SP1SENDER123'),
+  useSenderAddress: vi.fn(() => 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B'),
 }));
 
 describe('BlockManager', () => {
@@ -87,7 +87,7 @@ describe('BlockManager', () => {
       const input = screen.getByLabelText(/user address/i);
       const checkButton = screen.getByRole('button', { name: /check block status/i });
 
-      await user.type(input, 'SP1SENDER123');
+      await user.type(input, 'SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B');
       await user.click(checkButton);
 
       expect(mockToast).toHaveBeenCalledWith('You cannot block yourself', 'warning');

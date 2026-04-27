@@ -3,6 +3,7 @@ import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transa
 import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS, STACKS_API_BASE } from '../config/contracts';
 import { formatSTX, formatAddress } from '../lib/utils';
+import { getTipRowKey } from '../lib/tipRowKey';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
 import { useDemoMode } from '../context/DemoContext';
@@ -293,8 +294,8 @@ export default function TipHistory({ userAddress }) {
                     </div>
                 ) : (
                     <div id="tip-history-panel" role="tabpanel" className="space-y-2">
-                        {filteredTips.map((tip, i) => (
-                            <div key={tip.tipId || i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
+                        {filteredTips.map((tip) => (
+                            <div key={getTipRowKey(tip)} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${tip.direction === 'sent' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>
                                         {tip.direction === 'sent' ? '-' : '+'}
