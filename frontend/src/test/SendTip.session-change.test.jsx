@@ -111,14 +111,12 @@ describe('SendTip session change behavior', () => {
     await user.type(recipientInput, 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE');
     await user.type(amountInput, '1');
 
-    const sendButton = screen.getByRole('button', { name: /send tip/i });
-    await user.click(sendButton);
+    const sendButtons = screen.getAllByRole('button', { name: /send tip/i });
+    await user.click(sendButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText(/confirm tip/i)).toBeInTheDocument();
     });
-
-    const confirmButton = screen.getByRole('button', { name: /send tip/i });
     
     mockOpenContractCall.mockImplementation(({ postConditions, onFinish }) => {
       expect(postConditions).toBeDefined();
@@ -128,7 +126,8 @@ describe('SendTip session change behavior', () => {
     
     openContractCall.mockImplementation(mockOpenContractCall);
 
-    await user.click(confirmButton);
+    const confirmButtons = screen.getAllByRole('button', { name: /send tip/i });
+    await user.click(confirmButtons[1]);
 
     await waitFor(() => {
       expect(mockOpenContractCall).toHaveBeenCalled();
