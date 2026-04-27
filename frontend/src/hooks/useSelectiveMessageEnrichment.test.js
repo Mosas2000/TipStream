@@ -171,4 +171,27 @@ describe('useSelectiveMessageEnrichment Hook', () => {
 
     expect(result.current.enrichedTips[0]?.message).toBeUndefined();
   });
+
+  it('forces re-fetch after manual clear even if IDs are identical', async () => {
+    const mockMessages = new Map([['1', 'Msg1']]);
+    fetchTipMessages.mockResolvedValue(mockMessages);
+
+    const { result, rerender } = renderHook(({ tips }) => useSelectiveMessageEnrichment(tips), {
+      initialProps: { tips: [{ tipId: '1' }] }
+    });
+
+    await waitFor(() => expect(result.current.enrichedTips[0]?.message).toBe('Msg1'));
+    expect(fetchTipMessages).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.clearEnrichment();
+    });
+
+    // Re-render with same tips
+    rerender({ tips: [{ tipId: '1' }] });
+
+    await waitFor(() => expect(result.current.enrichedTips[0]?.message).toBe('Msg1'));
+    // Should have been called again because clearEnrichment reset previousIdsRef
+    expect(fetchTipMessages).toHaveBeenCalledTimes(2);
+  });
 });
