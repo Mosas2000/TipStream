@@ -88,9 +88,6 @@ describe('TokenTip session change behavior', () => {
     const { openContractCall } = await import('@stacks/connect');
     openContractCall.mockImplementation(mockOpenContractCall);
     
-    stacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue({});
-    stacksTransactions.cvToJSON.mockReturnValue({ value: { value: true } });
-    
     mockUseSenderAddress.mockReturnValue('SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE');
 
     renderWithProviders(<TokenTip addToast={mockToast} />);
