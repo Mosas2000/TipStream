@@ -201,4 +201,92 @@ describe('getTipRowKey', () => {
 
     expect(getTipRowKey(tip)).toBe('fp:unknown:unknown:0:0:0');
   });
+
+  it('generates same key for identical tips', () => {
+    const tip1 = {
+      tipId: '42',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    const tip2 = {
+      tipId: '42',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip1)).toBe(getTipRowKey(tip2));
+  });
+
+  it('generates different keys for different tipIds', () => {
+    const tip1 = { tipId: '42' };
+    const tip2 = { tipId: '43' };
+
+    expect(getTipRowKey(tip1)).not.toBe(getTipRowKey(tip2));
+  });
+
+  it('generates different keys for different txIds', () => {
+    const tip1 = { tipId: undefined, txId: '0xabc' };
+    const tip2 = { tipId: undefined, txId: '0xdef' };
+
+    expect(getTipRowKey(tip1)).not.toBe(getTipRowKey(tip2));
+  });
+
+  it('generates different keys for different fingerprints', () => {
+    const tip1 = {
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    const tip2 = {
+      tipId: undefined,
+      txId: undefined,
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '2000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip1)).not.toBe(getTipRowKey(tip2));
+  });
+
+  it('trims whitespace from tipId', () => {
+    const tip = {
+      tipId: '  42  ',
+      txId: '0xabc',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip)).toBe('tip:42');
+  });
+
+  it('trims whitespace from txId', () => {
+    const tip = {
+      tipId: undefined,
+      txId: '  0xabc  ',
+      sender: 'SP1SENDER',
+      recipient: 'SP2RECIPIENT',
+      amount: '1000000',
+      fee: '50000',
+      timestamp: 1700000000,
+    };
+
+    expect(getTipRowKey(tip)).toBe('tx:0xabc');
+  });
 });
