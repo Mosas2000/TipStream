@@ -127,4 +127,43 @@ describe('RecentTips integration', () => {
     const rows = container.querySelectorAll('.group');
     expect(rows.length).toBe(3);
   });
+
+  it('maintains key uniqueness with duplicate amounts', () => {
+    const tips = [
+      {
+        event: 'tip-sent',
+        tipId: undefined,
+        txId: undefined,
+        sender: 'SP1SENDER1',
+        recipient: 'SP2RECIPIENT1',
+        amount: '1000000',
+        fee: '50000',
+        timestamp: 1700000000,
+      },
+      {
+        event: 'tip-sent',
+        tipId: undefined,
+        txId: undefined,
+        sender: 'SP1SENDER2',
+        recipient: 'SP2RECIPIENT2',
+        amount: '1000000',
+        fee: '50000',
+        timestamp: 1700000001,
+      },
+    ];
+
+    useTipContext.mockReturnValue({
+      events: tips,
+      eventsLoading: false,
+      eventsError: null,
+      eventsMeta: { total: 2, hasMore: false },
+      lastEventRefresh: null,
+      refreshEvents: vi.fn(),
+      loadMoreEvents: vi.fn(),
+    });
+
+    const { container } = render(<RecentTips addToast={vi.fn()} />);
+    const rows = container.querySelectorAll('.group');
+    expect(rows.length).toBe(2);
+  });
 });
