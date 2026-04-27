@@ -17,18 +17,21 @@
  * @returns {string} Stable key for React rendering
  */
 export function getTipRowKey(tip) {
+  // Try primary key: tipId
   const rawTipId = tip?.tipId;
   if (rawTipId !== undefined && rawTipId !== null) {
     const tipId = String(rawTipId).trim();
     if (tipId) return `tip:${tipId}`;
   }
 
+  // Try secondary key: txId
   const rawTxId = tip?.txId;
   if (rawTxId !== undefined && rawTxId !== null) {
     const txId = String(rawTxId).trim();
     if (txId) return `tx:${txId}`;
   }
 
+  // Fallback to fingerprint using tip properties
   const sender = tip?.sender ?? 'unknown';
   const recipient = tip?.recipient ?? 'unknown';
   const amount = tip?.amount ?? '0';
