@@ -456,4 +456,18 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.queryByText('Failed to Load Telemetry Data')).not.toBeInTheDocument();
     });
   });
+
+  it('error message container has proper styling', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw new Error('Service error');
+    });
+
+    const { container } = render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      const errorMessage = screen.getByText('Service error');
+      expect(errorMessage.className).toContain('bg-gray-50');
+      expect(errorMessage.className).toContain('border');
+    });
+  });
 });
