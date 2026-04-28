@@ -185,10 +185,10 @@ export default function TelemetryDashboard({ addToast }) {
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                 Failed to Load Telemetry Data
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 font-mono bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
                 {error}
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handleRefresh}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
