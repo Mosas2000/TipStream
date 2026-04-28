@@ -346,4 +346,19 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.getByLabelText('Export telemetry data as CSV')).toBeInTheDocument();
     });
   });
+
+  it('export buttons are enabled in error state', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw new Error('Service error');
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      const exportJsonButton = screen.getByLabelText('Export telemetry data as JSON');
+      const exportCsvButton = screen.getByLabelText('Export telemetry data as CSV');
+      expect(exportJsonButton).not.toBeDisabled();
+      expect(exportCsvButton).not.toBeDisabled();
+    });
+  });
 });
