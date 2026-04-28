@@ -401,4 +401,16 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.getByText('Telemetry Dashboard')).toBeInTheDocument();
     });
   });
+
+  it('handles null error with fallback message', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw null;
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
+    });
+  });
 });
