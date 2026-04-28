@@ -277,4 +277,32 @@ describe('TelemetryDashboard error handling', () => {
       expect(addToast).toHaveBeenCalledWith(expect.stringContaining('Exported'), 'success');
     });
   });
+
+  it('displays error message in monospace font', async () => {
+    const errorMessage = 'Connection refused: localhost:5432';
+    analytics.getSummary.mockImplementation(() => {
+      throw new Error(errorMessage);
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      const errorElement = screen.getByText(errorMessage);
+      expect(errorElement).toBeInTheDocument();
+      expect(errorElement.className).toContain('font-mono');
+    });
+  });
+
+  it('shows alert icon in error state', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw new Error('Service error');
+    });
+
+    const { container } = render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      const alertIcon = container.querySelector('svg[class*="text-red-500"]');
+      expect(alertIcon).toBeInTheDocument();
+    });
+  });
 });
