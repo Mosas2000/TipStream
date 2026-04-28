@@ -46,7 +46,17 @@ import {
  * @returns {string} User-friendly error message
  */
 function extractErrorMessage(err) {
-  return err?.message || 'Failed to load telemetry data';
+  if (!err) return 'Failed to load telemetry data';
+  
+  if (err.message) {
+    return err.message;
+  }
+  
+  if (typeof err === 'string') {
+    return err;
+  }
+  
+  return 'Failed to load telemetry data';
 }
 
 /**
