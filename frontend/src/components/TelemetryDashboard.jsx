@@ -29,19 +29,56 @@ import {
 
 /**
  * TelemetryDashboard -- displays application performance metrics and error logs.
+ * 
+ * Error Handling:
+ * - Displays visible error state when analytics data fails to load
+ * - Keeps refresh and export actions available during errors
+ * - Allows retry after failed loads
+ * 
  * Note: Shared sub-components (MetricCard, AlertPanel, etc.) must be defined
  * at the top level to avoid "symbol has already been declared" errors during
  * Vite/Rollup transformation when build optimizations are enabled.
+ */
+
+const DEFAULT_ERROR_MESSAGE = 'Failed to load telemetry data';
+
+/**
+ * Extract a user-friendly error message from an exception.
+ * @param {Error} err - The error object
+ * @returns {string} User-friendly error message
+ */
+function extractErrorMessage(err) {
+  if (!err) return DEFAULT_ERROR_MESSAGE;
+  
+  if (err.message) {
+    return err.message;
+  }
+  
+  if (typeof err === 'string') {
+    return err;
+  }
+  
+  return DEFAULT_ERROR_MESSAGE;
+}
+
+/**
+ * TelemetryDashboard component displays application performance metrics.
+ * 
+ * @param {Object} props - Component props
+ * @param {Function} props.addToast - Function to display toast notifications
+ * @returns {JSX.Element} The telemetry dashboard UI
  */
 export default function TelemetryDashboard({ addToast }) {
   const { demoEnabled } = useDemoMode();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   const loadData = useCallback(() => {
     setLoading(true);
+    setError(null);
     
     if (demoEnabled) {
       setTimeout(() => {
@@ -81,7 +118,12 @@ export default function TelemetryDashboard({ addToast }) {
     try {
       const data = analytics.getSummary();
       setSummary(data);
+      setError(null);
     } catch (err) {
+      // Extract error message for display, fallback to generic message
+      const errorMessage = extractErrorMessage(err);
+      setError(errorMessage);
+      // Keep console logging for debugging purposes
       console.error('Failed to load telemetry:', err);
     } finally {
       setLoading(false);
@@ -166,6 +208,55 @@ export default function TelemetryDashboard({ addToast }) {
     return (
       <div className="flex justify-center items-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  // Render error state with retry and export options
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8" role="alert" aria-live="assertive">
+          <div className="flex items-start gap-4">
+            <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-1" aria-hidden="true" />
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Failed to Load Telemetry Data
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 font-mono bg-gray-50 dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                {error}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleRefresh}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                  aria-label="Retry loading telemetry data"
+                >
+                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                  Retry
+                </button>
+                <button
+                  onClick={handleExportJson}
+                  disabled={exporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  aria-label="Export telemetry data as JSON"
+                >
+                  <FileJson className="w-4 h-4" aria-hidden="true" />
+                  Export JSON
+                </button>
+                <button
+                  onClick={handleExportCsv}
+                  disabled={exporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  aria-label="Export telemetry data as CSV"
+                >
+                  <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
