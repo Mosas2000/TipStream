@@ -374,4 +374,31 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.getByText('String error message')).toBeInTheDocument();
     });
   });
+
+  it('does not show error state when data loads successfully', async () => {
+    analytics.getSummary.mockReturnValue({
+      sessions: 10,
+      totalPageViews: 50,
+      tipsConfirmed: 5,
+      tipCompletionRate: '50',
+      tipDropOffRate: '50',
+      batchTipsConfirmed: 1,
+      batchCompletionRate: '100',
+      totalErrors: 0,
+      sortedPages: [],
+      sortedErrors: [],
+      webVitals: {},
+      walletConnections: 5,
+      walletDisconnections: 0,
+      firstSeen: Date.now(),
+      lastSeen: Date.now(),
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Failed to Load Telemetry Data')).not.toBeInTheDocument();
+      expect(screen.getByText('Telemetry Dashboard')).toBeInTheDocument();
+    });
+  });
 });
