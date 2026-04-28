@@ -40,13 +40,15 @@ import {
  * Vite/Rollup transformation when build optimizations are enabled.
  */
 
+const DEFAULT_ERROR_MESSAGE = 'Failed to load telemetry data';
+
 /**
  * Extract a user-friendly error message from an exception.
  * @param {Error} err - The error object
  * @returns {string} User-friendly error message
  */
 function extractErrorMessage(err) {
-  if (!err) return 'Failed to load telemetry data';
+  if (!err) return DEFAULT_ERROR_MESSAGE;
   
   if (err.message) {
     return err.message;
@@ -56,7 +58,7 @@ function extractErrorMessage(err) {
     return err;
   }
   
-  return 'Failed to load telemetry data';
+  return DEFAULT_ERROR_MESSAGE;
 }
 
 /**
