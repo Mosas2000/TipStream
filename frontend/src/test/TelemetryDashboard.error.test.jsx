@@ -110,8 +110,8 @@ describe('TelemetryDashboard error handling', () => {
     render(<TelemetryDashboard addToast={vi.fn()} />);
 
     await waitFor(() => {
-      const exportJsonButton = screen.getByRole('button', { name: /export json/i });
-      const exportCsvButton = screen.getByRole('button', { name: /export csv/i });
+      const exportJsonButton = screen.getByLabelText('Export telemetry data as JSON');
+      const exportCsvButton = screen.getByLabelText('Export telemetry data as CSV');
       expect(exportJsonButton).toBeInTheDocument();
       expect(exportCsvButton).toBeInTheDocument();
     });
@@ -248,7 +248,7 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
     });
 
-    const exportJsonButton = screen.getByRole('button', { name: /export json/i });
+    const exportJsonButton = screen.getByLabelText('Export telemetry data as JSON');
     await user.click(exportJsonButton);
 
     await waitFor(() => {
@@ -270,7 +270,7 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
     });
 
-    const exportCsvButton = screen.getByRole('button', { name: /export csv/i });
+    const exportCsvButton = screen.getByLabelText('Export telemetry data as CSV');
     await user.click(exportCsvButton);
 
     await waitFor(() => {
@@ -316,6 +316,34 @@ describe('TelemetryDashboard error handling', () => {
     await waitFor(() => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
       expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
+    });
+  });
+
+  it('error container has alert role for accessibility', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw new Error('Service error');
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      const alertContainer = screen.getByRole('alert');
+      expect(alertContainer).toBeInTheDocument();
+      expect(alertContainer).toHaveAttribute('aria-live', 'assertive');
+    });
+  });
+
+  it('buttons have descriptive aria labels in error state', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw new Error('Service error');
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Retry loading telemetry data')).toBeInTheDocument();
+      expect(screen.getByLabelText('Export telemetry data as JSON')).toBeInTheDocument();
+      expect(screen.getByLabelText('Export telemetry data as CSV')).toBeInTheDocument();
     });
   });
 });
