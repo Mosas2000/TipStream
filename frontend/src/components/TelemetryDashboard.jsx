@@ -39,6 +39,15 @@ import {
  * at the top level to avoid "symbol has already been declared" errors during
  * Vite/Rollup transformation when build optimizations are enabled.
  */
+
+/**
+ * Extract a user-friendly error message from an exception.
+ * @param {Error} err - The error object
+ * @returns {string} User-friendly error message
+ */
+function extractErrorMessage(err) {
+  return err?.message || 'Failed to load telemetry data';
+}
 export default function TelemetryDashboard({ addToast }) {
   const { demoEnabled } = useDemoMode();
   const [summary, setSummary] = useState(null);
@@ -92,7 +101,7 @@ export default function TelemetryDashboard({ addToast }) {
       setError(null);
     } catch (err) {
       // Extract error message for display, fallback to generic message
-      const errorMessage = err.message || 'Failed to load telemetry data';
+      const errorMessage = extractErrorMessage(err);
       setError(errorMessage);
       // Keep console logging for debugging purposes
       console.error('Failed to load telemetry:', err);
