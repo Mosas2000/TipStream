@@ -75,6 +75,7 @@ describe('TelemetryDashboard error handling', () => {
     vi.clearAllMocks();
   });
 
+  // Basic error display tests
   it('displays error state when analytics.getSummary throws', async () => {
     const errorMessage = 'Analytics service unavailable';
     analytics.getSummary.mockImplementation(() => {
@@ -102,6 +103,7 @@ describe('TelemetryDashboard error handling', () => {
     });
   });
 
+  // Button availability tests
   it('keeps export buttons available during error state', async () => {
     analytics.getSummary.mockImplementation(() => {
       throw new Error('Service error');
@@ -117,6 +119,7 @@ describe('TelemetryDashboard error handling', () => {
     });
   });
 
+  // Retry functionality tests
   it('allows retry after error', async () => {
     const user = userEvent.setup();
     analytics.getSummary.mockImplementation(() => {
@@ -193,6 +196,7 @@ describe('TelemetryDashboard error handling', () => {
     });
   });
 
+  // Error message handling tests
   it('displays generic error message for unknown errors', async () => {
     analytics.getSummary.mockImplementation(() => {
       throw new Error();
