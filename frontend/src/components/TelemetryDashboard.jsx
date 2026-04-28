@@ -48,6 +48,14 @@ import {
 function extractErrorMessage(err) {
   return err?.message || 'Failed to load telemetry data';
 }
+
+/**
+ * TelemetryDashboard component displays application performance metrics.
+ * 
+ * @param {Object} props - Component props
+ * @param {Function} props.addToast - Function to display toast notifications
+ * @returns {JSX.Element} The telemetry dashboard UI
+ */
 export default function TelemetryDashboard({ addToast }) {
   const { demoEnabled } = useDemoMode();
   const [summary, setSummary] = useState(null);
