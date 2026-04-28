@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import TelemetryDashboard from '../components/TelemetryDashboard';
-
-const mockAnalytics = {
-  getSummary: vi.fn(),
-  reset: vi.fn(),
-};
 
 vi.mock('../lib/analytics', () => ({
-  analytics: mockAnalytics,
+  analytics: {
+    getSummary: vi.fn(),
+    reset: vi.fn(),
+  },
 }));
+
+import TelemetryDashboard from '../components/TelemetryDashboard';
+import { analytics } from '../lib/analytics';
 
 vi.mock('../context/DemoContext', () => ({
   useDemoMode: vi.fn(() => ({
@@ -77,7 +77,7 @@ describe('TelemetryDashboard error handling', () => {
 
   it('displays error state when analytics.getSummary throws', async () => {
     const errorMessage = 'Analytics service unavailable';
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error(errorMessage);
     });
 
@@ -90,7 +90,7 @@ describe('TelemetryDashboard error handling', () => {
   });
 
   it('shows retry button in error state', async () => {
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error('Service error');
     });
 
@@ -103,7 +103,7 @@ describe('TelemetryDashboard error handling', () => {
   });
 
   it('keeps export buttons available during error state', async () => {
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error('Service error');
     });
 
@@ -119,7 +119,7 @@ describe('TelemetryDashboard error handling', () => {
 
   it('allows retry after error', async () => {
     const user = userEvent.setup();
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error('Service error');
     });
 
@@ -129,7 +129,7 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
     });
 
-    mockAnalytics.getSummary.mockReturnValue({
+    analytics.getSummary.mockReturnValue({
       sessions: 10,
       totalPageViews: 50,
       tipsConfirmed: 5,
@@ -156,17 +156,18 @@ describe('TelemetryDashboard error handling', () => {
   });
 
   it('clears error when data loads successfully', async () => {
-    mockAnalytics.getSummary.mockImplementation(() => {
+    const user = userEvent.setup();
+    analytics.getSummary.mockImplementation(() => {
       throw new Error('Service error');
     });
 
-    const { rerender } = render(<TelemetryDashboard addToast={vi.fn()} />);
+    render(<TelemetryDashboard addToast={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
     });
 
-    mockAnalytics.getSummary.mockReturnValue({
+    analytics.getSummary.mockReturnValue({
       sessions: 10,
       totalPageViews: 50,
       tipsConfirmed: 5,
@@ -184,7 +185,8 @@ describe('TelemetryDashboard error handling', () => {
       lastSeen: Date.now(),
     });
 
-    rerender(<TelemetryDashboard addToast={vi.fn()} />);
+    const retryButton = screen.getByRole('button', { name: /retry/i });
+    await user.click(retryButton);
 
     await waitFor(() => {
       expect(screen.queryByText('Failed to Load Telemetry Data')).not.toBeInTheDocument();
@@ -192,7 +194,7 @@ describe('TelemetryDashboard error handling', () => {
   });
 
   it('displays generic error message for unknown errors', async () => {
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error();
     });
 
@@ -205,7 +207,7 @@ describe('TelemetryDashboard error handling', () => {
 
   it('shows error with specific message from exception', async () => {
     const specificError = 'Database connection timeout';
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error(specificError);
     });
 
@@ -217,7 +219,7 @@ describe('TelemetryDashboard error handling', () => {
   });
 
   it('maintains error state across re-renders', async () => {
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error('Persistent error');
     });
 
@@ -234,15 +236,8 @@ describe('TelemetryDashboard error handling', () => {
 
   it('exports JSON even when data load fails', async () => {
     const user = userEvent.setup();
-    const mockDownloadExport = vi.fn(() => 'export.json');
-    
-    vi.doMock('../lib/telemetry-export', () => ({
-      downloadExport: mockDownloadExport,
-      exportToCsv: vi.fn(() => 'export.csv'),
-      copyToClipboard: vi.fn(),
-    }));
 
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error('Service error');
     });
 
@@ -263,15 +258,8 @@ describe('TelemetryDashboard error handling', () => {
 
   it('exports CSV even when data load fails', async () => {
     const user = userEvent.setup();
-    const mockExportCsv = vi.fn(() => 'export.csv');
-    
-    vi.doMock('../lib/telemetry-export', () => ({
-      downloadExport: vi.fn(() => 'export.json'),
-      exportToCsv: mockExportCsv,
-      copyToClipboard: vi.fn(),
-    }));
 
-    mockAnalytics.getSummary.mockImplementation(() => {
+    analytics.getSummary.mockImplementation(() => {
       throw new Error('Service error');
     });
 
