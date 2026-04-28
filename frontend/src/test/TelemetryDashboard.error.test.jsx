@@ -413,4 +413,47 @@ describe('TelemetryDashboard error handling', () => {
       expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
     });
   });
+
+  it('retry button triggers data reload', async () => {
+    const user = userEvent.setup();
+    let callCount = 0;
+    
+    analytics.getSummary.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error('First attempt failed');
+      }
+      return {
+        sessions: 10,
+        totalPageViews: 50,
+        tipsConfirmed: 5,
+        tipCompletionRate: '50',
+        tipDropOffRate: '50',
+        batchTipsConfirmed: 1,
+        batchCompletionRate: '100',
+        totalErrors: 0,
+        sortedPages: [],
+        sortedErrors: [],
+        webVitals: {},
+        walletConnections: 5,
+        walletDisconnections: 0,
+        firstSeen: Date.now(),
+        lastSeen: Date.now(),
+      };
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
+    });
+
+    const retryButton = screen.getByLabelText('Retry loading telemetry data');
+    await user.click(retryButton);
+
+    await waitFor(() => {
+      expect(callCount).toBe(2);
+      expect(screen.queryByText('Failed to Load Telemetry Data')).not.toBeInTheDocument();
+    });
+  });
 });
