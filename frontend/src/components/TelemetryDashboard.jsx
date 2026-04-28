@@ -37,11 +37,13 @@ export default function TelemetryDashboard({ addToast }) {
   const { demoEnabled } = useDemoMode();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   const loadData = useCallback(() => {
     setLoading(true);
+    setError(null);
     
     if (demoEnabled) {
       setTimeout(() => {
@@ -81,7 +83,10 @@ export default function TelemetryDashboard({ addToast }) {
     try {
       const data = analytics.getSummary();
       setSummary(data);
+      setError(null);
     } catch (err) {
+      const errorMessage = err.message || 'Failed to load telemetry data';
+      setError(errorMessage);
       console.error('Failed to load telemetry:', err);
     } finally {
       setLoading(false);
@@ -166,6 +171,51 @@ export default function TelemetryDashboard({ addToast }) {
     return (
       <div className="flex justify-center items-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8">
+          <div className="flex items-start gap-4">
+            <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-1" />
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Failed to Load Telemetry Data
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {error}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRefresh}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Retry
+                </button>
+                <button
+                  onClick={handleExportJson}
+                  disabled={exporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  <FileJson className="w-4 h-4" />
+                  Export JSON
+                </button>
+                <button
+                  onClick={handleExportCsv}
+                  disabled={exporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
