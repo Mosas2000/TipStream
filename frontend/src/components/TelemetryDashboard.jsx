@@ -186,9 +186,9 @@ export default function TelemetryDashboard({ addToast }) {
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8" role="alert" aria-live="assertive">
           <div className="flex items-start gap-4">
-            <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-1" />
+            <AlertTriangle className="w-6 h-6 text-red-500 shrink-0 mt-1" aria-hidden="true" />
             <div className="flex-1">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                 Failed to Load Telemetry Data
@@ -200,24 +200,27 @@ export default function TelemetryDashboard({ addToast }) {
                 <button
                   onClick={handleRefresh}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                  aria-label="Retry loading telemetry data"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
                   Retry
                 </button>
                 <button
                   onClick={handleExportJson}
                   disabled={exporting}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  aria-label="Export telemetry data as JSON"
                 >
-                  <FileJson className="w-4 h-4" />
+                  <FileJson className="w-4 h-4" aria-hidden="true" />
                   Export JSON
                 </button>
                 <button
                   onClick={handleExportCsv}
                   disabled={exporting}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  aria-label="Export telemetry data as CSV"
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
+                  <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
                   Export CSV
                 </button>
               </div>
