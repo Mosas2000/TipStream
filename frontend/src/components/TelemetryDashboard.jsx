@@ -91,8 +91,10 @@ export default function TelemetryDashboard({ addToast }) {
       setSummary(data);
       setError(null);
     } catch (err) {
+      // Extract error message for display, fallback to generic message
       const errorMessage = err.message || 'Failed to load telemetry data';
       setError(errorMessage);
+      // Keep console logging for debugging purposes
       console.error('Failed to load telemetry:', err);
     } finally {
       setLoading(false);
