@@ -210,6 +210,7 @@ export default function TelemetryDashboard({ addToast }) {
     );
   }
 
+  // Render error state with retry and export options
   if (error) {
     return (
       <div className="space-y-4">
