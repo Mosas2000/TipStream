@@ -305,4 +305,17 @@ describe('TelemetryDashboard error handling', () => {
       expect(alertIcon).toBeInTheDocument();
     });
   });
+
+  it('clears loading state when error occurs', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw new Error('Service error');
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
+    });
+  });
 });
