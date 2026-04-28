@@ -29,6 +29,12 @@ import {
 
 /**
  * TelemetryDashboard -- displays application performance metrics and error logs.
+ * 
+ * Error Handling:
+ * - Displays visible error state when analytics data fails to load
+ * - Keeps refresh and export actions available during errors
+ * - Allows retry after failed loads
+ * 
  * Note: Shared sub-components (MetricCard, AlertPanel, etc.) must be defined
  * at the top level to avoid "symbol has already been declared" errors during
  * Vite/Rollup transformation when build optimizations are enabled.
