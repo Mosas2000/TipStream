@@ -361,4 +361,17 @@ describe('TelemetryDashboard error handling', () => {
       expect(exportCsvButton).not.toBeDisabled();
     });
   });
+
+  it('handles string errors gracefully', async () => {
+    analytics.getSummary.mockImplementation(() => {
+      throw 'String error message';
+    });
+
+    render(<TelemetryDashboard addToast={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to Load Telemetry Data')).toBeInTheDocument();
+      expect(screen.getByText('String error message')).toBeInTheDocument();
+    });
+  });
 });
