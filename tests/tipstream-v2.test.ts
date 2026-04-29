@@ -135,7 +135,7 @@ describe("TipStream V2 Contract Tests", () => {
     });
 
     it("returns false for is-paused when contract is running", () => {
-        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "get-is-paused", [], deployer);
 
         expect(result).toBeOk(Cl.bool(false));
     });
@@ -150,7 +150,7 @@ describe("TipStream V2 Contract Tests", () => {
 
         simnet.callPublicFn(CONTRACT_NAME, "emergency-pause", [], wallet1);
 
-        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "get-is-paused", [], deployer);
 
         expect(result).toBeOk(Cl.bool(true));
     });
@@ -167,7 +167,7 @@ describe("TipStream V2 Contract Tests", () => {
 
         simnet.callPublicFn(CONTRACT_NAME, "execute-pause-change", [], deployer);
 
-        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "get-is-paused", [], deployer);
 
         expect(result).toBeOk(Cl.bool(true));
     });
@@ -193,7 +193,7 @@ describe("TipStream V2 Contract Tests", () => {
 
         simnet.callPublicFn(CONTRACT_NAME, "execute-pause-change", [], deployer);
 
-        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "get-is-paused", [], deployer);
 
         expect(result).toBeOk(Cl.bool(false));
     });

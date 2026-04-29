@@ -2143,7 +2143,7 @@ describe("TipStream Contract Tests", () => {
 
     describe("Pause State Read-Only Function", () => {
         it("returns false for is-paused when contract is running", () => {
-            const { result } = simnet.callReadOnlyFn("tipstream", "is-paused", [], deployer);
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
 
             expect(result).toBeOk(Cl.bool(false));
         });
@@ -2151,7 +2151,7 @@ describe("TipStream Contract Tests", () => {
         it("returns true for is-paused after contract is paused", () => {
             simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(true)], deployer);
 
-            const { result } = simnet.callReadOnlyFn("tipstream", "is-paused", [], deployer);
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
 
             expect(result).toBeOk(Cl.bool(true));
 
@@ -2162,7 +2162,7 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(true)], deployer);
             simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
 
-            const { result } = simnet.callReadOnlyFn("tipstream", "is-paused", [], deployer);
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
 
             expect(result).toBeOk(Cl.bool(false));
         });
@@ -2174,7 +2174,7 @@ describe("TipStream Contract Tests", () => {
 
             simnet.callPublicFn("tipstream", "execute-pause-change", [], deployer);
 
-            const { result } = simnet.callReadOnlyFn("tipstream", "is-paused", [], deployer);
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
 
             expect(result).toBeOk(Cl.bool(true));
 
@@ -2190,7 +2190,7 @@ describe("TipStream Contract Tests", () => {
 
             simnet.callPublicFn("tipstream", "execute-pause-change", [], deployer);
 
-            const { result } = simnet.callReadOnlyFn("tipstream", "is-paused", [], deployer);
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
 
             expect(result).toBeOk(Cl.bool(false));
         });

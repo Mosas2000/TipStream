@@ -540,7 +540,7 @@
     }
 )
 
-(define-read-only (is-paused)
+(define-read-only (get-is-paused)
     (ok (var-get is-paused))
 )
 

@@ -63,7 +63,7 @@ export async function fetchPauseState() {
         // Fetch both pending and current state in parallel for consistency
         const [pendingData, currentData] = await Promise.all([
             callReadOnly('get-pending-pause-change'),
-            callReadOnly('is-paused')
+            callReadOnly('get-is-paused')
         ]);
 
         const result = parseClarityValue(pendingData.result);

@@ -138,13 +138,13 @@ Pause proposal pending:
 
 ---
 
-### is-paused
+### get-is-paused
 
 Returns current contract pause state.
 
 **Function Signature:**
 ```clarity
-(define-read-only (is-paused) ...)
+(define-read-only (get-is-paused) ...)
 ```
 
 **Parameters:** None
@@ -169,7 +169,7 @@ PAUSE_OPERATIONS = {
   EXECUTE_PAUSE: 'execute-pause-change',
   CANCEL_PAUSE: 'cancel-pause-change',
   GET_PENDING: 'get-pending-pause-change',
-  IS_PAUSED: 'is-paused'
+  GET_IS_PAUSED: 'get-is-paused'
 }
 
 TIMELOCK_BLOCKS = 144  // ~24 hours

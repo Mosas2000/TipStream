@@ -117,7 +117,7 @@ Before executing any pause change:
 
 ### If Pause Executed Unexpectedly
 
-1. Verify pause state: Check `is-paused` returns true
+1. Verify pause state: Check `get-is-paused` returns true
 2. Determine if intentional
 3. If unintentional:
    - Call `set-paused(false)` immediately (direct bypass)
@@ -138,7 +138,7 @@ Before executing any pause change:
 ### If Unpause Fails
 
 1. Call `set-paused(false)` directly (bypasses timelock)
-2. Verify `is-paused` returns false
+2. Verify `get-is-paused` returns false
 3. Monitor system for issues
 4. Investigate failure cause
 
