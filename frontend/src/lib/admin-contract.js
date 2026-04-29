@@ -171,6 +171,18 @@ export async function fetchCurrentFee() {
  *
  * @param {string} hex - Hex-encoded Clarity value
  * @returns {*} Parsed JavaScript value
+ * 
+ * @example
+ * // Parse a boolean
+ * parseClarityValue('0x0703') // returns true
+ * parseClarityValue('0x0704') // returns false
+ * 
+ * // Parse a uint
+ * parseClarityValue('0x0100000000000000000000000000000064') // returns 100
+ * 
+ * // Parse an optional
+ * parseClarityValue('0x09') // returns null (none)
+ * parseClarityValue('0x0a03') // returns true (some true)
  */
 export function parseClarityValue(hex) {
     if (!hex || typeof hex !== 'string') return null;
