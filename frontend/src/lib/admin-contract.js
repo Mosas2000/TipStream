@@ -10,6 +10,15 @@
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_GET_CURRENT_FEE_BASIS_POINTS } from '../config/contracts';
 
 /**
+ * Contract function names for read-only calls
+ */
+export const FN_GET_IS_PAUSED = 'get-is-paused';
+export const FN_GET_PENDING_PAUSE_CHANGE = 'get-pending-pause-change';
+export const FN_GET_PENDING_FEE_CHANGE = 'get-pending-fee-change';
+export const FN_GET_CONTRACT_OWNER = 'get-contract-owner';
+export const FN_GET_MULTISIG = 'get-multisig';
+
+/**
  * Fetch the current block height from the Stacks API.
  *
  * @returns {Promise<number>} Current block height
@@ -75,8 +84,8 @@ export async function fetchPauseState() {
     try {
         // Fetch both pending and current state in parallel for consistency
         const [pendingData, currentData] = await Promise.all([
-            callReadOnly('get-pending-pause-change'),
-            callReadOnly('get-is-paused')
+            callReadOnly(FN_GET_PENDING_PAUSE_CHANGE),
+            callReadOnly(FN_GET_IS_PAUSED)
         ]);
 
         const result = parseClarityValue(pendingData.result);
@@ -101,7 +110,7 @@ export async function fetchFeeState() {
     try {
         // Fetch both pending and current state in parallel for consistency
         const [pendingData, currentFee] = await Promise.all([
-            callReadOnly('get-pending-fee-change'),
+            callReadOnly(FN_GET_PENDING_FEE_CHANGE),
             fetchCurrentFee()
         ]);
 
@@ -124,7 +133,7 @@ export async function fetchFeeState() {
  */
 export async function fetchContractOwner() {
     try {
-        const data = await callReadOnly('get-contract-owner');
+        const data = await callReadOnly(FN_GET_CONTRACT_OWNER);
         const result = parseClarityValue(data.result);
         return result;
     } catch (err) {
@@ -139,7 +148,7 @@ export async function fetchContractOwner() {
  */
 export async function fetchMultisig() {
     try {
-        const data = await callReadOnly('get-multisig');
+        const data = await callReadOnly(FN_GET_MULTISIG);
         const result = parseClarityValue(data.result);
         return result;
     } catch (err) {
