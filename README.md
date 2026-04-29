@@ -155,6 +155,7 @@ constants instead of hard-coding path strings.
 | `get-pending-owner` | Pending ownership transfer target |
 | `get-pending-fee-change` | Pending fee proposal and execution height |
 | `get-pending-pause-change` | Pending pause proposal and execution height |
+| `get-is-paused` | Current contract pause state (true = paused, false = running) |
 | `get-multisig` | Authorized multisig contract address |
 | `get-contract-version` | Contract version and name |
 
@@ -184,7 +185,7 @@ constants instead of hard-coding path strings.
 | `blocked-users` | Privacy blocking |
 | `total-tips-sent` | Global counter (also tip ID) |
 | `total-volume` / `platform-fees` | Running totals |
-| `is-paused` | Emergency pause |
+| `is-paused` | Emergency pause state (accessible via `get-is-paused` read-only function) |
 | `current-fee-basis-points` | Fee rate (default 50 = 0.5%) |
 
 ### Testing
