@@ -6,7 +6,7 @@ export const PAUSE_OPERATIONS = {
   EXECUTE_PAUSE: 'execute-pause-change',
   CANCEL_PAUSE: 'cancel-pause-change',
   GET_PENDING: 'get-pending-pause-change',
-  IS_PAUSED: 'is-paused'
+  GET_IS_PAUSED: 'get-is-paused'
 };
 
 export const TIMELOCK_BLOCKS = 144;
@@ -155,7 +155,7 @@ export const pauseContractCallConfig = {
     args: () => []
   },
   getStatus: {
-    functionName: PAUSE_OPERATIONS.IS_PAUSED,
+    functionName: PAUSE_OPERATIONS.GET_IS_PAUSED,
     args: () => []
   }
 };

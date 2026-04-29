@@ -12,7 +12,7 @@ Quick reference guide for common administrative tasks on TipStream.
 | Emergency Pause | `set-paused` (direct) | None | Owner | Seconds |
 | Change Owner | `propose-new-owner` → `accept-ownership` | 2-step | Owner → New Owner | 10 min |
 | View Fee Rate | `get-current-fee-basis-points` | None (read) | Anyone | Instant |
-| View Contract Status | `get-contract-owner` / `is-paused` | None (read) | Anyone | Instant |
+| View Contract Status | `get-contract-owner` / `get-is-paused` | None (read) | Anyone | Instant |
 
 ## Pre-Administration Checklist
 
@@ -315,7 +315,7 @@ Result should be: SP1234...ABC
 fetch('https://api.hiro.so/.../get-contract-owner')
 // Should return owner address
 
-fetch('https://api.hiro.so/.../is-paused')
+fetch('https://api.hiro.so/.../get-is-paused')
 // Should return boolean (false = operational)
 
 // 2. Recent Transactions

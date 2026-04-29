@@ -123,7 +123,7 @@ Need to pause?
 | cancel-pause-change | ✓ | ✗ |
 | set-paused (direct) | ✓ | ✗ |
 | get-pending-pause-change | ✓ | ✓ |
-| is-paused | ✓ | ✓ |
+| get-is-paused | ✓ | ✓ |
 
 ## Events
 

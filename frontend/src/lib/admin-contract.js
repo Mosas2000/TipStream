@@ -10,6 +10,15 @@
 import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_GET_CURRENT_FEE_BASIS_POINTS } from '../config/contracts';
 
 /**
+ * Contract function names for read-only calls
+ */
+export const FN_GET_IS_PAUSED = 'get-is-paused';
+export const FN_GET_PENDING_PAUSE_CHANGE = 'get-pending-pause-change';
+export const FN_GET_PENDING_FEE_CHANGE = 'get-pending-fee-change';
+export const FN_GET_CONTRACT_OWNER = 'get-contract-owner';
+export const FN_GET_MULTISIG = 'get-multisig';
+
+/**
  * Fetch the current block height from the Stacks API.
  *
  * @returns {Promise<number>} Current block height
@@ -55,15 +64,28 @@ async function callReadOnly(functionName, args = []) {
 
 /**
  * Fetch the current contract pause state and any pending changes.
+ * 
+ * This function calls both get-is-paused and get-pending-pause-change
+ * in parallel to provide a complete view of the pause state.
  *
  * @returns {Promise<{ isPaused: boolean, pendingPause: boolean|null, effectiveHeight: number }>}
+ * @throws {Error} If the API call fails or response cannot be parsed
+ * 
+ * @example
+ * const state = await fetchPauseState();
+ * if (state.isPaused) {
+ *   console.log('Contract is paused');
+ * }
+ * if (state.pendingPause !== null) {
+ *   console.log(`Pending ${state.pendingPause ? 'pause' : 'unpause'} at block ${state.effectiveHeight}`);
+ * }
  */
 export async function fetchPauseState() {
     try {
         // Fetch both pending and current state in parallel for consistency
         const [pendingData, currentData] = await Promise.all([
-            callReadOnly('get-pending-pause-change'),
-            callReadOnly('is-paused')
+            callReadOnly(FN_GET_PENDING_PAUSE_CHANGE),
+            callReadOnly(FN_GET_IS_PAUSED)
         ]);
 
         const result = parseClarityValue(pendingData.result);
@@ -88,7 +110,7 @@ export async function fetchFeeState() {
     try {
         // Fetch both pending and current state in parallel for consistency
         const [pendingData, currentFee] = await Promise.all([
-            callReadOnly('get-pending-fee-change'),
+            callReadOnly(FN_GET_PENDING_FEE_CHANGE),
             fetchCurrentFee()
         ]);
 
@@ -111,7 +133,7 @@ export async function fetchFeeState() {
  */
 export async function fetchContractOwner() {
     try {
-        const data = await callReadOnly('get-contract-owner');
+        const data = await callReadOnly(FN_GET_CONTRACT_OWNER);
         const result = parseClarityValue(data.result);
         return result;
     } catch (err) {
@@ -126,7 +148,7 @@ export async function fetchContractOwner() {
  */
 export async function fetchMultisig() {
     try {
-        const data = await callReadOnly('get-multisig');
+        const data = await callReadOnly(FN_GET_MULTISIG);
         const result = parseClarityValue(data.result);
         return result;
     } catch (err) {
@@ -158,6 +180,18 @@ export async function fetchCurrentFee() {
  *
  * @param {string} hex - Hex-encoded Clarity value
  * @returns {*} Parsed JavaScript value
+ * 
+ * @example
+ * // Parse a boolean
+ * parseClarityValue('0x0703') // returns true
+ * parseClarityValue('0x0704') // returns false
+ * 
+ * // Parse a uint
+ * parseClarityValue('0x0100000000000000000000000000000064') // returns 100
+ * 
+ * // Parse an optional
+ * parseClarityValue('0x09') // returns null (none)
+ * parseClarityValue('0x0a03') // returns true (some true)
  */
 export function parseClarityValue(hex) {
     if (!hex || typeof hex !== 'string') return null;

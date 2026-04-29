@@ -2140,4 +2140,59 @@ describe("TipStream Contract Tests", () => {
             simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
         });
     });
+
+    describe("Pause State Read-Only Function", () => {
+        it("returns false for is-paused when contract is running", () => {
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
+
+            expect(result).toBeOk(Cl.bool(false));
+        });
+
+        it("returns true for is-paused after contract is paused", () => {
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(true)], deployer);
+
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
+
+            expect(result).toBeOk(Cl.bool(true));
+
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("returns false for is-paused after contract is unpaused", () => {
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(true)], deployer);
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
+
+            expect(result).toBeOk(Cl.bool(false));
+        });
+
+        it("returns true for is-paused after executing pause proposal", () => {
+            simnet.callPublicFn("tipstream", "propose-pause-change", [Cl.bool(true)], deployer);
+
+            simnet.mineEmptyBlocks(144);
+
+            simnet.callPublicFn("tipstream", "execute-pause-change", [], deployer);
+
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
+
+            expect(result).toBeOk(Cl.bool(true));
+
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(false)], deployer);
+        });
+
+        it("returns false for is-paused after executing unpause proposal", () => {
+            simnet.callPublicFn("tipstream", "set-paused", [Cl.bool(true)], deployer);
+
+            simnet.callPublicFn("tipstream", "propose-pause-change", [Cl.bool(false)], deployer);
+
+            simnet.mineEmptyBlocks(144);
+
+            simnet.callPublicFn("tipstream", "execute-pause-change", [], deployer);
+
+            const { result } = simnet.callReadOnlyFn("tipstream", "get-is-paused", [], deployer);
+
+            expect(result).toBeOk(Cl.bool(false));
+        });
+    });
 });
