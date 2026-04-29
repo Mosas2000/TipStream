@@ -540,6 +540,9 @@
     }
 )
 
+;; Returns the current pause state of the contract.
+;; When paused, tip operations are disabled.
+;; Returns (ok true) if paused, (ok false) if running.
 (define-read-only (get-is-paused)
     (ok (var-get is-paused))
 )
