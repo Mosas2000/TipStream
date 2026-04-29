@@ -532,6 +532,10 @@
     }
 )
 
+(define-read-only (is-paused)
+    (ok (var-get is-paused))
+)
+
 (define-read-only (get-multisig)
     (ok (var-get authorized-multisig))
 )
