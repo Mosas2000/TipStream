@@ -134,6 +134,8 @@ describe("TipStream V2 Contract Tests", () => {
         expect(execute.result).toBeErr(Cl.uint(ERR_NO_PROPOSAL));
     });
 
+    // Tests for get-is-paused read-only function
+    // This function provides direct access to the contract pause state
     it("returns false for is-paused when contract is running", () => {
         const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "get-is-paused", [], deployer);
 
