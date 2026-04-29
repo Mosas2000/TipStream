@@ -55,8 +55,21 @@ async function callReadOnly(functionName, args = []) {
 
 /**
  * Fetch the current contract pause state and any pending changes.
+ * 
+ * This function calls both get-is-paused and get-pending-pause-change
+ * in parallel to provide a complete view of the pause state.
  *
  * @returns {Promise<{ isPaused: boolean, pendingPause: boolean|null, effectiveHeight: number }>}
+ * @throws {Error} If the API call fails or response cannot be parsed
+ * 
+ * @example
+ * const state = await fetchPauseState();
+ * if (state.isPaused) {
+ *   console.log('Contract is paused');
+ * }
+ * if (state.pendingPause !== null) {
+ *   console.log(`Pending ${state.pendingPause ? 'pause' : 'unpause'} at block ${state.effectiveHeight}`);
+ * }
  */
 export async function fetchPauseState() {
     try {
