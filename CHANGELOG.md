@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Direct read-only function for contract pause state (Issue #345):
+  - New `get-is-paused` read-only function provides direct access to pause state
+  - Returns simple boolean response: `(ok true)` for paused, `(ok false)` for running
+  - Eliminates need to infer pause state from other contract responses
+  - Frontend helpers updated to use new function for improved clarity
+  - Comprehensive contract tests for both v2 and legacy contracts
+  - Frontend integration tests verify correct API usage
+  - Example scripts for querying and monitoring pause state
+  - Migration guide for integrators
+  - Documentation updates across PAUSE_API_REFERENCE, PAUSE_OPERATIONS, and ADMIN_OPERATIONS
+
 - Cancel-pause-change functionality for contract pause operations:
   - New `cancel-pause-change` function allows admins to cancel pending pause proposals
   - Provides operational symmetry with existing `cancel-fee-change` function
