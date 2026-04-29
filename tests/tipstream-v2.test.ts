@@ -133,4 +133,68 @@ describe("TipStream V2 Contract Tests", () => {
         const execute = simnet.callPublicFn(CONTRACT_NAME, "execute-pause-change", [], deployer);
         expect(execute.result).toBeErr(Cl.uint(ERR_NO_PROPOSAL));
     });
+
+    it("returns false for is-paused when contract is running", () => {
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+
+        expect(result).toBeOk(Cl.bool(false));
+    });
+
+    it("returns true for is-paused after emergency pause", () => {
+        simnet.callPublicFn(
+            CONTRACT_NAME,
+            "set-emergency-authority",
+            [Cl.some(Cl.principal(wallet1))],
+            deployer,
+        );
+
+        simnet.callPublicFn(CONTRACT_NAME, "emergency-pause", [], wallet1);
+
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+
+        expect(result).toBeOk(Cl.bool(true));
+    });
+
+    it("returns true for is-paused after executing pause proposal", () => {
+        simnet.callPublicFn(
+            CONTRACT_NAME,
+            "propose-pause-change",
+            [Cl.bool(true)],
+            deployer,
+        );
+
+        simnet.mineEmptyBlocks(144);
+
+        simnet.callPublicFn(CONTRACT_NAME, "execute-pause-change", [], deployer);
+
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+
+        expect(result).toBeOk(Cl.bool(true));
+    });
+
+    it("returns false for is-paused after executing unpause proposal", () => {
+        simnet.callPublicFn(
+            CONTRACT_NAME,
+            "set-emergency-authority",
+            [Cl.some(Cl.principal(wallet1))],
+            deployer,
+        );
+
+        simnet.callPublicFn(CONTRACT_NAME, "emergency-pause", [], wallet1);
+
+        simnet.callPublicFn(
+            CONTRACT_NAME,
+            "propose-pause-change",
+            [Cl.bool(false)],
+            deployer,
+        );
+
+        simnet.mineEmptyBlocks(144);
+
+        simnet.callPublicFn(CONTRACT_NAME, "execute-pause-change", [], deployer);
+
+        const { result } = simnet.callReadOnlyFn(CONTRACT_NAME, "is-paused", [], deployer);
+
+        expect(result).toBeOk(Cl.bool(false));
+    });
 });
