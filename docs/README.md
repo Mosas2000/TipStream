@@ -32,6 +32,9 @@ Comprehensive documentation for TipStream development, operations, and evaluatio
 | [SMART_CONTRACT_UPGRADE.md](SMART_CONTRACT_UPGRADE.md) | Upgrade procedures, versioning, and rollback strategies |
 | [MONITORING.md](MONITORING.md) | Monitoring procedures and observability setup |
 | [DEPLOYMENT_VERIFICATION.md](DEPLOYMENT_VERIFICATION.md) | Pre/post-deployment verification checklist |
+| [PAUSE_OPERATIONS.md](PAUSE_OPERATIONS.md) | Pause control operations and procedures |
+| [PAUSE_CONTROL_RUNBOOK.md](PAUSE_CONTROL_RUNBOOK.md) | Operational runbook for pause management |
+| [PAUSE_API_REFERENCE.md](PAUSE_API_REFERENCE.md) | Complete API reference for pause operations |
 
 ## For Performance & Optimization
 
@@ -39,6 +42,15 @@ Comprehensive documentation for TipStream development, operations, and evaluatio
 |---|---|
 | [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) | Performance targets, baselines, and optimization opportunities |
 | [API_RESILIENCE_TROUBLESHOOTING.md](API_RESILIENCE_TROUBLESHOOTING.md) | Troubleshooting guide for API and cache failures |
+| [PAUSE_STATE_PERFORMANCE.md](PAUSE_STATE_PERFORMANCE.md) | Performance optimization for pause state queries |
+
+## For Migration & Integration
+
+| Document | Purpose |
+|---|---|
+| [MIGRATION_GUIDE_PAUSE_STATE.md](MIGRATION_GUIDE_PAUSE_STATE.md) | Migration guide for get-is-paused function |
+| [PAUSE_STATE_QUICK_REFERENCE.md](PAUSE_STATE_QUICK_REFERENCE.md) | Quick reference card for pause state function |
+| [examples/README.md](examples/README.md) | Code examples and integration patterns |
 
 ## For Configuration & Deployment
 
