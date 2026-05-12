@@ -1,9 +1,20 @@
 {
-  "name": "frontend",
+  "name": "tipstream-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "type": "module",
+  "description": "TipStream - Decentralized micro-tipping platform on Stacks",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/tipstream.git"
+  },
+  "contract": {
+    "address": "SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60",
+    "name": "tipstream",
+    "version": "v2.0.0",
+    "deploymentBlock": 7940053
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
