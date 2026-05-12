@@ -335,3 +335,4 @@ export async function createEventStore(options = {}) {
 }
 
 export { MemoryEventStore, PostgresEventStore };
+export { DEFAULT_POOL_MAX, DEFAULT_POOL_IDLE_TIMEOUT_MS, DEFAULT_POOL_CONNECTION_TIMEOUT_MS, DEFAULT_STATEMENT_TIMEOUT_MS };
