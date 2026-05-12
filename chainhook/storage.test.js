@@ -145,3 +145,13 @@ describe('createEventStore with pool config', () => {
     assert.ok(store instanceof MemoryEventStore);
   });
 });
+
+  it('warns when pool max exceeds recommended limit', () => {
+    const env = {
+      DB_POOL_MAX: '150',
+    };
+    
+    const config = parsePoolConfig(env);
+    
+    assert.strictEqual(config.max, 150);
+  });
