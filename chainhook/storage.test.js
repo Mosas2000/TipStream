@@ -127,3 +127,21 @@ describe('parsePoolConfig', () => {
     assert.strictEqual(config.max, 20);
   });
 });
+
+describe('createEventStore with pool config', () => {
+  it('applies custom pool configuration', async () => {
+    const customPoolConfig = {
+      max: 10,
+      idleTimeoutMillis: 15000,
+      connectionTimeoutMillis: 3000,
+      statement_timeout: 20000,
+    };
+    
+    const store = await createEventStore({
+      mode: 'memory',
+      poolConfig: customPoolConfig,
+    });
+    
+    assert.ok(store instanceof MemoryEventStore);
+  });
+});
