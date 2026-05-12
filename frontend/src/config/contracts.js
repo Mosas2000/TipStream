@@ -10,6 +10,10 @@ export const CONTRACT_NAME = 'tipstream';
 export const CONTRACT_VERSION = 'v2.0.0';
 export const CONTRACT_DEPLOYMENT_BLOCK = 7940053;
 
+// Traits contract (required for token tipping)
+export const TRAITS_CONTRACT_ADDRESS = 'SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60';
+export const TRAITS_CONTRACT_NAME = 'tipstream-traits';
+
 const NETWORK = import.meta.env.VITE_NETWORK || 'mainnet';
 export const NETWORK_NAME = validateNetwork(NETWORK);
 export const STACKS_API_BASE = NETWORK === 'mainnet'
