@@ -2,12 +2,50 @@ import { Pool } from 'pg';
 import { generateEventKey } from './deduplication.js';
 import { StorageUnavailableError } from './errors.js';
 
+const DEFAULT_POOL_MAX = 20;
+const DEFAULT_POOL_IDLE_TIMEOUT_MS = 30000;
+const DEFAULT_POOL_CONNECTION_TIMEOUT_MS = 5000;
+const DEFAULT_STATEMENT_TIMEOUT_MS = 30000;
+
+/**
+ * Parse PostgreSQL pool configuration from environment variables.
+ * 
+ * @param {Object} env - Environment variables object
+ * @returns {Object} Pool configuration with max, timeouts, and statement_timeout
+ */
+
 export function parseRetentionDays(value, fallback = 30) {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed < 0) {
     return fallback;
   }
   return parsed;
+}
+
+export function parsePoolConfig(env = {}) {
+  const max = Number.parseInt(env.DB_POOL_MAX, 10);
+  const idleTimeoutMillis = Number.parseInt(env.DB_POOL_IDLE_TIMEOUT_MS, 10);
+  const connectionTimeoutMillis = Number.parseInt(env.DB_POOL_CONNECTION_TIMEOUT_MS, 10);
+  const statementTimeout = Number.parseInt(env.DB_STATEMENT_TIMEOUT_MS, 10);
+
+  const config = {
+    max: Number.isNaN(max) || max <= 0 ? DEFAULT_POOL_MAX : max,
+    idleTimeoutMillis: Number.isNaN(idleTimeoutMillis) || idleTimeoutMillis < 0 
+      ? DEFAULT_POOL_IDLE_TIMEOUT_MS 
+      : idleTimeoutMillis,
+    connectionTimeoutMillis: Number.isNaN(connectionTimeoutMillis) || connectionTimeoutMillis < 0 
+      ? DEFAULT_POOL_CONNECTION_TIMEOUT_MS 
+      : connectionTimeoutMillis,
+    statement_timeout: Number.isNaN(statementTimeout) || statementTimeout < 0 
+      ? DEFAULT_STATEMENT_TIMEOUT_MS 
+      : statementTimeout,
+  };
+
+  if (config.max > 100) {
+    console.warn(`DB_POOL_MAX=${config.max} exceeds recommended maximum of 100`);
+  }
+
+  return config;
 }
 
 export function getRetentionCutoff(retentionDays) {
@@ -128,15 +166,20 @@ class MemoryEventStore {
 }
 
 class PostgresEventStore {
-  constructor({ databaseUrl, retentionDays = 30, ssl = false } = {}) {
+  constructor({ databaseUrl, retentionDays = 30, ssl = false, poolConfig = {} } = {}) {
     if (!databaseUrl) {
       throw new StorageUnavailableError('DATABASE_URL is required for postgres storage');
     }
 
     this.retentionDays = retentionDays;
+    this.poolConfig = poolConfig;
     this.pool = new Pool({
       connectionString: databaseUrl,
       ssl: ssl ? { rejectUnauthorized: false } : undefined,
+      max: poolConfig.max, // Maximum number of clients in the pool
+      idleTimeoutMillis: poolConfig.idleTimeoutMillis, // Close idle clients after this time
+      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis, // Wait time for connection from pool
+      statement_timeout: poolConfig.statement_timeout, // Query execution timeout
     });
     this.ready = null;
   }
@@ -273,6 +316,12 @@ class PostgresEventStore {
       healthy: true,
       storage_mode: 'postgres',
       total_events: await this.countEvents(),
+      pool_config: {
+        max: this.poolConfig.max,
+        idle_timeout_ms: this.poolConfig.idleTimeoutMillis,
+        connection_timeout_ms: this.poolConfig.connectionTimeoutMillis,
+        statement_timeout_ms: this.poolConfig.statement_timeout,
+      },
     };
   }
 
@@ -293,7 +342,10 @@ export async function createEventStore(options = {}) {
 
   const databaseUrl = options.databaseUrl || process.env.DATABASE_URL;
   const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
-  return new PostgresEventStore({ databaseUrl, retentionDays, ssl });
+  const poolConfig = options.poolConfig || parsePoolConfig(process.env);
+  
+  return new PostgresEventStore({ databaseUrl, retentionDays, ssl, poolConfig });
 }
 
 export { MemoryEventStore, PostgresEventStore };
+export { DEFAULT_POOL_MAX, DEFAULT_POOL_IDLE_TIMEOUT_MS, DEFAULT_POOL_CONNECTION_TIMEOUT_MS, DEFAULT_STATEMENT_TIMEOUT_MS };

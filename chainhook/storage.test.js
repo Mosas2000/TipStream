@@ -1,6 +1,15 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { MemoryEventStore, createEventStore, getRetentionCutoff } from './storage.js';
+import { 
+  MemoryEventStore, 
+  createEventStore, 
+  getRetentionCutoff, 
+  parsePoolConfig,
+  DEFAULT_POOL_MAX,
+  DEFAULT_POOL_IDLE_TIMEOUT_MS,
+  DEFAULT_POOL_CONNECTION_TIMEOUT_MS,
+  DEFAULT_STATEMENT_TIMEOUT_MS,
+} from './storage.js';
 
 function makeEvent(overrides = {}) {
   return {
@@ -72,5 +81,95 @@ describe('createEventStore', () => {
     const store = await createEventStore({ mode: 'memory', retentionDays: 7 });
     assert.ok(store instanceof MemoryEventStore);
     assert.strictEqual(store.retentionDays, 7);
+  });
+});
+
+describe('parsePoolConfig', () => {
+  it('returns default values when no environment variables are set', () => {
+    const config = parsePoolConfig({});
+    
+    assert.strictEqual(config.max, 20);
+    assert.strictEqual(config.idleTimeoutMillis, 30000);
+    assert.strictEqual(config.connectionTimeoutMillis, 5000);
+    assert.strictEqual(config.statement_timeout, 30000);
+  });
+
+  it('parses valid environment variables', () => {
+    const env = {
+      DB_POOL_MAX: '50',
+      DB_POOL_IDLE_TIMEOUT_MS: '60000',
+      DB_POOL_CONNECTION_TIMEOUT_MS: '10000',
+      DB_STATEMENT_TIMEOUT_MS: '45000',
+    };
+    
+    const config = parsePoolConfig(env);
+    
+    assert.strictEqual(config.max, 50);
+    assert.strictEqual(config.idleTimeoutMillis, 60000);
+    assert.strictEqual(config.connectionTimeoutMillis, 10000);
+    assert.strictEqual(config.statement_timeout, 45000);
+  });
+
+  it('falls back to defaults for invalid values', () => {
+    const env = {
+      DB_POOL_MAX: 'invalid',
+      DB_POOL_IDLE_TIMEOUT_MS: '-100',
+      DB_POOL_CONNECTION_TIMEOUT_MS: 'abc',
+      DB_STATEMENT_TIMEOUT_MS: '',
+    };
+    
+    const config = parsePoolConfig(env);
+    
+    assert.strictEqual(config.max, 20);
+    assert.strictEqual(config.idleTimeoutMillis, 30000);
+    assert.strictEqual(config.connectionTimeoutMillis, 5000);
+    assert.strictEqual(config.statement_timeout, 30000);
+  });
+
+  it('falls back to defaults for zero or negative max', () => {
+    const env = {
+      DB_POOL_MAX: '0',
+    };
+    
+    const config = parsePoolConfig(env);
+    
+    assert.strictEqual(config.max, 20);
+  });
+});
+
+describe('createEventStore with pool config', () => {
+  it('applies custom pool configuration', async () => {
+    const customPoolConfig = {
+      max: 10,
+      idleTimeoutMillis: 15000,
+      connectionTimeoutMillis: 3000,
+      statement_timeout: 20000,
+    };
+    
+    const store = await createEventStore({
+      mode: 'memory',
+      poolConfig: customPoolConfig,
+    });
+    
+    assert.ok(store instanceof MemoryEventStore);
+  });
+});
+
+  it('warns when pool max exceeds recommended limit', () => {
+    const env = {
+      DB_POOL_MAX: '150',
+    };
+    
+    const config = parsePoolConfig(env);
+    
+    assert.strictEqual(config.max, 150);
+  });
+
+describe('pool configuration constants', () => {
+  it('defines expected default values', () => {
+    assert.strictEqual(DEFAULT_POOL_MAX, 20);
+    assert.strictEqual(DEFAULT_POOL_IDLE_TIMEOUT_MS, 30000);
+    assert.strictEqual(DEFAULT_POOL_CONNECTION_TIMEOUT_MS, 5000);
+    assert.strictEqual(DEFAULT_STATEMENT_TIMEOUT_MS, 30000);
   });
 });
