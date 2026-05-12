@@ -90,3 +90,12 @@ Monitor these metrics to tune your pool configuration:
 **Query timeouts**: Increase `DB_STATEMENT_TIMEOUT_MS` or optimize slow queries
 
 **Database connection limit reached**: Reduce `DB_POOL_MAX` across all service instances
+
+### Best Practices
+
+1. Start with default values and adjust based on monitoring data
+2. Set `DB_POOL_MAX` lower than your database's max_connections limit
+3. Monitor connection pool metrics in production
+4. Use longer timeouts for batch operations
+5. Test pool configuration under expected load before deploying
+6. Document any custom pool settings in your deployment notes
