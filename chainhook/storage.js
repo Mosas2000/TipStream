@@ -2,6 +2,11 @@ import { Pool } from 'pg';
 import { generateEventKey } from './deduplication.js';
 import { StorageUnavailableError } from './errors.js';
 
+const DEFAULT_POOL_MAX = 20;
+const DEFAULT_POOL_IDLE_TIMEOUT_MS = 30000;
+const DEFAULT_POOL_CONNECTION_TIMEOUT_MS = 5000;
+const DEFAULT_STATEMENT_TIMEOUT_MS = 30000;
+
 export function parseRetentionDays(value, fallback = 30) {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed < 0) {
