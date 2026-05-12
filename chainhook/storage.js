@@ -15,6 +15,26 @@ export function parseRetentionDays(value, fallback = 30) {
   return parsed;
 }
 
+export function parsePoolConfig(env = {}) {
+  const max = Number.parseInt(env.DB_POOL_MAX, 10);
+  const idleTimeoutMillis = Number.parseInt(env.DB_POOL_IDLE_TIMEOUT_MS, 10);
+  const connectionTimeoutMillis = Number.parseInt(env.DB_POOL_CONNECTION_TIMEOUT_MS, 10);
+  const statementTimeout = Number.parseInt(env.DB_STATEMENT_TIMEOUT_MS, 10);
+
+  return {
+    max: Number.isNaN(max) || max <= 0 ? DEFAULT_POOL_MAX : max,
+    idleTimeoutMillis: Number.isNaN(idleTimeoutMillis) || idleTimeoutMillis < 0 
+      ? DEFAULT_POOL_IDLE_TIMEOUT_MS 
+      : idleTimeoutMillis,
+    connectionTimeoutMillis: Number.isNaN(connectionTimeoutMillis) || connectionTimeoutMillis < 0 
+      ? DEFAULT_POOL_CONNECTION_TIMEOUT_MS 
+      : connectionTimeoutMillis,
+    statement_timeout: Number.isNaN(statementTimeout) || statementTimeout < 0 
+      ? DEFAULT_STATEMENT_TIMEOUT_MS 
+      : statementTimeout,
+  };
+}
+
 export function getRetentionCutoff(retentionDays) {
   if (!retentionDays || retentionDays <= 0) {
     return null;
