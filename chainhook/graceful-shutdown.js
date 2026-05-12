@@ -23,6 +23,7 @@ export function setupGracefulShutdown(server, onShutdown) {
     shutdownState = true;
 
     console.log(`\nReceived ${signal}, starting graceful shutdown...`);
+    console.log('Rejecting new requests...');
 
     if (onShutdown) {
       try {
