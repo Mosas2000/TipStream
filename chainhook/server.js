@@ -11,7 +11,7 @@ import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
 import { normalizeClarityEventFields } from "../shared/clarityValues.js";
-import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, classifyError, toErrorResponse } from "./errors.js";
+import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, ServiceUnavailableError, classifyError, toErrorResponse } from "./errors.js";
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
