@@ -316,6 +316,12 @@ class PostgresEventStore {
       healthy: true,
       storage_mode: 'postgres',
       total_events: await this.countEvents(),
+      pool_config: {
+        max: this.poolConfig.max,
+        idle_timeout_ms: this.poolConfig.idleTimeoutMillis,
+        connection_timeout_ms: this.poolConfig.connectionTimeoutMillis,
+        statement_timeout_ms: this.poolConfig.statement_timeout,
+      },
     };
   }
 
