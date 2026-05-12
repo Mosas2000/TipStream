@@ -176,6 +176,19 @@ function parseTipEvent(event) {
 
 export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore };
 
+function checkShutdownState(res, requestId) {
+  if (isShuttingDown()) {
+    sendError(
+      res,
+      new ServiceUnavailableError('service is shutting down'),
+      requestId,
+      { shutdown: true }
+    );
+    return true;
+  }
+  return false;
+}
+
 const server = http.createServer(async (req, res) => {
   const requestId = randomUUID();
   res.setHeader("X-Request-Id", requestId);
