@@ -176,10 +176,10 @@ class PostgresEventStore {
     this.pool = new Pool({
       connectionString: databaseUrl,
       ssl: ssl ? { rejectUnauthorized: false } : undefined,
-      max: poolConfig.max,
-      idleTimeoutMillis: poolConfig.idleTimeoutMillis,
-      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
-      statement_timeout: poolConfig.statement_timeout,
+      max: poolConfig.max, // Maximum number of clients in the pool
+      idleTimeoutMillis: poolConfig.idleTimeoutMillis, // Close idle clients after this time
+      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis, // Wait time for connection from pool
+      statement_timeout: poolConfig.statement_timeout, // Query execution timeout
     });
     this.ready = null;
   }
