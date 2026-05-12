@@ -8,7 +8,7 @@ import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
 import { RateLimiter, getClientIp } from "./rate-limit.js";
 import { logger } from "./logging.js";
-import { setupGracefulShutdown } from "./graceful-shutdown.js";
+import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
 import { normalizeClarityEventFields } from "../shared/clarityValues.js";
 import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, classifyError, toErrorResponse } from "./errors.js";
