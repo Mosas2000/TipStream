@@ -323,7 +323,9 @@ export async function createEventStore(options = {}) {
 
   const databaseUrl = options.databaseUrl || process.env.DATABASE_URL;
   const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
-  return new PostgresEventStore({ databaseUrl, retentionDays, ssl });
+  const poolConfig = options.poolConfig || parsePoolConfig(process.env);
+  
+  return new PostgresEventStore({ databaseUrl, retentionDays, ssl, poolConfig });
 }
 
 export { MemoryEventStore, PostgresEventStore };
