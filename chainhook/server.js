@@ -181,6 +181,7 @@ export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, check
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
+    metrics.recordRequest(false);
     sendError(
       res,
       new ServiceUnavailableError('service is shutting down'),
