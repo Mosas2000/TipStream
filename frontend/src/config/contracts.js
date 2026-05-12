@@ -56,3 +56,15 @@ export const FN_WHITELIST_TOKEN = 'whitelist-token';
 export const FN_GET_USER_STATS = 'get-user-stats';
 export const FN_GET_PLATFORM_STATS = 'get-platform-stats';
 export const FN_GET_CURRENT_FEE_BASIS_POINTS = 'get-current-fee-basis-points';
+
+// Contract validation helper
+export function validateContractDeployment() {
+  return {
+    address: CONTRACT_ADDRESS,
+    name: CONTRACT_NAME,
+    version: CONTRACT_VERSION,
+    deploymentBlock: CONTRACT_DEPLOYMENT_BLOCK,
+    fullId: FULL_CONTRACT_ID,
+    explorerUrl: CONTRACT_EXPLORER_URL
+  };
+}
