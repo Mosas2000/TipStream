@@ -153,15 +153,20 @@ class MemoryEventStore {
 }
 
 class PostgresEventStore {
-  constructor({ databaseUrl, retentionDays = 30, ssl = false } = {}) {
+  constructor({ databaseUrl, retentionDays = 30, ssl = false, poolConfig = {} } = {}) {
     if (!databaseUrl) {
       throw new StorageUnavailableError('DATABASE_URL is required for postgres storage');
     }
 
     this.retentionDays = retentionDays;
+    this.poolConfig = poolConfig;
     this.pool = new Pool({
       connectionString: databaseUrl,
       ssl: ssl ? { rejectUnauthorized: false } : undefined,
+      max: poolConfig.max,
+      idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+      statement_timeout: poolConfig.statement_timeout,
     });
     this.ready = null;
   }
