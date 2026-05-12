@@ -36,11 +36,14 @@ Content creators and community contributors lack a simple, transparent way to re
 
 | Field | Value |
 |---|---|
-| Contract | `SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream` |
+| Contract | `SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream` |
+| Version | v2.0.0 |
 | Network | Stacks Mainnet (Secured by Bitcoin) |
-| Status | Deployed |
-| Explorer | [View on Hiro Explorer](https://explorer.hiro.so/txid/SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream?chain=mainnet) |
-| Deploy TX | [0xf7ac08...](https://explorer.hiro.so/txid/0xf7ac0877ce65494779264fb0172023facd101b639ad5ae8bbd71e102387033ef?chain=mainnet) |
+| Deployment Block | 7940053 |
+| Status | Live |
+| Explorer | [View on Hiro Explorer](https://explorer.hiro.so/txid/SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream?chain=mainnet) |
+| Deploy TX | [0x8ebb6a...](https://explorer.hiro.so/txid/0x8ebb6a0469a0a29592e75bd09149147eecd4765f9eccb748c15194c2939a31a6?chain=mainnet) |
+| Traits Contract | `SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream-traits` |
 
 ## Tech Stack
 
