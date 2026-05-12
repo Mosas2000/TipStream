@@ -5,8 +5,22 @@ import {
   validateNetwork
 } from './validation.js';
 
-export const CONTRACT_ADDRESS = 'SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T';
+export const CONTRACT_ADDRESS = 'SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60';
 export const CONTRACT_NAME = 'tipstream';
+export const CONTRACT_VERSION = 'v2.0.0';
+export const CONTRACT_DEPLOYMENT_BLOCK = 7940053;
+
+// Traits contract (required for token tipping)
+export const TRAITS_CONTRACT_ADDRESS = 'SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60';
+export const TRAITS_CONTRACT_NAME = 'tipstream-traits';
+
+// Full contract identifiers
+export const FULL_CONTRACT_ID = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+export const FULL_TRAITS_CONTRACT_ID = `${TRAITS_CONTRACT_ADDRESS}.${TRAITS_CONTRACT_NAME}`;
+
+// Explorer links
+export const CONTRACT_EXPLORER_URL = `https://explorer.hiro.so/txid/SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream?chain=mainnet`;
+export const DEPLOYMENT_TX_URL = 'https://explorer.hiro.so/txid/0x8ebb6a0469a0a29592e75bd09149147eecd4765f9eccb748c15194c2939a31a6?chain=mainnet';
 
 const NETWORK = import.meta.env.VITE_NETWORK || 'mainnet';
 export const NETWORK_NAME = validateNetwork(NETWORK);
@@ -42,3 +56,15 @@ export const FN_WHITELIST_TOKEN = 'whitelist-token';
 export const FN_GET_USER_STATS = 'get-user-stats';
 export const FN_GET_PLATFORM_STATS = 'get-platform-stats';
 export const FN_GET_CURRENT_FEE_BASIS_POINTS = 'get-current-fee-basis-points';
+
+// Contract validation helper
+export function validateContractDeployment() {
+  return {
+    address: CONTRACT_ADDRESS,
+    name: CONTRACT_NAME,
+    version: CONTRACT_VERSION,
+    deploymentBlock: CONTRACT_DEPLOYMENT_BLOCK,
+    fullId: FULL_CONTRACT_ID,
+    explorerUrl: CONTRACT_EXPLORER_URL
+  };
+}

@@ -1,0 +1,18 @@
+---
+id: 1
+name: TipStream V3 Mainnet Deployment
+network: mainnet
+stacks-node: "https://api.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: tipstream-v3
+            expected-sender: DEPLOYER_ADDRESS
+            cost: 1000000
+            path: contracts/tipstream-v3.clar
+            anchor-block-only: true
+            clarity-version: 2
+      epoch: "3.0"

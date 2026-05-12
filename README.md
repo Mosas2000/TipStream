@@ -4,12 +4,40 @@ A decentralized micro-tipping platform on the Stacks blockchain, secured by Bitc
 
 ## Project Status
 
-**Phase:** 1 - Core Platform (Stable)
-**Live Features:** 14 (all functional on mainnet)
-**Test Coverage:** 128 tests (88 contract + 40 frontend)
-**Recent Work:** Event pagination optimization (Issue #291), API resilience caching (Issue #290)
+**Phase:** 1 - Core Platform (Stable)  
+**Version:** v2.0.0 (Mainnet)  
+**Live Features:** 14 (all functional on mainnet)  
+**Test Coverage:** 128 tests (88 contract + 40 frontend)  
+**Recent Work:** V2 mainnet deployment (May 2026), Event pagination optimization (Issue #291), API resilience caching (Issue #290)
 
 See [ROADMAP.md](ROADMAP.md) for upcoming phases and timelines.
+
+## What's New in V2
+
+**Deployed:** May 12, 2026 | **Block:** 7940053 | **Cost:** 0.6 STX
+
+### Contract Improvements
+- ✅ **Enhanced Security** - Improved emergency pause mechanism with cooldown period
+- ✅ **Token Tipping Support** - SIP-010 trait implementation for token tips
+- ✅ **Categorized Tips** - 7 tip categories for better organization
+- ✅ **Time-locked Admin Functions** - 144-block delay for fee/pause changes
+- ✅ **Multi-sig Support** - Optional multi-signature authorization layer
+- ✅ **Cancel Pause Change** - Ability to cancel pending pause proposals
+
+### Frontend Enhancements
+- ✅ **New Contract Integration** - Seamless migration to V2 contract
+- ✅ **Version Tracking** - Contract version and deployment metadata
+- ✅ **Explorer Links** - Direct links to contract and deployment transaction
+- ✅ **Validation Helpers** - Runtime contract verification functions
+- ✅ **Improved Configuration** - Centralized contract constants and helpers
+
+### Developer Experience
+- ✅ **Comprehensive Documentation** - Deployment guide, migration guide, and changelog
+- ✅ **Professional Git History** - 20 well-structured commits with conventional naming
+- ✅ **Tagged Release** - v2.0.0-mainnet tag for version tracking
+- ✅ **Environment Configuration** - Updated production and example env files
+
+See [DEPLOYMENT_V2.md](DEPLOYMENT_V2.md) for complete deployment details and [frontend/MIGRATION_GUIDE.md](frontend/MIGRATION_GUIDE.md) for migration instructions.
 
 ## Problem
 
@@ -36,11 +64,14 @@ Content creators and community contributors lack a simple, transparent way to re
 
 | Field | Value |
 |---|---|
-| Contract | `SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream` |
+| Contract | `SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream` |
+| Version | v2.0.0 |
 | Network | Stacks Mainnet (Secured by Bitcoin) |
-| Status | Deployed |
-| Explorer | [View on Hiro Explorer](https://explorer.hiro.so/txid/SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream?chain=mainnet) |
-| Deploy TX | [0xf7ac08...](https://explorer.hiro.so/txid/0xf7ac0877ce65494779264fb0172023facd101b639ad5ae8bbd71e102387033ef?chain=mainnet) |
+| Deployment Block | 7940053 |
+| Status | Live |
+| Explorer | [View on Hiro Explorer](https://explorer.hiro.so/txid/SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream?chain=mainnet) |
+| Deploy TX | [0x8ebb6a...](https://explorer.hiro.so/txid/0x8ebb6a0469a0a29592e75bd09149147eecd4765f9eccb748c15194c2939a31a6?chain=mainnet) |
+| Traits Contract | `SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream-traits` |
 
 ## Tech Stack
 
