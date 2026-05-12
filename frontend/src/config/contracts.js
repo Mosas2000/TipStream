@@ -14,6 +14,10 @@ export const CONTRACT_DEPLOYMENT_BLOCK = 7940053;
 export const TRAITS_CONTRACT_ADDRESS = 'SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60';
 export const TRAITS_CONTRACT_NAME = 'tipstream-traits';
 
+// Full contract identifiers
+export const FULL_CONTRACT_ID = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
+export const FULL_TRAITS_CONTRACT_ID = `${TRAITS_CONTRACT_ADDRESS}.${TRAITS_CONTRACT_NAME}`;
+
 const NETWORK = import.meta.env.VITE_NETWORK || 'mainnet';
 export const NETWORK_NAME = validateNetwork(NETWORK);
 export const STACKS_API_BASE = NETWORK === 'mainnet'
