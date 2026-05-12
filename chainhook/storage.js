@@ -7,6 +7,13 @@ const DEFAULT_POOL_IDLE_TIMEOUT_MS = 30000;
 const DEFAULT_POOL_CONNECTION_TIMEOUT_MS = 5000;
 const DEFAULT_STATEMENT_TIMEOUT_MS = 30000;
 
+/**
+ * Parse PostgreSQL pool configuration from environment variables.
+ * 
+ * @param {Object} env - Environment variables object
+ * @returns {Object} Pool configuration with max, timeouts, and statement_timeout
+ */
+
 export function parseRetentionDays(value, fallback = 30) {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed < 0) {
