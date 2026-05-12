@@ -7,6 +7,8 @@ import {
 
 export const CONTRACT_ADDRESS = 'SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60';
 export const CONTRACT_NAME = 'tipstream';
+export const CONTRACT_VERSION = 'v2.0.0';
+export const CONTRACT_DEPLOYMENT_BLOCK = 7940053;
 
 const NETWORK = import.meta.env.VITE_NETWORK || 'mainnet';
 export const NETWORK_NAME = validateNetwork(NETWORK);
