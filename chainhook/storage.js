@@ -21,7 +21,7 @@ export function parsePoolConfig(env = {}) {
   const connectionTimeoutMillis = Number.parseInt(env.DB_POOL_CONNECTION_TIMEOUT_MS, 10);
   const statementTimeout = Number.parseInt(env.DB_STATEMENT_TIMEOUT_MS, 10);
 
-  return {
+  const config = {
     max: Number.isNaN(max) || max <= 0 ? DEFAULT_POOL_MAX : max,
     idleTimeoutMillis: Number.isNaN(idleTimeoutMillis) || idleTimeoutMillis < 0 
       ? DEFAULT_POOL_IDLE_TIMEOUT_MS 
@@ -33,6 +33,12 @@ export function parsePoolConfig(env = {}) {
       ? DEFAULT_STATEMENT_TIMEOUT_MS 
       : statementTimeout,
   };
+
+  if (config.max > 100) {
+    console.warn(`DB_POOL_MAX=${config.max} exceeds recommended maximum of 100`);
+  }
+
+  return config;
 }
 
 export function getRetentionCutoff(retentionDays) {
