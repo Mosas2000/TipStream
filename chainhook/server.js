@@ -177,7 +177,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
