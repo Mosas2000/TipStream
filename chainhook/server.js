@@ -134,6 +134,9 @@ function sendError(res, error, requestId, context = {}) {
   if (statusCode === 429) {
     headers['Retry-After'] = String(classified.details?.retryAfter || 60);
   }
+  if (statusCode === 503) {
+    headers['Retry-After'] = '30';
+  }
   const logContext = {
     request_id: requestId,
     error_code: classified.code,
