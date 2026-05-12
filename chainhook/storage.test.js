@@ -1,6 +1,15 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { MemoryEventStore, createEventStore, getRetentionCutoff, parsePoolConfig } from './storage.js';
+import { 
+  MemoryEventStore, 
+  createEventStore, 
+  getRetentionCutoff, 
+  parsePoolConfig,
+  DEFAULT_POOL_MAX,
+  DEFAULT_POOL_IDLE_TIMEOUT_MS,
+  DEFAULT_POOL_CONNECTION_TIMEOUT_MS,
+  DEFAULT_STATEMENT_TIMEOUT_MS,
+} from './storage.js';
 
 function makeEvent(overrides = {}) {
   return {
@@ -155,3 +164,12 @@ describe('createEventStore with pool config', () => {
     
     assert.strictEqual(config.max, 150);
   });
+
+describe('pool configuration constants', () => {
+  it('defines expected default values', () => {
+    assert.strictEqual(DEFAULT_POOL_MAX, 20);
+    assert.strictEqual(DEFAULT_POOL_IDLE_TIMEOUT_MS, 30000);
+    assert.strictEqual(DEFAULT_POOL_CONNECTION_TIMEOUT_MS, 5000);
+    assert.strictEqual(DEFAULT_STATEMENT_TIMEOUT_MS, 30000);
+  });
+});
