@@ -6,6 +6,7 @@ import {
   RateLimitError,
   PayloadTooLargeError,
   StorageUnavailableError,
+  ServiceUnavailableError,
   classifyError,
   toErrorResponse,
 } from './errors.js';
@@ -37,5 +38,7 @@ describe('error helpers', () => {
     assert.strictEqual(new UnauthorizedError().statusCode, 401);
     assert.strictEqual(new RateLimitError().statusCode, 429);
     assert.strictEqual(new PayloadTooLargeError().statusCode, 413);
+    assert.strictEqual(new ServiceUnavailableError().statusCode, 503);
+    assert.strictEqual(new ServiceUnavailableError().code, 'service_unavailable');
   });
 });

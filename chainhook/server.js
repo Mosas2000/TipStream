@@ -8,10 +8,10 @@ import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
 import { RateLimiter, getClientIp } from "./rate-limit.js";
 import { logger } from "./logging.js";
-import { setupGracefulShutdown } from "./graceful-shutdown.js";
+import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
 import { normalizeClarityEventFields } from "../shared/clarityValues.js";
-import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, classifyError, toErrorResponse } from "./errors.js";
+import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, ServiceUnavailableError, classifyError, toErrorResponse } from "./errors.js";
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
@@ -134,6 +134,9 @@ function sendError(res, error, requestId, context = {}) {
   if (statusCode === 429) {
     headers['Retry-After'] = String(classified.details?.retryAfter || 60);
   }
+  if (statusCode === 503) {
+    headers['Retry-After'] = '30';
+  }
   const logContext = {
     request_id: requestId,
     error_code: classified.code,
@@ -174,7 +177,21 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState };
+
+function checkShutdownState(res, requestId) {
+  if (isShuttingDown()) {
+    metrics.recordRequest(false);
+    sendError(
+      res,
+      new ServiceUnavailableError('service is shutting down'),
+      requestId,
+      { shutdown: true }
+    );
+    return true;
+  }
+  return false;
+}
 
 const server = http.createServer(async (req, res) => {
   const requestId = randomUUID();
@@ -197,6 +214,10 @@ const server = http.createServer(async (req, res) => {
 
   // POST /api/chainhook/events -- ingest webhook payloads
   if (req.method === "POST" && path === "/api/chainhook/events") {
+    if (checkShutdownState(res, requestId)) {
+      return;
+    }
+
     const clientIp = getClientIp(req);
     const startTime = Date.now();
 

@@ -46,6 +46,13 @@ export class StorageUnavailableError extends ChainhookError {
   }
 }
 
+export class ServiceUnavailableError extends ChainhookError {
+  constructor(message = 'service unavailable', details = {}) {
+    super(message, { code: 'service_unavailable', statusCode: 503, category: 'shutdown', details });
+    this.name = 'ServiceUnavailableError';
+  }
+}
+
 export function isChainhookError(error) {
   return error instanceof ChainhookError;
 }

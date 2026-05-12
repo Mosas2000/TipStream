@@ -10,6 +10,7 @@ Webhook listener for TipStream on-chain events from the Stacks blockchain.
 - Rate limiting and authentication
 - Metrics and health endpoints
 - Configurable connection pooling
+- Graceful shutdown with request rejection
 
 ## Configuration
 
@@ -78,3 +79,28 @@ npm test
 ## Environment Variables
 
 See [.env.example](./.env.example) for all available configuration options.
+
+
+## Graceful Shutdown
+
+The service handles SIGTERM and SIGINT signals gracefully:
+
+1. Stops accepting new ingest requests immediately
+2. Returns 503 Service Unavailable with Retry-After header
+3. Allows in-flight requests to complete
+4. Closes database connections
+5. Exits cleanly
+
+During shutdown, the service returns:
+
+```json
+{
+  "error": "service_unavailable",
+  "message": "service is shutting down",
+  "request_id": "..."
+}
+```
+
+With HTTP headers:
+- Status: 503 Service Unavailable
+- Retry-After: 30 seconds

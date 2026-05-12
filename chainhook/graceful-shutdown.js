@@ -5,6 +5,8 @@
  * clean shutdown of HTTP server and resources.
  */
 
+let shutdownState = false;
+
 /**
  * Set up graceful shutdown handlers for SIGTERM and SIGINT signals.
  * Allows in-flight requests to complete before closing the server.
@@ -18,8 +20,10 @@ export function setupGracefulShutdown(server, onShutdown) {
   const shutdown = async (signal) => {
     if (isShuttingDown) return;
     isShuttingDown = true;
+    shutdownState = true;
 
     console.log(`\nReceived ${signal}, starting graceful shutdown...`);
+    console.log('Rejecting new requests...');
 
     if (onShutdown) {
       try {
@@ -51,5 +55,5 @@ export function setupGracefulShutdown(server, onShutdown) {
  * @returns {boolean} True if shutdown is in progress
  */
 export function isShuttingDown() {
-  return process.exitCode !== undefined;
+  return shutdownState;
 }

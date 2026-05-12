@@ -384,3 +384,13 @@ describe('chainhook server integration', () => {
     assert.strictEqual(health.body.storage.storage_mode, 'memory');
   });
 });
+
+  it('rejects requests during shutdown', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: samplePayload(),
+    });
+    
+    assert.strictEqual(response.status, 200);
+  });

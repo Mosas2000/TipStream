@@ -99,3 +99,41 @@ Monitor these metrics to tune your pool configuration:
 4. Use longer timeouts for batch operations
 5. Test pool configuration under expected load before deploying
 6. Document any custom pool settings in your deployment notes
+
+
+## Graceful Shutdown
+
+The service implements graceful shutdown to prevent request failures during deployments and restarts.
+
+### Shutdown Sequence
+
+1. **Signal received** (SIGTERM or SIGINT)
+2. **Request rejection begins** - New ingest requests immediately receive 503 responses
+3. **In-flight requests complete** - Existing requests are allowed to finish
+4. **Resources cleanup** - Database connections and intervals are closed
+5. **Process exit** - Clean termination after 30 seconds maximum
+
+### Client Behavior
+
+When the service is shutting down, clients receive:
+
+**HTTP Response:**
+- Status: 503 Service Unavailable
+- Retry-After: 30 seconds
+
+**Response Body:**
+```json
+{
+  "error": "service_unavailable",
+  "message": "service is shutting down",
+  "request_id": "..."
+}
+```
+
+### Deployment Recommendations
+
+1. Configure load balancers to respect 503 responses
+2. Implement retry logic with exponential backoff
+3. Use health checks to remove instances before shutdown
+4. Allow 30-60 seconds for graceful termination
+5. Monitor shutdown metrics to tune timeout values
