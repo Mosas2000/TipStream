@@ -210,6 +210,10 @@ const server = http.createServer(async (req, res) => {
 
   // POST /api/chainhook/events -- ingest webhook payloads
   if (req.method === "POST" && path === "/api/chainhook/events") {
+    if (checkShutdownState(res, requestId)) {
+      return;
+    }
+
     const clientIp = getClientIp(req);
     const startTime = Date.now();
 
