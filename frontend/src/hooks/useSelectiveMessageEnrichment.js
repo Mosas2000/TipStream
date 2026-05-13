@@ -55,6 +55,11 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     return false;
   }, [visibleTipIds]);
 
+  // Determine which IDs need fetching
+  const idsToFetch = useMemo(() => {
+    return visibleTipIds.filter(id => !tipMessages[id]);
+  }, [visibleTipIds, tipMessages]);
+
   useEffect(() => {
     if (visibleTipIds.length === 0) {
       return;
@@ -68,7 +73,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     let cancelled = false;
     cancelledRef.current = false;
     
-    setLoading(true);
+    setLoading(idsToFetch.length > 0);
     setError(null);
     
     const prevSet = new Set(previousIdsRef.current);
@@ -91,15 +96,23 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     
     previousIdsRef.current = visibleTipIds;
 
+    if (idsToFetch.length === 0) {
+      return;
+    }
+
+    if (idsToFetch.length === 0) {
+      return;
+    }
+
     const marker = createEnrichmentMarker();
 
-    fetchTipMessages(visibleTipIds)
+    fetchTipMessages(idsToFetch)
       .then(messageMap => {
         if (cancelled || cancelledRef.current || requestId !== activeRequestIdRef.current) return;
         const obj = {};
         messageMap.forEach((v, k) => { obj[k] = v; });
         setTipMessages(prev => ({ ...prev, ...obj }));
-        marker.stop(visibleTipIds.length, messageMap.size);
+        marker.stop(idsToFetch.length, messageMap.size);
       })
       .catch(err => {
         if (!cancelled && !cancelledRef.current && requestId === activeRequestIdRef.current) {
@@ -117,7 +130,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
       cancelled = true;
       cancelledRef.current = true;
     };
-  }, [visibleTipIds, visibleSetChanged]);
+  }, [visibleTipIds, visibleSetChanged, idsToFetch]);
 
   /**
    * Re-map the visible tips to include their fetched messages.
