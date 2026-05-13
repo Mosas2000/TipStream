@@ -117,7 +117,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
       cancelled = true;
       cancelledRef.current = true;
     };
-  }, [visibleTipIds]);
+  }, [visibleTipIds, visibleSetChanged]);
 
   /**
    * Re-map the visible tips to include their fetched messages.
