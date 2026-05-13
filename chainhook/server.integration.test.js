@@ -705,6 +705,29 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.body.error, 'bad_request');
     assert.ok(response.body.message.includes('missing block_identifier'));
   });
+
+  it('rejects payload with missing transaction_identifier', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: {
+        apply: [
+          {
+            block_identifier: { index: 100 },
+            transactions: [
+              {
+                metadata: {},
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('missing transaction_identifier'));
+  });
 });
 
   it('rejects requests during shutdown', async () => {
