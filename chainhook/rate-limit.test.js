@@ -81,3 +81,43 @@ test("getClientIp handles missing socket", () => {
   assert(ip);
   assert.strictEqual(typeof ip, "string");
 });
+
+test("RateLimiter.updateConfig changes rate limit settings", () => {
+  const limiter = new RateLimiter(2, 1000);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(!limiter.isAllowed("192.168.1.1"));
+
+  limiter.updateConfig(5, 1000);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+});
+
+test("RateLimiter.updateConfig changes window duration", () => {
+  const limiter = new RateLimiter(1, 100);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(!limiter.isAllowed("192.168.1.1"));
+
+  limiter.updateConfig(1, 50);
+  const config = limiter.getConfig();
+  assert.strictEqual(config.windowMs, 50);
+});
+
+test("RateLimiter.getConfig returns current settings", () => {
+  const limiter = new RateLimiter(10, 5000);
+  const config = limiter.getConfig();
+  assert.strictEqual(config.maxRequests, 10);
+  assert.strictEqual(config.windowMs, 5000);
+});
+
+test("RateLimiter.updateConfig applies immediately", () => {
+  const limiter = new RateLimiter(1, 1000);
+  limiter.isAllowed("192.168.1.1");
+  assert(!limiter.isAllowed("192.168.1.1"));
+
+  limiter.updateConfig(3, 1000);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(!limiter.isAllowed("192.168.1.1"));
+});
