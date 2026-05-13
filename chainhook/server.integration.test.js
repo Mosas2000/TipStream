@@ -698,6 +698,61 @@ describe('chainhook server integration', () => {
     assert.ok(Array.isArray(response.body.bypasses));
     assert.strictEqual(response.body.total, response.body.bypasses.length);
   });
+
+  it('paginates tips list correctly', async () => {
+    const sender = 'SPENNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN';
+    const recipient = 'SPFOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({
+          txId: '0xpage-tip-1',
+          tipId: 901,
+          sender,
+          recipient,
+          amount: 10000,
+          fee: 500,
+          netAmount: 9500,
+        }),
+        buildTipEvent({
+          txId: '0xpage-tip-2',
+          tipId: 902,
+          sender,
+          recipient,
+          amount: 20000,
+          fee: 1000,
+          netAmount: 19000,
+        }),
+        buildTipEvent({
+          txId: '0xpage-tip-3',
+          tipId: 903,
+          sender,
+          recipient,
+          amount: 30000,
+          fee: 1500,
+          netAmount: 28500,
+        }),
+      ], 901, 1700000008000),
+    });
+
+    const page1 = await request({
+      method: 'GET',
+      path: '/api/tips?limit=2&offset=0',
+    });
+
+    assert.strictEqual(page1.status, 200);
+    assert.ok(page1.body.tips.length <= 2);
+
+    const page2 = await request({
+      method: 'GET',
+      path: '/api/tips?limit=2&offset=2',
+    });
+
+    assert.strictEqual(page2.status, 200);
+    assert.ok(Array.isArray(page2.body.tips));
+  });
 });
 
   it('rejects requests during shutdown', async () => {
