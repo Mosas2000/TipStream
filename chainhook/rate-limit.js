@@ -82,6 +82,8 @@ export class RateLimiter {
 
   /**
    * Update rate limit configuration at runtime.
+   * Changes apply immediately to all subsequent requests.
+   * Existing rate limit counters are preserved.
    * 
    * @param {number} maxRequests - New maximum requests per window
    * @param {number} windowMs - New time window in milliseconds
@@ -93,8 +95,9 @@ export class RateLimiter {
 
   /**
    * Get current rate limit configuration.
+   * Useful for monitoring and audit purposes.
    * 
-   * @returns {object} Current configuration
+   * @returns {object} Current configuration with maxRequests and windowMs
    */
   getConfig() {
     return {
