@@ -100,6 +100,22 @@ function validatePayloadStructure(payload) {
   return { valid: true };
 }
 
+function validateBlock(block, blockIndex) {
+  if (!block || typeof block !== 'object') {
+    return { valid: false, reason: `block at index ${blockIndex} must be an object` };
+  }
+  
+  if (!block.block_identifier || typeof block.block_identifier !== 'object') {
+    return { valid: false, reason: `block at index ${blockIndex} missing block_identifier` };
+  }
+  
+  if (typeof block.block_identifier.index !== 'number') {
+    return { valid: false, reason: `block at index ${blockIndex} missing block_identifier.index` };
+  }
+  
+  return { valid: true };
+}
+
 function extractEvents(payload) {
   const events = [];
   const apply = payload.apply || [];
