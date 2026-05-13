@@ -79,6 +79,29 @@ export class RateLimiter {
       }
     }
   }
+
+  /**
+   * Update rate limit configuration at runtime.
+   * 
+   * @param {number} maxRequests - New maximum requests per window
+   * @param {number} windowMs - New time window in milliseconds
+   */
+  updateConfig(maxRequests, windowMs) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
+  }
+
+  /**
+   * Get current rate limit configuration.
+   * 
+   * @returns {object} Current configuration
+   */
+  getConfig() {
+    return {
+      maxRequests: this.maxRequests,
+      windowMs: this.windowMs,
+    };
+  }
 }
 
 /**
