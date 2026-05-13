@@ -7,6 +7,12 @@ process.env.CHAINHOOK_AUTH_TOKEN = 'test-secret-token';
 
 const { server } = await import('./server.js');
 
+before(async () => {
+  await new Promise((resolve) => {
+    server.listen(0, () => resolve());
+  });
+});
+
 function request({ method, path, body, headers = {} }) {
   return new Promise((resolve, reject) => {
     const payload = typeof body === 'string' ? body : body ? JSON.stringify(body) : '';
