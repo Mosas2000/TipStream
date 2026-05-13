@@ -81,6 +81,9 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     const currentSet = new Set(visibleTipIds);
     const hasOverlap = visibleTipIds.some(id => prevSet.has(id));
     
+    // Reconcile cached state based on overlap with previous set
+    // - No overlap: complete page change, clear all cache
+    // - Partial overlap: keep only messages for visible IDs
     if (!hasOverlap && previousIdsRef.current.length > 0) {
       setTipMessages({});
       tipMessagesRef.current = {};
