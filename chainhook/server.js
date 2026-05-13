@@ -164,7 +164,15 @@ function extractEvents(payload) {
         if (evt.type !== "SmartContractEvent" && evt.type !== "print_event") continue;
         const data = evt.data || evt.contract_event || {};
         const value = data.value || data.raw_value;
-        if (!value) continue;
+        
+        if (!value) {
+          logger.warn('Event missing value field', {
+            block_height: block.block_identifier.index,
+            tx_id: tx.transaction_identifier.hash,
+            event_type: evt.type,
+          });
+          continue;
+        }
 
         events.push({
           txId: tx.transaction_identifier?.hash || "",
