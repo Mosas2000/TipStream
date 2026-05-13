@@ -102,6 +102,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     
     previousIdsRef.current = visibleTipIds;
     
+    // Determine which IDs need fetching from the API
     const uncachedIds = visibleTipIds.filter(id => !tipMessagesRef.current[id]);
     
     if (uncachedIds.length === 0) {
