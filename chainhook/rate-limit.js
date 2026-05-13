@@ -117,3 +117,30 @@ export function getClientIp(req) {
   }
   return req.socket?.remoteAddress || 'unknown';
 }
+
+/**
+ * Validate rate limit configuration parameters.
+ * 
+ * @param {number} maxRequests - Maximum requests per window
+ * @param {number} windowMs - Time window in milliseconds
+ * @returns {object} Validation result with valid flag and error message
+ */
+export function validateRateLimitConfig(maxRequests, windowMs) {
+  if (typeof maxRequests !== 'number' || isNaN(maxRequests)) {
+    return { valid: false, error: 'maxRequests must be a number' };
+  }
+
+  if (typeof windowMs !== 'number' || isNaN(windowMs)) {
+    return { valid: false, error: 'windowMs must be a number' };
+  }
+
+  if (maxRequests < 1 || maxRequests > 10000) {
+    return { valid: false, error: 'maxRequests must be between 1 and 10000' };
+  }
+
+  if (windowMs < 1000 || windowMs > 3600000) {
+    return { valid: false, error: 'windowMs must be between 1000 and 3600000' };
+  }
+
+  return { valid: true };
+}
