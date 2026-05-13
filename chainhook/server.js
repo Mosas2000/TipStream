@@ -88,6 +88,18 @@ function parseBody(req) {
  * @param {object} payload - The parsed Chainhook webhook body.
  * @returns {Array<object>} Extracted event objects.
  */
+function validatePayloadStructure(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return { valid: false, reason: 'payload must be an object' };
+  }
+  
+  if (!Array.isArray(payload.apply)) {
+    return { valid: false, reason: 'payload.apply must be an array' };
+  }
+  
+  return { valid: true };
+}
+
 function extractEvents(payload) {
   const events = [];
   const apply = payload.apply || [];
