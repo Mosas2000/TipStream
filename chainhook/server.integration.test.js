@@ -753,6 +753,16 @@ describe('chainhook server integration', () => {
     assert.strictEqual(page2.status, 200);
     assert.ok(Array.isArray(page2.body.tips));
   });
+
+  it('rejects invalid pagination limit', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips?limit=200',
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
