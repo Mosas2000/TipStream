@@ -138,6 +138,9 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   const clearEnrichment = useCallback(() => {
     setTipMessages({});
     previousIdsRef.current = [];
+    activeRequestIdRef.current++;
+    setLoading(false);
+    setError(null);
   }, []);
 
   return {
