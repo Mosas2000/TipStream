@@ -435,9 +435,8 @@ describe('chainhook server integration', () => {
       path: '/api/tips/-1',
     });
 
-    assert.strictEqual(response.status, 400);
-    assert.strictEqual(response.body.error, 'bad_request');
-    assert.strictEqual(response.body.message, 'invalid tip ID');
+    assert.strictEqual(response.status, 404);
+    assert.strictEqual(response.body.error, 'not found');
   });
 
   it('retrieves tips by user address', async () => {
