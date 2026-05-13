@@ -521,6 +521,11 @@ const server = http.createServer(async (req, res) => {
       }
     }
     const config = rateLimiter.getConfig();
+    logger.logResponse(req, 200, 0, {
+      request_id: requestId,
+      max_requests: config.maxRequests,
+      window_ms: config.windowMs,
+    });
     return sendJson(res, 200, {
       maxRequests: config.maxRequests,
       windowMs: config.windowMs,
