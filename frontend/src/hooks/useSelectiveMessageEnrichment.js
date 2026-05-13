@@ -60,13 +60,11 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
       return;
     }
 
-    const hasNewIds = visibleTipIds.length !== previousIdsRef.current.length ||
-                     visibleTipIds.some((id, i) => id !== previousIdsRef.current[i]);
-
-    if (!hasNewIds) {
+    if (!visibleSetChanged) {
       return;
     }
 
+    const requestId = ++activeRequestIdRef.current;
     let cancelled = false;
     cancelledRef.current = false;
     
