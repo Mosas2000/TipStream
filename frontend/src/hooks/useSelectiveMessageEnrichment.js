@@ -71,20 +71,25 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     setLoading(true);
     setError(null);
     
-    Promise.resolve().then(() => {
-      if (cancelled || cancelledRef.current) return;
-      
-      setLoading(true);
-      setError(null);
-
-      const prevSet = new Set(previousIdsRef.current);
-      const hasOverlap = visibleTipIds.some(id => prevSet.has(id));
-      if (!hasOverlap && previousIdsRef.current.length > 0) {
-        setTipMessages({});
-      }
-      
-      previousIdsRef.current = visibleTipIds;
-    });
+    const prevSet = new Set(previousIdsRef.current);
+    const currentSet = new Set(visibleTipIds);
+    const hasOverlap = visibleTipIds.some(id => prevSet.has(id));
+    
+    if (!hasOverlap && previousIdsRef.current.length > 0) {
+      setTipMessages({});
+    } else if (hasOverlap) {
+      setTipMessages(prev => {
+        const filtered = {};
+        for (const id of currentSet) {
+          if (prev[id]) {
+            filtered[id] = prev[id];
+          }
+        }
+        return filtered;
+      });
+    }
+    
+    previousIdsRef.current = visibleTipIds;
 
     const marker = createEnrichmentMarker();
 
