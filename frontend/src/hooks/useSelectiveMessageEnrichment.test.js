@@ -218,4 +218,30 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     expect(result.current.enrichedTips[0].tipId).toBe('3');
     expect(result.current.loading).toBe(false);
   });
+
+  it('prevents stale loading indicators on rapid changes', async () => {
+    let resolveFirst;
+    const firstPromise = new Promise(resolve => { resolveFirst = resolve; });
+    const mockMessages2 = new Map([['2', 'Msg2']]);
+    
+    fetchTipMessages
+      .mockReturnValueOnce(firstPromise)
+      .mockResolvedValueOnce(mockMessages2);
+
+    const { result, rerender } = renderHook(({ tips }) => useSelectiveMessageEnrichment(tips), {
+      initialProps: { tips: [{ tipId: '1' }] }
+    });
+
+    expect(result.current.loading).toBe(true);
+
+    // Change to different set before first request completes
+    rerender({ tips: [{ tipId: '2' }] });
+
+    // Resolve the stale request
+    resolveFirst(new Map([['1', 'Msg1']]));
+
+    await waitFor(() => expect(result.current.enrichedTips[0]?.message).toBe('Msg2'));
+    expect(result.current.loading).toBe(false);
+    expect(result.current.enrichedTips[0].tipId).toBe('2');
+  });
 });
