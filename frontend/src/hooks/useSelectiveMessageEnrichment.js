@@ -30,6 +30,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   const [error, setError] = useState(null);
   const cancelledRef = useRef(false);
   const previousIdsRef = useRef([]);
+  const activeRequestIdRef = useRef(0);
 
   // Extract unique, non-zero tip IDs from the currently visible set
   const visibleTipIds = useMemo(
@@ -39,6 +40,20 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     },
     [visibleTips]
   );
+
+  // Detect if the visible set has changed materially
+  const visibleSetChanged = useMemo(() => {
+    const current = new Set(visibleTipIds);
+    const previous = new Set(previousIdsRef.current);
+    
+    if (current.size !== previous.size) return true;
+    
+    for (const id of current) {
+      if (!previous.has(id)) return true;
+    }
+    
+    return false;
+  }, [visibleTipIds]);
 
   useEffect(() => {
     if (visibleTipIds.length === 0) {
