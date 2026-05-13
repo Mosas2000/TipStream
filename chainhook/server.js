@@ -569,6 +569,8 @@ const server = http.createServer(async (req, res) => {
         request_id: requestId,
       });
 
+      metrics.recordRequest(true);
+
       return sendJson(res, 200, {
         ok: true,
         previous: {
@@ -582,6 +584,7 @@ const server = http.createServer(async (req, res) => {
         },
       });
     } catch (err) {
+      metrics.recordRequest(false);
       return sendError(res, err, requestId, { path });
     }
   }
