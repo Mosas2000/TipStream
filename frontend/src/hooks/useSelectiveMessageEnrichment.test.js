@@ -194,4 +194,28 @@ describe('useSelectiveMessageEnrichment Hook', () => {
     // Should have been called again because clearEnrichment reset previousIdsRef
     expect(fetchTipMessages).toHaveBeenCalledTimes(2);
   });
+
+  it('handles rapid pagination without stale state', async () => {
+    const mockMessages1 = new Map([['1', 'Page1']]);
+    const mockMessages2 = new Map([['2', 'Page2']]);
+    const mockMessages3 = new Map([['3', 'Page3']]);
+    
+    fetchTipMessages
+      .mockResolvedValueOnce(mockMessages1)
+      .mockResolvedValueOnce(mockMessages2)
+      .mockResolvedValueOnce(mockMessages3);
+
+    const { result, rerender } = renderHook(({ tips }) => useSelectiveMessageEnrichment(tips), {
+      initialProps: { tips: [{ tipId: '1' }] }
+    });
+
+    // Rapidly change pages
+    rerender({ tips: [{ tipId: '2' }] });
+    rerender({ tips: [{ tipId: '3' }] });
+
+    await waitFor(() => expect(result.current.enrichedTips[0]?.message).toBe('Page3'));
+    expect(result.current.enrichedTips).toHaveLength(1);
+    expect(result.current.enrichedTips[0].tipId).toBe('3');
+    expect(result.current.loading).toBe(false);
+  });
 });
