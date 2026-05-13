@@ -598,6 +598,20 @@ describe('chainhook server integration', () => {
     assert.ok(response.body.uniqueSenders >= 2);
     assert.ok(response.body.uniqueRecipients >= 2);
   });
+
+  it('returns zero statistics when no tips exist', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/stats',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(typeof response.body.totalTips === 'number');
+    assert.ok(typeof response.body.totalVolume === 'number');
+    assert.ok(typeof response.body.totalFees === 'number');
+    assert.ok(typeof response.body.uniqueSenders === 'number');
+    assert.ok(typeof response.body.uniqueRecipients === 'number');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
