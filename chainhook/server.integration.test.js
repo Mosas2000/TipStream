@@ -763,6 +763,16 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.status, 400);
     assert.strictEqual(response.body.error, 'bad_request');
   });
+
+  it('rejects negative pagination offset', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips?offset=-1',
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
