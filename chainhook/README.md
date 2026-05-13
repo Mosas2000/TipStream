@@ -11,6 +11,7 @@ Webhook listener for TipStream on-chain events from the Stacks blockchain.
 - Metrics and health endpoints
 - Configurable connection pooling
 - Graceful shutdown with request rejection
+- Payload validation with detailed error messages
 
 ## Configuration
 
