@@ -659,6 +659,34 @@ describe('chainhook server integration', () => {
     assert.ok(Array.isArray(response.body.events));
     assert.ok(typeof response.body.total === 'number');
   });
+
+  it('retrieves detected bypasses', async () => {
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildAdminEvent({
+          txId: '0xbypass-1',
+          eventType: 'contract-paused',
+          data: { paused: true },
+        }),
+        buildAdminEvent({
+          txId: '0xbypass-2',
+          eventType: 'pause-change-executed',
+          data: { paused: false },
+        }),
+      ], 801, 1700000007000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: '/api/admin/bypasses',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(Array.isArray(response.body.bypasses));
+    assert.ok(typeof response.body.total === 'number');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
