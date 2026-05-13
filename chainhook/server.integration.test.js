@@ -648,6 +648,17 @@ describe('chainhook server integration', () => {
     assert.ok(response.body.events.some((e) => e.eventType === 'contract-paused'));
     assert.ok(typeof response.body.total === 'number');
   });
+
+  it('returns empty array when no admin events exist', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/admin/events',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(Array.isArray(response.body.events));
+    assert.ok(typeof response.body.total === 'number');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
