@@ -687,6 +687,17 @@ describe('chainhook server integration', () => {
     assert.ok(Array.isArray(response.body.bypasses));
     assert.ok(typeof response.body.total === 'number');
   });
+
+  it('returns empty array when no bypasses detected', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/admin/bypasses',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(Array.isArray(response.body.bypasses));
+    assert.strictEqual(response.body.total, response.body.bypasses.length);
+  });
 });
 
   it('rejects requests during shutdown', async () => {
