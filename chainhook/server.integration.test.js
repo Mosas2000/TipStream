@@ -383,6 +383,41 @@ describe('chainhook server integration', () => {
     assert.strictEqual(health.body.status, 'healthy');
     assert.strictEqual(health.body.storage.storage_mode, 'memory');
   });
+
+  it('retrieves tip by ID', async () => {
+    const sender = 'SP1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    const recipient = 'SP2BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({
+          txId: '0xtip-by-id-1',
+          tipId: 301,
+          sender,
+          recipient,
+          amount: 50000,
+          fee: 2500,
+          netAmount: 47500,
+        }),
+      ], 301, 1700000002000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips/301',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.tipId, '301');
+    assert.strictEqual(response.body.sender, sender);
+    assert.strictEqual(response.body.recipient, recipient);
+    assert.strictEqual(response.body.amount, '50000');
+    assert.strictEqual(response.body.fee, '2500');
+    assert.strictEqual(response.body.netAmount, '47500');
+    assert.strictEqual(response.body.txId, '0xtip-by-id-1');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
