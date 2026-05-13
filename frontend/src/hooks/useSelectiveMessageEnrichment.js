@@ -30,6 +30,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   const [error, setError] = useState(null);
   const previousIdsRef = useRef([]);
   const activeRequestIdRef = useRef(0);
+  // Ref to track cache state without triggering effect re-runs
   const tipMessagesRef = useRef({});
   const [clearCounter, setClearCounter] = useState(0);
 
