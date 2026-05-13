@@ -534,6 +534,17 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.body.error, 'bad_request');
     assert.strictEqual(response.body.message, 'invalid address format');
   });
+
+  it('returns empty array for user with no tips', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips/user/SP9IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.tips.length, 0);
+    assert.strictEqual(response.body.total, 0);
+  });
 });
 
   it('rejects requests during shutdown', async () => {
