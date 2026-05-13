@@ -675,6 +675,71 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.status, 400);
     assert.strictEqual(response.body.error, 'bad_request');
   });
+
+  it('rejects payload without apply field', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: { invalid: 'payload' },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('payload.apply must be an array'));
+  });
+
+  it('rejects payload with missing block_identifier', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: {
+        apply: [
+          {
+            transactions: [],
+          },
+        ],
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('missing block_identifier'));
+  });
+
+  it('rejects payload with missing transaction_identifier', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: {
+        apply: [
+          {
+            block_identifier: { index: 100 },
+            transactions: [
+              {
+                metadata: {},
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('missing transaction_identifier'));
+  });
+
+  it('accepts payload with empty apply array', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: { apply: [] },
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.ok, true);
+    assert.strictEqual(response.body.indexed, 0);
+  });
 });
 
   it('rejects requests during shutdown', async () => {

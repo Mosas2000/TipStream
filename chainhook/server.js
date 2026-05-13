@@ -88,12 +88,74 @@ function parseBody(req) {
  * @param {object} payload - The parsed Chainhook webhook body.
  * @returns {Array<object>} Extracted event objects.
  */
+function validatePayloadStructure(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return { valid: false, reason: 'payload must be an object' };
+  }
+  
+  if (!Array.isArray(payload.apply)) {
+    return { valid: false, reason: 'payload.apply must be an array' };
+  }
+  
+  return { valid: true };
+}
+
+function validateBlock(block, blockIndex) {
+  if (!block || typeof block !== 'object') {
+    return { valid: false, reason: `block at index ${blockIndex} must be an object` };
+  }
+  
+  if (!block.block_identifier || typeof block.block_identifier !== 'object') {
+    return { valid: false, reason: `block at index ${blockIndex} missing block_identifier` };
+  }
+  
+  if (typeof block.block_identifier.index !== 'number') {
+    return { valid: false, reason: `block at index ${blockIndex} missing block_identifier.index` };
+  }
+  
+  return { valid: true };
+}
+
+function validateTransaction(tx, blockIndex, txIndex) {
+  if (!tx || typeof tx !== 'object') {
+    return { valid: false, reason: `transaction at block ${blockIndex}, tx ${txIndex} must be an object` };
+  }
+  
+  if (!tx.transaction_identifier || typeof tx.transaction_identifier !== 'object') {
+    return { valid: false, reason: `transaction at block ${blockIndex}, tx ${txIndex} missing transaction_identifier` };
+  }
+  
+  if (!tx.transaction_identifier.hash) {
+    return { valid: false, reason: `transaction at block ${blockIndex}, tx ${txIndex} missing transaction_identifier.hash` };
+  }
+  
+  return { valid: true };
+}
+
 function extractEvents(payload) {
+  const validation = validatePayloadStructure(payload);
+  if (!validation.valid) {
+    throw new BadRequestError(`invalid payload structure: ${validation.reason}`);
+  }
+
   const events = [];
   const apply = payload.apply || [];
-  for (const block of apply) {
+  
+  for (let blockIndex = 0; blockIndex < apply.length; blockIndex++) {
+    const block = apply[blockIndex];
+    const blockValidation = validateBlock(block, blockIndex);
+    if (!blockValidation.valid) {
+      throw new BadRequestError(`invalid block structure: ${blockValidation.reason}`);
+    }
+
     const transactions = block.transactions || [];
-    for (const tx of transactions) {
+    for (let txIndex = 0; txIndex < transactions.length; txIndex++) {
+      const tx = transactions[txIndex];
+      const txValidation = validateTransaction(tx, blockIndex, txIndex);
+      if (!txValidation.valid) {
+        throw new BadRequestError(`invalid transaction structure: ${txValidation.reason}`);
+      }
+
       const metadata = tx.metadata || {};
       const receipt = metadata.receipt || {};
       const printEvents = receipt.events || [];
@@ -102,7 +164,15 @@ function extractEvents(payload) {
         if (evt.type !== "SmartContractEvent" && evt.type !== "print_event") continue;
         const data = evt.data || evt.contract_event || {};
         const value = data.value || data.raw_value;
-        if (!value) continue;
+        
+        if (!value) {
+          logger.warn('Event missing value field', {
+            block_height: block.block_identifier.index,
+            tx_id: tx.transaction_identifier.hash,
+            event_type: evt.type,
+          });
+          continue;
+        }
 
         events.push({
           txId: tx.transaction_identifier?.hash || "",
@@ -177,7 +247,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {

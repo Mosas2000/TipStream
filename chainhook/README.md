@@ -11,6 +11,7 @@ Webhook listener for TipStream on-chain events from the Stacks blockchain.
 - Metrics and health endpoints
 - Configurable connection pooling
 - Graceful shutdown with request rejection
+- Payload validation with detailed error messages
 
 ## Configuration
 
@@ -104,3 +105,16 @@ During shutdown, the service returns:
 With HTTP headers:
 - Status: 503 Service Unavailable
 - Retry-After: 30 seconds
+
+
+## Payload Validation
+
+The service validates incoming chainhook payloads to ensure they contain all required fields:
+
+- Payload must have an `apply` array
+- Each block must have a `block_identifier` with `index`
+- Each transaction must have a `transaction_identifier` with `hash`
+
+Malformed payloads are rejected with 400 Bad Request and a detailed error message.
+
+See [PAYLOAD_VALIDATION.md](./PAYLOAD_VALIDATION.md) for complete validation rules and examples.
