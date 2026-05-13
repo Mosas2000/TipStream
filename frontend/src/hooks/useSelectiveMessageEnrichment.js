@@ -68,6 +68,9 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     let cancelled = false;
     cancelledRef.current = false;
     
+    setLoading(true);
+    setError(null);
+    
     Promise.resolve().then(() => {
       if (cancelled || cancelledRef.current) return;
       
