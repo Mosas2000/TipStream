@@ -6,7 +6,7 @@ import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
-import { RateLimiter, getClientIp } from "./rate-limit.js";
+import { RateLimiter, getClientIp, validateRateLimitConfig } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
@@ -26,6 +26,16 @@ const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || 
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
 let eventStore = null;
+
+/**
+ * Get the rate limiter instance for runtime configuration.
+ * Exposed for admin endpoints to query and update configuration.
+ * 
+ * @returns {RateLimiter} The active rate limiter instance
+ */
+function getRateLimiter() {
+  return rateLimiter;
+}
 
 async function getEventStore() {
   if (!eventStore) {
@@ -247,7 +257,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -501,6 +511,105 @@ const server = http.createServer(async (req, res) => {
       }
     }
     return sendJson(res, 200, { bypasses, total: bypasses.length });
+  }
+
+  // GET /api/admin/rate-limit -- get current rate limit configuration
+  if (req.method === "GET" && path === "/api/admin/rate-limit") {
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(
+          res,
+          new UnauthorizedError("unauthorized"),
+          requestId,
+          { path }
+        );
+      }
+    }
+    const config = rateLimiter.getConfig();
+    logger.logResponse(req, 200, 0, {
+      request_id: requestId,
+      max_requests: config.maxRequests,
+      window_ms: config.windowMs,
+    });
+    return sendJson(res, 200, {
+      maxRequests: config.maxRequests,
+      windowMs: config.windowMs,
+      windowSeconds: Math.round(config.windowMs / 1000),
+    });
+  }
+
+  // POST /api/admin/rate-limit -- update rate limit configuration
+  if (req.method === "POST" && path === "/api/admin/rate-limit") {
+    const startTime = Date.now();
+    
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(
+          res,
+          new UnauthorizedError("unauthorized"),
+          requestId,
+          { path }
+        );
+      }
+    }
+
+    try {
+      const body = await parseBody(req);
+      const maxRequests = parseInt(body.maxRequests, 10);
+      const windowMs = parseInt(body.windowMs, 10);
+
+      const validation = validateRateLimitConfig(maxRequests, windowMs);
+      if (!validation.valid) {
+        return sendError(
+          res,
+          new BadRequestError(validation.error),
+          requestId,
+          { path, maxRequests: body.maxRequests, windowMs: body.windowMs }
+        );
+      }
+
+      const oldConfig = rateLimiter.getConfig();
+      rateLimiter.updateConfig(maxRequests, windowMs);
+      const newConfig = rateLimiter.getConfig();
+
+      const processingMs = Date.now() - startTime;
+
+      logger.info("Rate limit configuration updated", {
+        old_max_requests: oldConfig.maxRequests,
+        old_window_ms: oldConfig.windowMs,
+        new_max_requests: newConfig.maxRequests,
+        new_window_ms: newConfig.windowMs,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      
+      logger.logResponse(req, 200, processingMs, {
+        request_id: requestId,
+        old_max_requests: oldConfig.maxRequests,
+        new_max_requests: newConfig.maxRequests,
+      });
+
+      return sendJson(res, 200, {
+        ok: true,
+        previous: {
+          maxRequests: oldConfig.maxRequests,
+          windowMs: oldConfig.windowMs,
+        },
+        current: {
+          maxRequests: newConfig.maxRequests,
+          windowMs: newConfig.windowMs,
+          windowSeconds: Math.round(newConfig.windowMs / 1000),
+        },
+      });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
   }
 
   // GET /health -- health check endpoint (always accessible for orchestration)

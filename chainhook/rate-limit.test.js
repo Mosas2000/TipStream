@@ -81,3 +81,100 @@ test("getClientIp handles missing socket", () => {
   assert(ip);
   assert.strictEqual(typeof ip, "string");
 });
+
+test("RateLimiter.updateConfig changes rate limit settings", () => {
+  const limiter = new RateLimiter(2, 1000);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(!limiter.isAllowed("192.168.1.1"));
+
+  limiter.updateConfig(5, 1000);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+});
+
+test("RateLimiter.updateConfig changes window duration", () => {
+  const limiter = new RateLimiter(1, 100);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(!limiter.isAllowed("192.168.1.1"));
+
+  limiter.updateConfig(1, 50);
+  const config = limiter.getConfig();
+  assert.strictEqual(config.windowMs, 50);
+});
+
+test("RateLimiter.getConfig returns current settings", () => {
+  const limiter = new RateLimiter(10, 5000);
+  const config = limiter.getConfig();
+  assert.strictEqual(config.maxRequests, 10);
+  assert.strictEqual(config.windowMs, 5000);
+});
+
+test("RateLimiter.updateConfig applies immediately", () => {
+  const limiter = new RateLimiter(1, 1000);
+  limiter.isAllowed("192.168.1.1");
+  assert(!limiter.isAllowed("192.168.1.1"));
+
+  limiter.updateConfig(3, 1000);
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(limiter.isAllowed("192.168.1.1"));
+  assert(!limiter.isAllowed("192.168.1.1"));
+});
+
+test("validateRateLimitConfig accepts valid parameters", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(100, 60000);
+  assert.strictEqual(result.valid, true);
+});
+
+test("validateRateLimitConfig rejects maxRequests below minimum", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(0, 60000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('maxRequests'));
+});
+
+test("validateRateLimitConfig rejects maxRequests above maximum", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(20000, 60000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('maxRequests'));
+});
+
+test("validateRateLimitConfig rejects windowMs below minimum", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(100, 500);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('windowMs'));
+});
+
+test("validateRateLimitConfig rejects windowMs above maximum", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(100, 4000000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('windowMs'));
+});
+
+test("validateRateLimitConfig rejects non-number maxRequests", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig("100", 60000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('maxRequests'));
+});
+
+test("validateRateLimitConfig rejects non-number windowMs", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(100, "60000");
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('windowMs'));
+});
+
+test("validateRateLimitConfig rejects NaN values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result1 = validateRateLimitConfig(NaN, 60000);
+  assert.strictEqual(result1.valid, false);
+  
+  const result2 = validateRateLimitConfig(100, NaN);
+  assert.strictEqual(result2.valid, false);
+});

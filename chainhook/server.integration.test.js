@@ -751,3 +751,174 @@ describe('chainhook server integration', () => {
     
     assert.strictEqual(response.status, 200);
   });
+
+describe('Rate Limit Configuration', () => {
+  it('GET /api/admin/rate-limit returns current configuration', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/admin/rate-limit',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(response.body.maxRequests);
+    assert.ok(response.body.windowMs);
+    assert.ok(response.body.windowSeconds);
+    assert.strictEqual(typeof response.body.maxRequests, 'number');
+    assert.strictEqual(typeof response.body.windowMs, 'number');
+  });
+
+  it('POST /api/admin/rate-limit updates configuration', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 50,
+        windowMs: 30000,
+      },
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.ok, true);
+    assert.strictEqual(response.body.current.maxRequests, 50);
+    assert.strictEqual(response.body.current.windowMs, 30000);
+    assert.strictEqual(response.body.current.windowSeconds, 30);
+  });
+
+  it('POST /api/admin/rate-limit validates maxRequests range', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 0,
+        windowMs: 60000,
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('maxRequests must be between 1 and 10000'));
+  });
+
+  it('POST /api/admin/rate-limit validates maxRequests upper bound', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 20000,
+        windowMs: 60000,
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('maxRequests must be between 1 and 10000'));
+  });
+
+  it('POST /api/admin/rate-limit validates windowMs range', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 100,
+        windowMs: 500,
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('windowMs must be between 1000 and 3600000'));
+  });
+
+  it('POST /api/admin/rate-limit validates windowMs upper bound', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 100,
+        windowMs: 4000000,
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.ok(response.body.message.includes('windowMs must be between 1000 and 3600000'));
+  });
+
+  it('POST /api/admin/rate-limit returns previous configuration', async () => {
+    const getBefore = await request({
+      method: 'GET',
+      path: '/api/admin/rate-limit',
+    });
+
+    const update = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 75,
+        windowMs: 45000,
+      },
+    });
+
+    assert.strictEqual(update.status, 200);
+    assert.strictEqual(update.body.previous.maxRequests, getBefore.body.maxRequests);
+    assert.strictEqual(update.body.previous.windowMs, getBefore.body.windowMs);
+    assert.strictEqual(update.body.current.maxRequests, 75);
+    assert.strictEqual(update.body.current.windowMs, 45000);
+  });
+
+  it('POST /api/admin/rate-limit applies changes immediately', async () => {
+    await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 200,
+        windowMs: 60000,
+      },
+    });
+
+    const getAfter = await request({
+      method: 'GET',
+      path: '/api/admin/rate-limit',
+    });
+
+    assert.strictEqual(getAfter.status, 200);
+    assert.strictEqual(getAfter.body.maxRequests, 200);
+    assert.strictEqual(getAfter.body.windowMs, 60000);
+  });
+
+  it('POST /api/admin/rate-limit rejects invalid JSON', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: 'invalid json',
+    });
+
+    assert.strictEqual(response.status, 400);
+  });
+
+  it('POST /api/admin/rate-limit rejects missing maxRequests', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        windowMs: 60000,
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.ok(response.body.message.includes('maxRequests'));
+  });
+
+  it('POST /api/admin/rate-limit rejects missing windowMs', async () => {
+    const response = await request({
+      method: 'POST',
+      path: '/api/admin/rate-limit',
+      body: {
+        maxRequests: 100,
+      },
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.ok(response.body.message.includes('windowMs'));
+  });
+});
