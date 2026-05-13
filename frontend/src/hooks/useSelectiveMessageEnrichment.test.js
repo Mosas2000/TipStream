@@ -247,23 +247,22 @@ describe('useSelectiveMessageEnrichment Hook', () => {
 
   it('handles rapid filtering changes correctly', async () => {
     const mockMessages1 = new Map([['1', 'Msg1'], ['2', 'Msg2'], ['3', 'Msg3']]);
-    const mockMessages2 = new Map([['1', 'Msg1']]);
     
-    fetchTipMessages
-      .mockResolvedValueOnce(mockMessages1)
-      .mockResolvedValueOnce(mockMessages2);
+    fetchTipMessages.mockResolvedValueOnce(mockMessages1);
 
     const { result, rerender } = renderHook(({ tips }) => useSelectiveMessageEnrichment(tips), {
       initialProps: { tips: [{ tipId: '1' }, { tipId: '2' }, { tipId: '3' }] }
     });
 
     await waitFor(() => expect(result.current.enrichedTips[2]?.message).toBe('Msg3'));
+    expect(result.current.loading).toBe(false);
 
-    // Filter to just one tip
+    // Filter to just one tip (subset with overlap)
     rerender({ tips: [{ tipId: '1' }] });
 
-    await waitFor(() => expect(result.current.enrichedTips).toHaveLength(1));
+    // Should use cached data, no new fetch needed
+    expect(result.current.enrichedTips).toHaveLength(1);
     expect(result.current.enrichedTips[0].message).toBe('Msg1');
-    expect(result.current.loading).toBe(false);
+    expect(fetchTipMessages).toHaveBeenCalledTimes(1);
   });
 });
