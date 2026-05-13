@@ -32,3 +32,35 @@ describe('payload validation', () => {
     assert.strictEqual(result.valid, true);
   });
 });
+
+
+describe('block validation', () => {
+  it('rejects null block', () => {
+    const result = validateBlock(null, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('must be an object'));
+  });
+
+  it('rejects block without block_identifier', () => {
+    const result = validateBlock({}, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('missing block_identifier'));
+  });
+
+  it('rejects block with non-object block_identifier', () => {
+    const result = validateBlock({ block_identifier: 'invalid' }, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('missing block_identifier'));
+  });
+
+  it('rejects block without block_identifier.index', () => {
+    const result = validateBlock({ block_identifier: {} }, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('missing block_identifier.index'));
+  });
+
+  it('accepts valid block structure', () => {
+    const result = validateBlock({ block_identifier: { index: 100 } }, 0);
+    assert.strictEqual(result.valid, true);
+  });
+});
