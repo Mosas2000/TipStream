@@ -43,6 +43,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   );
 
   // Detect if the visible set has changed materially
+  // clearCounter forces recalculation when clearEnrichment is called
   const visibleSetChanged = useMemo(() => {
     const current = new Set(visibleTipIds);
     const previous = new Set(previousIdsRef.current);
