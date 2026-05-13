@@ -612,6 +612,42 @@ describe('chainhook server integration', () => {
     assert.ok(typeof response.body.uniqueSenders === 'number');
     assert.ok(typeof response.body.uniqueRecipients === 'number');
   });
+
+  it('retrieves admin events', async () => {
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildAdminEvent({
+          txId: '0xadmin-event-1',
+          eventType: 'fee-change-proposed',
+          data: { 'new-fee': 300 },
+        }),
+        buildAdminEvent({
+          txId: '0xadmin-event-2',
+          eventType: 'fee-change-executed',
+          data: { 'new-fee': 300 },
+        }),
+        buildAdminEvent({
+          txId: '0xadmin-event-3',
+          eventType: 'contract-paused',
+          data: { paused: true },
+        }),
+      ], 701, 1700000006000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: '/api/admin/events',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(Array.isArray(response.body.events));
+    assert.ok(response.body.events.some((e) => e.eventType === 'fee-change-proposed'));
+    assert.ok(response.body.events.some((e) => e.eventType === 'fee-change-executed'));
+    assert.ok(response.body.events.some((e) => e.eventType === 'contract-paused'));
+    assert.ok(typeof response.body.total === 'number');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
