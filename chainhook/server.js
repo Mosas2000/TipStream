@@ -27,6 +27,12 @@ const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
 let eventStore = null;
 
+/**
+ * Get the rate limiter instance for runtime configuration.
+ * Exposed for admin endpoints to query and update configuration.
+ * 
+ * @returns {RateLimiter} The active rate limiter instance
+ */
 function getRateLimiter() {
   return rateLimiter;
 }
