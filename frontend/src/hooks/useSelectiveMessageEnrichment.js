@@ -95,20 +95,20 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
 
     fetchTipMessages(visibleTipIds)
       .then(messageMap => {
-        if (cancelled || cancelledRef.current) return;
+        if (cancelled || cancelledRef.current || requestId !== activeRequestIdRef.current) return;
         const obj = {};
         messageMap.forEach((v, k) => { obj[k] = v; });
         setTipMessages(prev => ({ ...prev, ...obj }));
         marker.stop(visibleTipIds.length, messageMap.size);
       })
       .catch(err => {
-        if (!cancelled && !cancelledRef.current) {
+        if (!cancelled && !cancelledRef.current && requestId === activeRequestIdRef.current) {
           console.warn('Failed to fetch visible tip messages:', err.message || err);
           setError(err.message || 'Failed to load messages');
         }
       })
       .finally(() => {
-        if (!cancelled && !cancelledRef.current) {
+        if (!cancelled && !cancelledRef.current && requestId === activeRequestIdRef.current) {
           setLoading(false);
         }
       });
