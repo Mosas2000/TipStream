@@ -439,6 +439,49 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.body.error, 'bad_request');
     assert.strictEqual(response.body.message, 'invalid tip ID');
   });
+
+  it('retrieves tips by user address', async () => {
+    const sender = 'SP3CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC';
+    const recipient1 = 'SP4DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD';
+    const recipient2 = 'SP5EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({
+          txId: '0xuser-tip-1',
+          tipId: 401,
+          sender,
+          recipient: recipient1,
+          amount: 30000,
+          fee: 1500,
+          netAmount: 28500,
+        }),
+        buildTipEvent({
+          txId: '0xuser-tip-2',
+          tipId: 402,
+          sender,
+          recipient: recipient2,
+          amount: 40000,
+          fee: 2000,
+          netAmount: 38000,
+        }),
+      ], 401, 1700000003000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: `/api/tips/user/${sender}`,
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.tips.length, 2);
+    assert.ok(response.body.tips.some((tip) => tip.tipId === '401'));
+    assert.ok(response.body.tips.some((tip) => tip.tipId === '402'));
+    assert.ok(response.body.tips.every((tip) => tip.sender === sender));
+    assert.strictEqual(response.body.total, 2);
+  });
 });
 
   it('rejects requests during shutdown', async () => {
