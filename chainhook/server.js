@@ -116,6 +116,22 @@ function validateBlock(block, blockIndex) {
   return { valid: true };
 }
 
+function validateTransaction(tx, blockIndex, txIndex) {
+  if (!tx || typeof tx !== 'object') {
+    return { valid: false, reason: `transaction at block ${blockIndex}, tx ${txIndex} must be an object` };
+  }
+  
+  if (!tx.transaction_identifier || typeof tx.transaction_identifier !== 'object') {
+    return { valid: false, reason: `transaction at block ${blockIndex}, tx ${txIndex} missing transaction_identifier` };
+  }
+  
+  if (!tx.transaction_identifier.hash) {
+    return { valid: false, reason: `transaction at block ${blockIndex}, tx ${txIndex} missing transaction_identifier.hash` };
+  }
+  
+  return { valid: true };
+}
+
 function extractEvents(payload) {
   const events = [];
   const apply = payload.apply || [];
