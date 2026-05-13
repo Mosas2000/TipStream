@@ -545,6 +545,59 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.body.tips.length, 0);
     assert.strictEqual(response.body.total, 0);
   });
+
+  it('returns aggregate statistics', async () => {
+    const sender1 = 'SPAJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ';
+    const sender2 = 'SPBKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK';
+    const recipient1 = 'SPCLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL';
+    const recipient2 = 'SPDMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({
+          txId: '0xstats-tip-1',
+          tipId: 601,
+          sender: sender1,
+          recipient: recipient1,
+          amount: 100000,
+          fee: 5000,
+          netAmount: 95000,
+        }),
+        buildTipEvent({
+          txId: '0xstats-tip-2',
+          tipId: 602,
+          sender: sender2,
+          recipient: recipient2,
+          amount: 200000,
+          fee: 10000,
+          netAmount: 190000,
+        }),
+        buildTipEvent({
+          txId: '0xstats-tip-3',
+          tipId: 603,
+          sender: sender1,
+          recipient: recipient2,
+          amount: 150000,
+          fee: 7500,
+          netAmount: 142500,
+        }),
+      ], 601, 1700000005000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: '/api/stats',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(response.body.totalTips >= 3);
+    assert.ok(response.body.totalVolume >= 450000);
+    assert.ok(response.body.totalFees >= 22500);
+    assert.ok(response.body.uniqueSenders >= 2);
+    assert.ok(response.body.uniqueRecipients >= 2);
+  });
 });
 
   it('rejects requests during shutdown', async () => {
