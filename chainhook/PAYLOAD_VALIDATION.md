@@ -111,3 +111,83 @@ Run tests with:
 ```bash
 npm test
 ```
+
+
+## Common Validation Errors
+
+### Missing apply Field
+
+**Request**:
+```json
+{
+  "invalid": "payload"
+}
+```
+
+**Response**:
+```json
+{
+  "error": "bad_request",
+  "message": "invalid payload structure: payload.apply must be an array",
+  "request_id": "abc-123"
+}
+```
+
+### Missing block_identifier
+
+**Request**:
+```json
+{
+  "apply": [
+    {
+      "transactions": []
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "error": "bad_request",
+  "message": "invalid block structure: block at index 0 missing block_identifier",
+  "request_id": "def-456"
+}
+```
+
+### Missing transaction_identifier
+
+**Request**:
+```json
+{
+  "apply": [
+    {
+      "block_identifier": { "index": 100 },
+      "transactions": [
+        {
+          "metadata": {}
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "error": "bad_request",
+  "message": "invalid transaction structure: transaction at block 0, tx 0 missing transaction_identifier",
+  "request_id": "ghi-789"
+}
+```
+
+## Monitoring
+
+Operators should monitor for:
+
+- 400 Bad Request responses indicating malformed payloads
+- Warning logs for events missing value fields
+- Validation error patterns in logs
+
+These signals indicate issues with the chainhook configuration or upstream data quality.
