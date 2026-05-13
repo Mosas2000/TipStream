@@ -28,9 +28,10 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
   const [tipMessages, setTipMessages] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const cancelledRef = useRef(false);
   const previousIdsRef = useRef([]);
   const activeRequestIdRef = useRef(0);
+  const tipMessagesRef = useRef({});
+  const [clearCounter, setClearCounter] = useState(0);
 
   // Extract unique, non-zero tip IDs from the currently visible set
   const visibleTipIds = useMemo(
@@ -53,15 +54,11 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     }
     
     return false;
-  }, [visibleTipIds]);
-
-  // Determine which IDs need fetching
-  const idsToFetch = useMemo(() => {
-    return visibleTipIds.filter(id => !tipMessages[id]);
-  }, [visibleTipIds, tipMessages]);
+  }, [visibleTipIds, clearCounter]);
 
   useEffect(() => {
     if (visibleTipIds.length === 0) {
+      setLoading(false);
       return;
     }
 
@@ -70,11 +67,6 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     }
 
     const requestId = ++activeRequestIdRef.current;
-    let cancelled = false;
-    cancelledRef.current = false;
-    
-    setLoading(idsToFetch.length > 0);
-    setError(null);
     
     const prevSet = new Set(previousIdsRef.current);
     const currentSet = new Set(visibleTipIds);
@@ -82,6 +74,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
     
     if (!hasOverlap && previousIdsRef.current.length > 0) {
       setTipMessages({});
+      tipMessagesRef.current = {};
     } else if (hasOverlap) {
       setTipMessages(prev => {
         const filtered = {};
@@ -90,47 +83,54 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
             filtered[id] = prev[id];
           }
         }
+        tipMessagesRef.current = filtered;
         return filtered;
       });
     }
     
     previousIdsRef.current = visibleTipIds;
-
-    if (idsToFetch.length === 0) {
+    
+    const uncachedIds = visibleTipIds.filter(id => !tipMessagesRef.current[id]);
+    
+    if (uncachedIds.length === 0) {
+      setLoading(false);
+      setError(null);
       return;
     }
 
-    if (idsToFetch.length === 0) {
-      return;
-    }
+    setLoading(true);
+    setError(null);
 
     const marker = createEnrichmentMarker();
 
-    fetchTipMessages(idsToFetch)
+    fetchTipMessages(uncachedIds)
       .then(messageMap => {
-        if (cancelled || cancelledRef.current || requestId !== activeRequestIdRef.current) return;
+        if (requestId !== activeRequestIdRef.current) return;
         const obj = {};
         messageMap.forEach((v, k) => { obj[k] = v; });
-        setTipMessages(prev => ({ ...prev, ...obj }));
-        marker.stop(idsToFetch.length, messageMap.size);
+        setTipMessages(prev => {
+          const updated = { ...prev, ...obj };
+          tipMessagesRef.current = updated;
+          return updated;
+        });
+        marker.stop(uncachedIds.length, messageMap.size);
       })
       .catch(err => {
-        if (!cancelled && !cancelledRef.current && requestId === activeRequestIdRef.current) {
+        if (requestId === activeRequestIdRef.current) {
           console.warn('Failed to fetch visible tip messages:', err.message || err);
           setError(err.message || 'Failed to load messages');
         }
       })
       .finally(() => {
-        if (!cancelled && !cancelledRef.current && requestId === activeRequestIdRef.current) {
+        if (requestId === activeRequestIdRef.current) {
           setLoading(false);
         }
       });
 
     return () => {
-      cancelled = true;
-      cancelledRef.current = true;
+      // Don't increment here, just let the next effect run increment it
     };
-  }, [visibleTipIds, visibleSetChanged, idsToFetch]);
+  }, [visibleTipIds, visibleSetChanged]);
 
   /**
    * Re-map the visible tips to include their fetched messages.
@@ -150,10 +150,12 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
    */
   const clearEnrichment = useCallback(() => {
     setTipMessages({});
+    tipMessagesRef.current = {};
     previousIdsRef.current = [];
     activeRequestIdRef.current++;
     setLoading(false);
     setError(null);
+    setClearCounter(c => c + 1);
   }, []);
 
   return {
