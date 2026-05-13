@@ -418,6 +418,16 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.body.netAmount, '47500');
     assert.strictEqual(response.body.txId, '0xtip-by-id-1');
   });
+
+  it('returns 404 for non-existent tip ID', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips/888888',
+    });
+
+    assert.strictEqual(response.status, 404);
+    assert.strictEqual(response.body.error, 'tip not found');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
