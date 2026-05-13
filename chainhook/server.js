@@ -133,11 +133,29 @@ function validateTransaction(tx, blockIndex, txIndex) {
 }
 
 function extractEvents(payload) {
+  const validation = validatePayloadStructure(payload);
+  if (!validation.valid) {
+    throw new BadRequestError(`invalid payload structure: ${validation.reason}`);
+  }
+
   const events = [];
   const apply = payload.apply || [];
-  for (const block of apply) {
+  
+  for (let blockIndex = 0; blockIndex < apply.length; blockIndex++) {
+    const block = apply[blockIndex];
+    const blockValidation = validateBlock(block, blockIndex);
+    if (!blockValidation.valid) {
+      throw new BadRequestError(`invalid block structure: ${blockValidation.reason}`);
+    }
+
     const transactions = block.transactions || [];
-    for (const tx of transactions) {
+    for (let txIndex = 0; txIndex < transactions.length; txIndex++) {
+      const tx = transactions[txIndex];
+      const txValidation = validateTransaction(tx, blockIndex, txIndex);
+      if (!txValidation.valid) {
+        throw new BadRequestError(`invalid transaction structure: ${txValidation.reason}`);
+      }
+
       const metadata = tx.metadata || {};
       const receipt = metadata.receipt || {};
       const printEvents = receipt.events || [];
