@@ -64,3 +64,35 @@ describe('block validation', () => {
     assert.strictEqual(result.valid, true);
   });
 });
+
+
+describe('transaction validation', () => {
+  it('rejects null transaction', () => {
+    const result = validateTransaction(null, 0, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('must be an object'));
+  });
+
+  it('rejects transaction without transaction_identifier', () => {
+    const result = validateTransaction({}, 0, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('missing transaction_identifier'));
+  });
+
+  it('rejects transaction with non-object transaction_identifier', () => {
+    const result = validateTransaction({ transaction_identifier: 'invalid' }, 0, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('missing transaction_identifier'));
+  });
+
+  it('rejects transaction without transaction_identifier.hash', () => {
+    const result = validateTransaction({ transaction_identifier: {} }, 0, 0);
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.reason.includes('missing transaction_identifier.hash'));
+  });
+
+  it('accepts valid transaction structure', () => {
+    const result = validateTransaction({ transaction_identifier: { hash: '0xabc' } }, 0, 0);
+    assert.strictEqual(result.valid, true);
+  });
+});
