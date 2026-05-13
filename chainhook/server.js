@@ -27,6 +27,10 @@ const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
 let eventStore = null;
 
+function getRateLimiter() {
+  return rateLimiter;
+}
+
 async function getEventStore() {
   if (!eventStore) {
     if (STORAGE_MODE === "postgres" && !DATABASE_URL) {
@@ -247,7 +251,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -501,6 +505,93 @@ const server = http.createServer(async (req, res) => {
       }
     }
     return sendJson(res, 200, { bypasses, total: bypasses.length });
+  }
+
+  // GET /api/admin/rate-limit -- get current rate limit configuration
+  if (req.method === "GET" && path === "/api/admin/rate-limit") {
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(
+          res,
+          new UnauthorizedError("unauthorized"),
+          requestId,
+          { path }
+        );
+      }
+    }
+    const config = rateLimiter.getConfig();
+    return sendJson(res, 200, {
+      maxRequests: config.maxRequests,
+      windowMs: config.windowMs,
+      windowSeconds: Math.round(config.windowMs / 1000),
+    });
+  }
+
+  // POST /api/admin/rate-limit -- update rate limit configuration
+  if (req.method === "POST" && path === "/api/admin/rate-limit") {
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(
+          res,
+          new UnauthorizedError("unauthorized"),
+          requestId,
+          { path }
+        );
+      }
+    }
+
+    try {
+      const body = await parseBody(req);
+      const maxRequests = parseInt(body.maxRequests, 10);
+      const windowMs = parseInt(body.windowMs, 10);
+
+      if (isNaN(maxRequests) || maxRequests < 1 || maxRequests > 10000) {
+        return sendError(
+          res,
+          new BadRequestError("maxRequests must be between 1 and 10000"),
+          requestId,
+          { path, maxRequests: body.maxRequests }
+        );
+      }
+
+      if (isNaN(windowMs) || windowMs < 1000 || windowMs > 3600000) {
+        return sendError(
+          res,
+          new BadRequestError("windowMs must be between 1000 and 3600000"),
+          requestId,
+          { path, windowMs: body.windowMs }
+        );
+      }
+
+      const oldConfig = rateLimiter.getConfig();
+      rateLimiter.updateConfig(maxRequests, windowMs);
+      const newConfig = rateLimiter.getConfig();
+
+      logger.info("Rate limit configuration updated", {
+        old_max_requests: oldConfig.maxRequests,
+        old_window_ms: oldConfig.windowMs,
+        new_max_requests: newConfig.maxRequests,
+        new_window_ms: newConfig.windowMs,
+        request_id: requestId,
+      });
+
+      return sendJson(res, 200, {
+        ok: true,
+        previous: {
+          maxRequests: oldConfig.maxRequests,
+          windowMs: oldConfig.windowMs,
+        },
+        current: {
+          maxRequests: newConfig.maxRequests,
+          windowMs: newConfig.windowMs,
+          windowSeconds: Math.round(newConfig.windowMs / 1000),
+        },
+      });
+    } catch (err) {
+      return sendError(res, err, requestId, { path });
+    }
   }
 
   // GET /health -- health check endpoint (always accessible for orchestration)
