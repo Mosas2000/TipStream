@@ -137,3 +137,171 @@ When the service is shutting down, clients receive:
 3. Use health checks to remove instances before shutdown
 4. Allow 30-60 seconds for graceful termination
 5. Monitor shutdown metrics to tune timeout values
+
+
+## Rate Limit Configuration
+
+### Startup Configuration
+
+Rate limits are configured via environment variables at startup:
+
+```bash
+RATE_LIMIT_MAX_REQUESTS=100    # Maximum requests per window
+RATE_LIMIT_WINDOW_MS=60000     # Time window in milliseconds (60 seconds)
+```
+
+### Runtime Reconfiguration
+
+Rate limits can be adjusted at runtime without restarting the service. This is critical for incident response when traffic patterns change unexpectedly.
+
+#### Check Current Configuration
+
+```bash
+curl http://localhost:3100/api/admin/rate-limit \
+  -H "Authorization: Bearer ${CHAINHOOK_AUTH_TOKEN}"
+```
+
+Response:
+```json
+{
+  "maxRequests": 100,
+  "windowMs": 60000,
+  "windowSeconds": 60
+}
+```
+
+#### Update Configuration
+
+```bash
+curl -X POST http://localhost:3100/api/admin/rate-limit \
+  -H "Authorization: Bearer ${CHAINHOOK_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "maxRequests": 50,
+    "windowMs": 30000
+  }'
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "previous": {
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "current": {
+    "maxRequests": 50,
+    "windowMs": 30000,
+    "windowSeconds": 30
+  }
+}
+```
+
+### Incident Response Workflow
+
+1. **Detect**: Monitor `/metrics` endpoint for rate limit violations
+2. **Assess**: Determine if traffic is legitimate or attack
+3. **Respond**: Adjust limits via POST endpoint
+4. **Verify**: Confirm new configuration via GET endpoint
+5. **Monitor**: Watch metrics for desired effect
+6. **Document**: Update environment variables for next restart
+
+### Example Scenarios
+
+#### Scenario 1: DDoS Attack Mitigation
+
+Tighten rate limits immediately:
+
+```bash
+curl -X POST http://localhost:3100/api/admin/rate-limit \
+  -H "Authorization: Bearer ${CHAINHOOK_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"maxRequests": 10, "windowMs": 60000}'
+```
+
+#### Scenario 2: Legitimate Traffic Spike
+
+Relax rate limits temporarily:
+
+```bash
+curl -X POST http://localhost:3100/api/admin/rate-limit \
+  -H "Authorization: Bearer ${CHAINHOOK_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"maxRequests": 200, "windowMs": 60000}'
+```
+
+#### Scenario 3: Gradual Adjustment
+
+Make incremental changes while monitoring:
+
+```bash
+# Step 1: Moderate tightening
+curl -X POST http://localhost:3100/api/admin/rate-limit \
+  -H "Authorization: Bearer ${CHAINHOOK_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"maxRequests": 75, "windowMs": 60000}'
+
+# Wait and monitor...
+
+# Step 2: Further tightening if needed
+curl -X POST http://localhost:3100/api/admin/rate-limit \
+  -H "Authorization: Bearer ${CHAINHOOK_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"maxRequests": 50, "windowMs": 60000}'
+```
+
+### Validation Rules
+
+- `maxRequests`: Must be between 1 and 10000
+- `windowMs`: Must be between 1000 (1 second) and 3600000 (1 hour)
+
+### Important Notes
+
+- Runtime changes are not persisted across restarts
+- After restart, service reverts to environment variable values
+- Changes apply immediately to all new requests
+- Existing rate limit counters are preserved
+- All configuration changes are logged for audit trail
+
+### Monitoring
+
+Rate limit configuration changes are logged:
+
+```json
+{
+  "level": "INFO",
+  "message": "Rate limit configuration updated",
+  "old_max_requests": 100,
+  "old_window_ms": 60000,
+  "new_max_requests": 50,
+  "new_window_ms": 30000,
+  "request_id": "..."
+}
+```
+
+Monitor these metrics:
+- Rate limit violations per IP
+- Total requests vs rate limited requests
+- Configuration change frequency
+- Response times during rate limit adjustments
+
+### Best Practices
+
+1. **Test in Staging**: Verify new limits before applying to production
+2. **Gradual Changes**: Make incremental adjustments rather than drastic ones
+3. **Document Changes**: Keep a log of why and when limits were changed
+4. **Update Defaults**: After incident, update environment variables to reflect new baseline
+5. **Automate Response**: Script common incident response scenarios
+6. **Monitor Impact**: Watch metrics after each change
+7. **Coordinate with Team**: Communicate rate limit changes to operations team
+
+### Security Considerations
+
+- Always use authentication tokens in production
+- Restrict admin endpoint access to authorized personnel
+- Log all configuration changes for audit trail
+- Monitor for unauthorized configuration attempts
+- Consider implementing additional authorization layers
+
+See [RATE_LIMIT_RUNTIME_CONFIG.md](./RATE_LIMIT_RUNTIME_CONFIG.md) for complete documentation.
