@@ -60,8 +60,14 @@ describe("parseBody", () => {
 });
 
 describe("extractEvents", () => {
-  it("returns an empty array for an empty payload", () => {
-    assert.deepStrictEqual(extractEvents({}), []);
+  it("throws error for payload without apply field", () => {
+    assert.throws(() => extractEvents({}), {
+      message: /payload.apply must be an array/,
+    });
+  });
+
+  it("returns empty array for empty apply", () => {
+    assert.deepStrictEqual(extractEvents({ apply: [] }), []);
   });
 
   it("extracts SmartContractEvent entries from a chainhook payload", () => {
