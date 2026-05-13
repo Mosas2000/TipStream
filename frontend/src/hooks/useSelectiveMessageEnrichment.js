@@ -107,6 +107,7 @@ export function useSelectiveMessageEnrichment(visibleTips = []) {
 
     fetchTipMessages(uncachedIds)
       .then(messageMap => {
+        // Only update state if this is still the active request
         if (requestId !== activeRequestIdRef.current) return;
         const obj = {};
         messageMap.forEach((v, k) => { obj[k] = v; });
