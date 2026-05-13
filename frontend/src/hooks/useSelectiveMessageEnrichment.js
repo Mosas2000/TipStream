@@ -9,6 +9,13 @@
  *
  * Message cache is persistent across hook re-renders to minimize redundant
  * fetches as the visible set changes.
+ *
+ * Key features:
+ * - Detects visible set changes to reset stale state
+ * - Tracks request IDs to prevent race conditions
+ * - Uses ref-based cache tracking to avoid infinite loops
+ * - Reconciles state on partial set changes
+ * - Handles rapid pagination and filtering gracefully
  */
 
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
