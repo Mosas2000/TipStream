@@ -535,6 +535,8 @@ const server = http.createServer(async (req, res) => {
 
   // POST /api/admin/rate-limit -- update rate limit configuration
   if (req.method === "POST" && path === "/api/admin/rate-limit") {
+    const startTime = Date.now();
+    
     if (AUTH_TOKEN) {
       const authHeader = req.headers.authorization || "";
       if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
@@ -566,15 +568,24 @@ const server = http.createServer(async (req, res) => {
       rateLimiter.updateConfig(maxRequests, windowMs);
       const newConfig = rateLimiter.getConfig();
 
+      const processingMs = Date.now() - startTime;
+
       logger.info("Rate limit configuration updated", {
         old_max_requests: oldConfig.maxRequests,
         old_window_ms: oldConfig.windowMs,
         new_max_requests: newConfig.maxRequests,
         new_window_ms: newConfig.windowMs,
         request_id: requestId,
+        processing_ms: processingMs,
       });
 
       metrics.recordRequest(true);
+      
+      logger.logResponse(req, 200, processingMs, {
+        request_id: requestId,
+        old_max_requests: oldConfig.maxRequests,
+        new_max_requests: newConfig.maxRequests,
+      });
 
       return sendJson(res, 200, {
         ok: true,
@@ -589,8 +600,9 @@ const server = http.createServer(async (req, res) => {
         },
       });
     } catch (err) {
+      const processingMs = Date.now() - startTime;
       metrics.recordRequest(false);
-      return sendError(res, err, requestId, { path });
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
     }
   }
 
