@@ -123,10 +123,11 @@ export function getClientIp(req) {
 
 /**
  * Validate rate limit configuration parameters.
+ * Ensures values are within acceptable ranges for production use.
  * 
  * @param {number} maxRequests - Maximum requests per window
  * @param {number} windowMs - Time window in milliseconds
- * @returns {object} Validation result with valid flag and error message
+ * @returns {object} Validation result with valid flag and error message if invalid
  */
 export function validateRateLimitConfig(maxRequests, windowMs) {
   if (typeof maxRequests !== 'number' || isNaN(maxRequests)) {
