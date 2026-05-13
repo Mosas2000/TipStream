@@ -428,6 +428,17 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.status, 404);
     assert.strictEqual(response.body.error, 'tip not found');
   });
+
+  it('returns 400 for invalid tip ID format', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips/-1',
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.strictEqual(response.body.message, 'invalid tip ID');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
