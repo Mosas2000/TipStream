@@ -6,7 +6,7 @@ import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
-import { RateLimiter, getClientIp } from "./rate-limit.js";
+import { RateLimiter, getClientIp, validateRateLimitConfig } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
@@ -547,21 +547,13 @@ const server = http.createServer(async (req, res) => {
       const maxRequests = parseInt(body.maxRequests, 10);
       const windowMs = parseInt(body.windowMs, 10);
 
-      if (isNaN(maxRequests) || maxRequests < 1 || maxRequests > 10000) {
+      const validation = validateRateLimitConfig(maxRequests, windowMs);
+      if (!validation.valid) {
         return sendError(
           res,
-          new BadRequestError("maxRequests must be between 1 and 10000"),
+          new BadRequestError(validation.error),
           requestId,
-          { path, maxRequests: body.maxRequests }
-        );
-      }
-
-      if (isNaN(windowMs) || windowMs < 1000 || windowMs > 3600000) {
-        return sendError(
-          res,
-          new BadRequestError("windowMs must be between 1000 and 3600000"),
-          requestId,
-          { path, windowMs: body.windowMs }
+          { path, maxRequests: body.maxRequests, windowMs: body.windowMs }
         );
       }
 
