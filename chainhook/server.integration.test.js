@@ -523,6 +523,17 @@ describe('chainhook server integration', () => {
     assert.ok(response.body.tips.every((tip) => tip.recipient === recipient));
     assert.strictEqual(response.body.total, 2);
   });
+
+  it('returns 400 for invalid user address format', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips/user/invalid-address',
+    });
+
+    assert.strictEqual(response.status, 400);
+    assert.strictEqual(response.body.error, 'bad_request');
+    assert.strictEqual(response.body.message, 'invalid address format');
+  });
 });
 
   it('rejects requests during shutdown', async () => {
