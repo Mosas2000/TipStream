@@ -38,6 +38,18 @@ export const ROUTE_BATCH = '/batch';
 export const ROUTE_TOKEN_TIP = '/token-tip';
 
 /**
+ * Schedule a tip for future execution.
+ * @type {string}
+ */
+export const ROUTE_SCHEDULE = '/schedule';
+
+/**
+ * View and manage scheduled tips.
+ * @type {string}
+ */
+export const ROUTE_SCHEDULED_TIPS = '/scheduled-tips';
+
+/**
  * Live feed of recent tips across the platform.
  * @type {string}
  */
@@ -101,6 +113,8 @@ export const ROUTE_LABELS = {
   [ROUTE_SEND]: 'Send Tip',
   [ROUTE_BATCH]: 'Batch',
   [ROUTE_TOKEN_TIP]: 'Token Tip',
+  [ROUTE_SCHEDULE]: 'Schedule',
+  [ROUTE_SCHEDULED_TIPS]: 'Scheduled Tips',
   [ROUTE_FEED]: 'Live Feed',
   [ROUTE_LEADERBOARD]: 'Leaderboard',
   [ROUTE_ACTIVITY]: 'My Activity',
@@ -123,6 +137,8 @@ export const ROUTE_TITLES = {
   [ROUTE_SEND]: 'Send Tip -- TipStream',
   [ROUTE_BATCH]: 'Batch Tip -- TipStream',
   [ROUTE_TOKEN_TIP]: 'Token Tip -- TipStream',
+  [ROUTE_SCHEDULE]: 'Schedule Tip -- TipStream',
+  [ROUTE_SCHEDULED_TIPS]: 'Scheduled Tips -- TipStream',
   [ROUTE_FEED]: 'Live Feed -- TipStream',
   [ROUTE_LEADERBOARD]: 'Leaderboard -- TipStream',
   [ROUTE_ACTIVITY]: 'My Activity -- TipStream',
@@ -162,6 +178,16 @@ export const ROUTE_META = {
   },
   [ROUTE_TOKEN_TIP]: {
     description: 'Send a SIP-010 token tip.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_SCHEDULE]: {
+    description: 'Schedule a tip to be sent at a future date and time.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_SCHEDULED_TIPS]: {
+    description: 'View and manage your scheduled tips.',
     requiresAuth: true,
     adminOnly: false,
   },
