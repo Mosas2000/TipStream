@@ -349,3 +349,359 @@ export async function createEventStore(options = {}) {
 
 export { MemoryEventStore, PostgresEventStore };
 export { DEFAULT_POOL_MAX, DEFAULT_POOL_IDLE_TIMEOUT_MS, DEFAULT_POOL_CONNECTION_TIMEOUT_MS, DEFAULT_STATEMENT_TIMEOUT_MS };
+
+class MemoryScheduledTipStore {
+  constructor() {
+    this.tips = [];
+  }
+
+  async init() {
+    return this;
+  }
+
+  async insertScheduledTip(tip) {
+    const existing = this.tips.find(t => t.id === tip.id);
+    if (existing) {
+      return { inserted: false, tip: existing };
+    }
+    this.tips.push(tip);
+    return { inserted: true, tip };
+  }
+
+  async getScheduledTip(id) {
+    return this.tips.find(t => t.id === id) || null;
+  }
+
+  async listScheduledTips(filters = {}) {
+    let results = [...this.tips];
+
+    if (filters.sender) {
+      results = results.filter(t => t.sender === filters.sender);
+    }
+    if (filters.recipient) {
+      results = results.filter(t => t.recipient === filters.recipient);
+    }
+    if (filters.status) {
+      results = results.filter(t => t.status === filters.status);
+    }
+
+    results.sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
+
+    const offset = filters.offset || 0;
+    const limit = filters.limit || 50;
+    const total = results.length;
+    results = results.slice(offset, offset + limit);
+
+    return { tips: results, total };
+  }
+
+  async updateScheduledTip(id, updates) {
+    const index = this.tips.findIndex(t => t.id === id);
+    if (index === -1) {
+      return { updated: false, tip: null };
+    }
+    this.tips[index] = { ...this.tips[index], ...updates, updatedAt: new Date() };
+    return { updated: true, tip: this.tips[index] };
+  }
+
+  async cancelScheduledTip(id, sender) {
+    const tip = this.tips.find(t => t.id === id && t.sender === sender);
+    if (!tip) {
+      return { cancelled: false, reason: 'not_found' };
+    }
+    if (tip.status !== 'pending') {
+      return { cancelled: false, reason: 'not_pending' };
+    }
+    tip.status = 'cancelled';
+    tip.updatedAt = new Date();
+    return { cancelled: true, tip };
+  }
+
+  async getPendingScheduledTips() {
+    const now = new Date();
+    return this.tips.filter(t => t.status === 'pending' && new Date(t.scheduledFor) <= now);
+  }
+
+  async getNotifiableScheduledTips(leadMinutes = 60) {
+    const now = new Date();
+    return this.tips.filter(t => {
+      if (t.status !== 'pending' || t.notifiedAt) return false;
+      const notificationTime = new Date(new Date(t.scheduledFor).getTime() - leadMinutes * 60 * 1000);
+      return now >= notificationTime;
+    });
+  }
+
+  async countScheduledTips(status = null) {
+    if (status) {
+      return this.tips.filter(t => t.status === status).length;
+    }
+    return this.tips.length;
+  }
+
+  async close() {}
+}
+
+class PostgresScheduledTipStore {
+  constructor(pool, poolConfig = {}) {
+    this.pool = pool;
+    this.poolConfig = poolConfig;
+    this.ready = null;
+  }
+
+  async init() {
+    if (!this.ready) {
+      this.ready = this.#initialize();
+    }
+    return this.ready;
+  }
+
+  async #initialize() {
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS scheduled_tips (
+        id TEXT PRIMARY KEY,
+        sender TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        amount BIGINT NOT NULL,
+        scheduled_for TIMESTAMPTZ NOT NULL,
+        message TEXT NOT NULL DEFAULT '',
+        category INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        executed_at TIMESTAMPTZ,
+        tx_id TEXT,
+        failure_reason TEXT,
+        notified_at TIMESTAMPTZ
+      );
+    `);
+
+    await this.pool.query('CREATE INDEX IF NOT EXISTS scheduled_tips_sender_idx ON scheduled_tips (sender);');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS scheduled_tips_recipient_idx ON scheduled_tips (recipient);');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS scheduled_tips_status_idx ON scheduled_tips (status);');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS scheduled_tips_scheduled_for_idx ON scheduled_tips (scheduled_for);');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS scheduled_tips_pending_due_idx ON scheduled_tips (scheduled_for) WHERE status = \'pending\';');
+  }
+
+  async insertScheduledTip(tip) {
+    await this.init();
+
+    const result = await this.pool.query(
+      `INSERT INTO scheduled_tips (id, sender, recipient, amount, scheduled_for, message, category, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING *`,
+      [
+        tip.id,
+        tip.sender,
+        tip.recipient,
+        tip.amount,
+        tip.scheduledFor,
+        tip.message || '',
+        tip.category || 0,
+        tip.status || 'pending',
+        tip.createdAt || new Date(),
+        tip.updatedAt || new Date(),
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      const existing = await this.getScheduledTip(tip.id);
+      return { inserted: false, tip: existing };
+    }
+
+    return { inserted: true, tip: this.#rowToTip(result.rows[0]) };
+  }
+
+  async getScheduledTip(id) {
+    await this.init();
+    const result = await this.pool.query('SELECT * FROM scheduled_tips WHERE id = $1', [id]);
+    return result.rows[0] ? this.#rowToTip(result.rows[0]) : null;
+  }
+
+  async listScheduledTips(filters = {}) {
+    await this.init();
+
+    let query = 'SELECT * FROM scheduled_tips WHERE 1=1';
+    const values = [];
+    let paramIndex = 1;
+
+    if (filters.sender) {
+      query += ` AND sender = $${paramIndex++}`;
+      values.push(filters.sender);
+    }
+    if (filters.recipient) {
+      query += ` AND recipient = $${paramIndex++}`;
+      values.push(filters.recipient);
+    }
+    if (filters.status) {
+      query += ` AND status = $${paramIndex++}`;
+      values.push(filters.status);
+    }
+
+    query += ' ORDER BY scheduled_for DESC';
+
+    const offset = filters.offset || 0;
+    const limit = filters.limit || 50;
+    query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    values.push(limit, offset);
+
+    const result = await this.pool.query(query, values);
+
+    const countResult = await this.pool.query(
+      'SELECT COUNT(*)::int AS count FROM scheduled_tips WHERE 1=1' +
+      (filters.sender ? ' AND sender = $1' : '') +
+      (filters.recipient ? ` AND recipient = $${filters.sender ? 2 : 1}` : '') +
+      (filters.status ? ` AND status = $${(filters.sender ? 1 : 0) + (filters.recipient ? 1 : 0) + 1}` : ''),
+      values.slice(0, -2)
+    );
+
+    return {
+      tips: result.rows.map(r => this.#rowToTip(r)),
+      total: countResult.rows[0]?.count || 0,
+    };
+  }
+
+  async updateScheduledTip(id, updates) {
+    await this.init();
+
+    const setClauses = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (updates.status !== undefined) {
+      setClauses.push(`status = $${paramIndex++}`);
+      values.push(updates.status);
+    }
+    if (updates.executedAt !== undefined) {
+      setClauses.push(`executed_at = $${paramIndex++}`);
+      values.push(updates.executedAt);
+    }
+    if (updates.txId !== undefined) {
+      setClauses.push(`tx_id = $${paramIndex++}`);
+      values.push(updates.txId);
+    }
+    if (updates.failureReason !== undefined) {
+      setClauses.push(`failure_reason = $${paramIndex++}`);
+      values.push(updates.failureReason);
+    }
+    if (updates.notifiedAt !== undefined) {
+      setClauses.push(`notified_at = $${paramIndex++}`);
+      values.push(updates.notifiedAt);
+    }
+
+    setClauses.push(`updated_at = $${paramIndex++}`);
+    values.push(new Date());
+
+    values.push(id);
+
+    const result = await this.pool.query(
+      `UPDATE scheduled_tips SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    if (result.rowCount === 0) {
+      return { updated: false, tip: null };
+    }
+
+    return { updated: true, tip: this.#rowToTip(result.rows[0]) };
+  }
+
+  async cancelScheduledTip(id, sender) {
+    await this.init();
+
+    const result = await this.pool.query(
+      `UPDATE scheduled_tips SET status = 'cancelled', updated_at = NOW()
+       WHERE id = $1 AND sender = $2 AND status = 'pending'
+       RETURNING *`,
+      [id, sender]
+    );
+
+    if (result.rowCount === 0) {
+      const tip = await this.getScheduledTip(id);
+      if (!tip || tip.sender !== sender) {
+        return { cancelled: false, reason: 'not_found' };
+      }
+      return { cancelled: false, reason: 'not_pending' };
+    }
+
+    return { cancelled: true, tip: this.#rowToTip(result.rows[0]) };
+  }
+
+  async getPendingScheduledTips() {
+    await this.init();
+    const result = await this.pool.query(
+      "SELECT * FROM scheduled_tips WHERE status = 'pending' AND scheduled_for <= NOW() ORDER BY scheduled_for ASC"
+    );
+    return result.rows.map(r => this.#rowToTip(r));
+  }
+
+  async getNotifiableScheduledTips(leadMinutes = 60) {
+    await this.init();
+    const result = await this.pool.query(
+      `SELECT * FROM scheduled_tips
+       WHERE status = 'pending'
+         AND notified_at IS NULL
+         AND scheduled_for <= NOW() + INTERVAL '1 minute' * $1
+         AND scheduled_for > NOW()
+       ORDER BY scheduled_for ASC`,
+      [leadMinutes]
+    );
+    return result.rows.map(r => this.#rowToTip(r));
+  }
+
+  async countScheduledTips(status = null) {
+    await this.init();
+    if (status) {
+      const result = await this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips WHERE status = $1', [status]);
+      return result.rows[0]?.count || 0;
+    }
+    const result = await this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips');
+    return result.rows[0]?.count || 0;
+  }
+
+  async close() {}
+
+  #rowToTip(row) {
+    return {
+      id: row.id,
+      sender: row.sender,
+      recipient: row.recipient,
+      amount: Number(row.amount),
+      scheduledFor: row.scheduled_for,
+      message: row.message || '',
+      category: row.category || 0,
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      executedAt: row.executed_at,
+      txId: row.tx_id,
+      failureReason: row.failure_reason,
+      notifiedAt: row.notified_at,
+    };
+  }
+}
+
+export async function createScheduledTipStore(options = {}) {
+  const mode = options.mode || process.env.CHAINHOOK_STORAGE || (process.env.NODE_ENV === 'test' ? 'memory' : 'postgres');
+
+  if (mode === 'memory') {
+    return new MemoryScheduledTipStore();
+  }
+
+  const databaseUrl = options.databaseUrl || process.env.DATABASE_URL;
+  const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
+  const poolConfig = options.poolConfig || parsePoolConfig(process.env);
+
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: ssl ? { rejectUnauthorized: false } : undefined,
+    max: poolConfig.max,
+    idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+    connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+    statement_timeout: poolConfig.statement_timeout,
+  });
+
+  return new PostgresScheduledTipStore(pool, poolConfig);
+}
+
+export { MemoryScheduledTipStore, PostgresScheduledTipStore };
