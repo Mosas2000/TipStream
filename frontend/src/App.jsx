@@ -18,17 +18,19 @@ import { usePageTitle } from './hooks/usePageTitle';
 import { useSessionSync } from './hooks/useSessionSync';
 import { useDemoMode } from './context/DemoContext';
 import {
-  ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_FEED,
+  ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_SCHEDULE, ROUTE_SCHEDULED_TIPS, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
   ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
 
 const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
 const MaintenancePage = lazy(() => import('./components/MaintenancePage'));
 const SendTip = lazy(() => import('./components/SendTip'));
+const ScheduleTip = lazy(() => import('./components/ScheduleTip'));
+const ScheduledTipsList = lazy(() => import('./components/ScheduledTipsList'));
 const TipHistory = lazy(() => import('./components/TipHistory'));
 const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
@@ -157,6 +159,8 @@ function App() {
       { path: ROUTE_SEND, label: 'Send Tip', icon: Zap },
       { path: ROUTE_BATCH, label: 'Batch', icon: Users },
       { path: ROUTE_TOKEN_TIP, label: 'Token Tip', icon: Coins },
+      { path: ROUTE_SCHEDULE, label: 'Schedule', icon: Calendar },
+      { path: ROUTE_SCHEDULED_TIPS, label: 'Scheduled', icon: Clock },
       { path: ROUTE_FEED, label: 'Live Feed', icon: Radio },
       { path: ROUTE_LEADERBOARD, label: 'Leaderboard', icon: Trophy },
       { path: ROUTE_ACTIVITY, label: 'My Activity', icon: User },
@@ -293,6 +297,30 @@ function App() {
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_TOKEN_TIP}>
                           <TokenTip addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  <Route 
+                    path={ROUTE_SCHEDULE} 
+                    element={
+                      userData || demoEnabled ? (
+                        <ScheduleTip addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_SCHEDULE}>
+                          <ScheduleTip addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  <Route 
+                    path={ROUTE_SCHEDULED_TIPS} 
+                    element={
+                      userData || demoEnabled ? (
+                        <ScheduledTipsList addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_SCHEDULED_TIPS}>
+                          <ScheduledTipsList addToast={addToast} />
                         </RequireAuth>
                       )
                     } 
