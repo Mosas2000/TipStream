@@ -235,11 +235,11 @@ export default function ScheduleTip({ addToast }) {
             setScheduledTime('');
 
             addToast(`Tip scheduled for ${scheduledDateTime.toLocaleString()}`, 'success');
-            analytics.trackTipConfirmed();
+            analytics.trackScheduledTipCreated();
         } catch (error) {
             console.error('Failed to schedule tip:', error);
             addToast(error.message || 'Failed to schedule tip', 'error');
-            analytics.trackTipFailed();
+            analytics.trackScheduledTipFailed();
         } finally {
             setLoading(false);
         }

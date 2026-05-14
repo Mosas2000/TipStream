@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { formatSTX } from '../lib/utils';
 import { useSenderAddress } from '../hooks/useSenderAddress';
 import { useDemoMode } from '../context/DemoContext';
+import { analytics } from '../lib/analytics';
 import { Calendar, Clock, X, CheckCircle, XCircle, Loader } from 'lucide-react';
 import ConfirmDialog from './ui/confirm-dialog';
 
@@ -86,6 +87,7 @@ export default function ScheduledTipsList({ addToast }) {
             }
 
             addToast('Scheduled tip cancelled successfully', 'success');
+            analytics.trackScheduledTipCancelled();
             fetchScheduledTips();
         } catch (error) {
             console.error('Failed to cancel scheduled tip:', error);
