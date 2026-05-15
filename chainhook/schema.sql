@@ -13,3 +13,5 @@ CREATE INDEX IF NOT EXISTS chainhook_events_tx_id_idx ON chainhook_events (tx_id
 CREATE INDEX IF NOT EXISTS chainhook_events_block_height_idx ON chainhook_events (block_height DESC);
 CREATE INDEX IF NOT EXISTS chainhook_events_contract_idx ON chainhook_events (contract);
 CREATE INDEX IF NOT EXISTS chainhook_events_ingested_at_idx ON chainhook_events (ingested_at DESC);
+CREATE INDEX IF NOT EXISTS chainhook_events_sender_idx ON chainhook_events ((raw_event->'event'->>'sender')) WHERE event_type = 'tip-sent';
+CREATE INDEX IF NOT EXISTS chainhook_events_recipient_idx ON chainhook_events ((raw_event->'event'->>'recipient')) WHERE event_type = 'tip-sent';
