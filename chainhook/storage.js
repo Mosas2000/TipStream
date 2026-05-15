@@ -162,6 +162,17 @@ class MemoryEventStore {
     };
   }
 
+  async listEventsByUser(address) {
+    return this.records
+      .filter((record) => {
+        const event = record.rawEvent?.event;
+        if (!event) return false;
+        return event.sender === address || event.recipient === address;
+      })
+      .sort((a, b) => a.ingestedAt - b.ingestedAt)
+      .map((record) => record.rawEvent);
+  }
+
   async close() {}
 }
 
@@ -323,6 +334,21 @@ class PostgresEventStore {
         statement_timeout_ms: this.poolConfig.statement_timeout,
       },
     };
+  }
+
+  async listEventsByUser(address) {
+    await this.init();
+    const result = await this.pool.query(`
+      SELECT raw_event 
+      FROM chainhook_events 
+      WHERE event_type = 'tip-sent'
+        AND (
+          raw_event->'event'->>'sender' = $1 
+          OR raw_event->'event'->>'recipient' = $1
+        )
+      ORDER BY ingested_at ASC, event_key ASC
+    `, [address]);
+    return result.rows.map(toRawEvent);
   }
 
   async close() {
