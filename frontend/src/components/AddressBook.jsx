@@ -124,7 +124,7 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6" role="region" aria-label="Address Book">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Address Book</h2>
         <div className="flex gap-3">
@@ -132,6 +132,8 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
             onClick={() => setShowForm(!showForm)}
             className="px-4 py-2 bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-amber-400 transition-colors"
             type="button"
+            aria-expanded={showForm}
+            aria-controls="address-book-form"
           >
             {showForm ? 'Cancel' : 'Add Address'}
           </button>
@@ -139,6 +141,8 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
             onClick={() => setShowImportExport(!showImportExport)}
             className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             type="button"
+            aria-expanded={showImportExport}
+            aria-controls="import-export-panel"
           >
             Import/Export
           </button>
@@ -146,29 +150,35 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
       </div>
 
       {showForm && (
-        <AddressBookForm
-          entry={editingEntry}
-          onSubmit={editingEntry ? handleUpdate : handleAdd}
-          onCancel={handleCancelEdit}
-        />
+        <div id="address-book-form">
+          <AddressBookForm
+            entry={editingEntry}
+            onSubmit={editingEntry ? handleUpdate : handleAdd}
+            onCancel={handleCancelEdit}
+          />
+        </div>
       )}
 
       {showImportExport && (
-        <AddressBookImportExport
-          onImport={handleImport}
-          onClose={() => setShowImportExport(false)}
-        />
+        <div id="import-export-panel">
+          <AddressBookImportExport
+            onImport={handleImport}
+            onClose={() => setShowImportExport(false)}
+          />
+        </div>
       )}
 
-      <AddressBookSearch
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search by label, address, or notes..."
-      />
+      <div role="search" aria-label="Search addresses">
+        <AddressBookSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search by label, address, or notes..."
+        />
+      </div>
 
-      <div className="space-y-3 mt-6">
+      <div className="space-y-3 mt-6" role="list" aria-label="Saved addresses">
         {filteredEntries.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12" role="status">
             {searchQuery ? (
               <p className="text-gray-500 dark:text-gray-400">No addresses found matching "{searchQuery}"</p>
             ) : (
@@ -180,19 +190,20 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
           </div>
         ) : (
           filteredEntries.map(entry => (
-            <AddressBookEntry
-              key={entry.id}
-              entry={entry}
-              onSelect={onSelectAddress ? () => handleSelect(entry) : null}
-              onEdit={() => handleEdit(entry)}
-              onDelete={() => handleDelete(entry.id)}
-            />
+            <div key={entry.id} role="listitem">
+              <AddressBookEntry
+                entry={entry}
+                onSelect={onSelectAddress ? () => handleSelect(entry) : null}
+                onEdit={() => handleEdit(entry)}
+                onDelete={() => handleDelete(entry.id)}
+              />
+            </div>
           ))
         )}
       </div>
 
       {entries.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800" role="status" aria-live="polite">
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
             {entries.length} address{entries.length !== 1 ? 'es' : ''} saved
           </p>
