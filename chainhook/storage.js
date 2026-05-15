@@ -169,7 +169,7 @@ class MemoryEventStore {
         if (!event) return false;
         return event.sender === address || event.recipient === address;
       })
-      .sort((a, b) => a.ingestedAt - b.ingestedAt)
+      .sort((a, b) => a.eventTimestamp - b.eventTimestamp)
       .map((record) => record.rawEvent);
   }
 
