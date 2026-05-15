@@ -19,11 +19,11 @@ import { useSessionSync } from './hooks/useSessionSync';
 import { useDemoMode } from './context/DemoContext';
 import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_SCHEDULE, ROUTE_SCHEDULED_TIPS, ROUTE_FEED,
-  ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE,
+  ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_ADDRESS_BOOK,
   ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
 
 const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
@@ -36,6 +36,7 @@ const PlatformStats = lazy(() => import('./components/PlatformStats'));
 const RecentTips = lazy(() => import('./components/RecentTips'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const ProfileManager = lazy(() => import('./components/ProfileManager'));
+const AddressBook = lazy(() => import('./components/AddressBook'));
 const BlockManager = lazy(() => import('./components/BlockManager'));
 const BatchTip = lazy(() => import('./components/BatchTip'));
 const TokenTip = lazy(() => import('./components/TokenTip'));
@@ -165,6 +166,7 @@ function App() {
       { path: ROUTE_LEADERBOARD, label: 'Leaderboard', icon: Trophy },
       { path: ROUTE_ACTIVITY, label: 'My Activity', icon: User },
       { path: ROUTE_PROFILE, label: 'Profile', icon: UserCircle },
+      { path: ROUTE_ADDRESS_BOOK, label: 'Address Book', icon: BookUser },
       { path: ROUTE_BLOCK, label: 'Block', icon: ShieldBan },
       { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
     ];
@@ -364,6 +366,18 @@ function App() {
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_BLOCK}>
                           <BlockManager addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    } 
+                  />
+                  <Route 
+                    path={ROUTE_ADDRESS_BOOK} 
+                    element={
+                      userData || demoEnabled ? (
+                        <AddressBook />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_ADDRESS_BOOK}>
+                          <AddressBook />
                         </RequireAuth>
                       )
                     } 
