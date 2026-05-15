@@ -200,3 +200,33 @@ test('MemoryEventStore.listEventsByUser returns events in chronological order', 
   assert.strictEqual(results[0].txId, '0xabc');
   assert.strictEqual(results[1].txId, '0xdef');
 });
+
+test('MemoryEventStore.listEventsByUser rejects null address', async () => {
+  const store = new MemoryEventStore();
+  await store.init();
+
+  await assert.rejects(
+    async () => await store.listEventsByUser(null),
+    { message: 'address must be a non-empty string' }
+  );
+});
+
+test('MemoryEventStore.listEventsByUser rejects empty address', async () => {
+  const store = new MemoryEventStore();
+  await store.init();
+
+  await assert.rejects(
+    async () => await store.listEventsByUser(''),
+    { message: 'address must be a non-empty string' }
+  );
+});
+
+test('MemoryEventStore.listEventsByUser rejects non-string address', async () => {
+  const store = new MemoryEventStore();
+  await store.init();
+
+  await assert.rejects(
+    async () => await store.listEventsByUser(123),
+    { message: 'address must be a non-empty string' }
+  );
+});
