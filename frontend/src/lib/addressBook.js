@@ -55,11 +55,19 @@ export class AddressBook {
       throw new Error('Label and address are required');
     }
 
-    if (this.findByAddress(address)) {
+    const sanitizedLabel = label.trim().slice(0, 50);
+    const sanitizedAddress = address.trim();
+    const sanitizedNotes = notes.trim().slice(0, 200);
+
+    if (this.findByAddress(sanitizedAddress)) {
       throw new Error('Address already exists in address book');
     }
 
-    const entry = new AddressBookEntry({ label, address, notes });
+    const entry = new AddressBookEntry({ 
+      label: sanitizedLabel, 
+      address: sanitizedAddress, 
+      notes: sanitizedNotes 
+    });
     this.entries.push(entry);
     this.save();
     return entry;
@@ -72,15 +80,20 @@ export class AddressBook {
     }
 
     const entry = this.entries[index];
-    if (updates.label !== undefined) entry.label = updates.label;
+    if (updates.label !== undefined) {
+      entry.label = updates.label.trim().slice(0, 50);
+    }
     if (updates.address !== undefined) {
-      const existing = this.findByAddress(updates.address);
+      const sanitizedAddress = updates.address.trim();
+      const existing = this.findByAddress(sanitizedAddress);
       if (existing && existing.id !== id) {
         throw new Error('Address already exists in address book');
       }
-      entry.address = updates.address;
+      entry.address = sanitizedAddress;
     }
-    if (updates.notes !== undefined) entry.notes = updates.notes;
+    if (updates.notes !== undefined) {
+      entry.notes = updates.notes.trim().slice(0, 200);
+    }
     entry.updatedAt = Date.now();
 
     this.save();
