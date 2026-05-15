@@ -162,6 +162,14 @@ class MemoryEventStore {
     };
   }
 
+  /**
+   * List all tip events for a specific user address.
+   * Returns events where the address is either sender or recipient.
+   * Results are sorted chronologically by event timestamp.
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @returns {Promise<Array>} Array of raw events
+   */
   async listEventsByUser(address) {
     if (!address || typeof address !== 'string') {
       throw new Error('address must be a non-empty string');
@@ -342,6 +350,15 @@ class PostgresEventStore {
     };
   }
 
+  /**
+   * List all tip events for a specific user address.
+   * Uses JSONB indexes for fast lookups on sender and recipient fields.
+   * Returns events where the address is either sender or recipient.
+   * Results are sorted chronologically by ingestion time.
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @returns {Promise<Array>} Array of raw events
+   */
   async listEventsByUser(address) {
     if (!address || typeof address !== 'string') {
       throw new Error('address must be a non-empty string');
