@@ -163,6 +163,10 @@ class MemoryEventStore {
   }
 
   async listEventsByUser(address) {
+    if (!address || typeof address !== 'string') {
+      throw new Error('address must be a non-empty string');
+    }
+    
     return this.records
       .filter((record) => {
         const event = record.rawEvent?.event;
@@ -339,6 +343,10 @@ class PostgresEventStore {
   }
 
   async listEventsByUser(address) {
+    if (!address || typeof address !== 'string') {
+      throw new Error('address must be a non-empty string');
+    }
+    
     await this.init();
     const result = await this.pool.query(`
       SELECT raw_event 
