@@ -15,6 +15,10 @@ const DEFAULT_METRICS = {
   batchTipsFailed: 0,
   batchTipsCancelled: 0,
   batchSizes: {},
+  scheduledTipsCreated: 0,
+  scheduledTipsCancelled: 0,
+  scheduledTipsExecuted: 0,
+  scheduledTipsFailed: 0,
   tabNavigations: {},
   routeRedirects: {},
   errors: {},
@@ -139,6 +143,22 @@ export const analytics = {
     increment('batchTipsCancelled');
   },
 
+  trackScheduledTipCreated() {
+    increment('scheduledTipsCreated');
+  },
+
+  trackScheduledTipCancelled() {
+    increment('scheduledTipsCancelled');
+  },
+
+  trackScheduledTipExecuted() {
+    increment('scheduledTipsExecuted');
+  },
+
+  trackScheduledTipFailed() {
+    increment('scheduledTipsFailed');
+  },
+
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
@@ -223,6 +243,10 @@ export const analytics = {
       batchTipsConfirmed: m.batchTipsConfirmed || 0,
       batchTipsFailed: m.batchTipsFailed || 0,
       batchTipsCancelled: m.batchTipsCancelled || 0,
+      scheduledTipsCreated: m.scheduledTipsCreated || 0,
+      scheduledTipsCancelled: m.scheduledTipsCancelled || 0,
+      scheduledTipsExecuted: m.scheduledTipsExecuted || 0,
+      scheduledTipsFailed: m.scheduledTipsFailed || 0,
       batchCompletionRate,
       batchDropOffRate,
       averageBatchSize,

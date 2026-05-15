@@ -13,3 +13,26 @@ CREATE INDEX IF NOT EXISTS chainhook_events_tx_id_idx ON chainhook_events (tx_id
 CREATE INDEX IF NOT EXISTS chainhook_events_block_height_idx ON chainhook_events (block_height DESC);
 CREATE INDEX IF NOT EXISTS chainhook_events_contract_idx ON chainhook_events (contract);
 CREATE INDEX IF NOT EXISTS chainhook_events_ingested_at_idx ON chainhook_events (ingested_at DESC);
+
+CREATE TABLE IF NOT EXISTS scheduled_tips (
+  id TEXT PRIMARY KEY,
+  sender TEXT NOT NULL,
+  recipient TEXT NOT NULL,
+  amount BIGINT NOT NULL,
+  scheduled_for TIMESTAMPTZ NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  category INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  executed_at TIMESTAMPTZ,
+  tx_id TEXT,
+  failure_reason TEXT,
+  notified_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS scheduled_tips_sender_idx ON scheduled_tips (sender);
+CREATE INDEX IF NOT EXISTS scheduled_tips_recipient_idx ON scheduled_tips (recipient);
+CREATE INDEX IF NOT EXISTS scheduled_tips_status_idx ON scheduled_tips (status);
+CREATE INDEX IF NOT EXISTS scheduled_tips_scheduled_for_idx ON scheduled_tips (scheduled_for);
+CREATE INDEX IF NOT EXISTS scheduled_tips_pending_due_idx ON scheduled_tips (scheduled_for) WHERE status = 'pending';

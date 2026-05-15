@@ -46,6 +46,7 @@ Content creators and community contributors lack a simple, transparent way to re
 ## Features
 
 - **Direct STX Tipping** - Send micro-tips to any Stacks address with optional messages
+- **Scheduled Tips** - Schedule tips to be sent at a future date and time (up to 365 days in advance)
 - **Batch Tipping** - Tip up to 50 recipients in a single transaction with strict or partial modes
 - **Recursive Tipping (Tip-a-Tip)** - Tip someone back directly from the live feed
 - **User Profiles** - Set a display name, bio, and avatar URL stored on-chain
@@ -137,6 +138,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | `/send` | Send Tip | Send a single STX tip | Stable |
 | `/batch` | Batch Tip | Tip up to 50 recipients at once | Stable |
 | `/token-tip` | Token Tip | Send a SIP-010 token tip (beta) | Beta |
+| `/schedule` | Schedule Tip | Schedule a tip for future execution | Stable |
+| `/scheduled-tips` | Scheduled Tips | View and manage scheduled tips | Stable |
 | `/feed` | Live Feed | Real-time feed of recent tips with pagination | Stable |
 | `/leaderboard` | Leaderboard | Top senders and receivers | Stable |
 | `/activity` | My Activity | Personal tip history | Stable |
