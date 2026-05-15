@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { addressBook } from '../lib/addressBook';
+import { analytics } from '../lib/analytics';
 import { Download, Copy, Upload, X } from 'lucide-react';
 
 export default function AddressBookImportExport({ onImport, onClose }) {
@@ -18,12 +19,14 @@ export default function AddressBookImportExport({ onImport, onClose }) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    analytics.trackAddressBookExported();
   };
 
   const handleCopyExport = async () => {
     try {
       const data = addressBook.exportData();
       await navigator.clipboard.writeText(data);
+      analytics.trackAddressBookExported();
       alert('Address book data copied to clipboard');
     } catch (error) {
       alert('Failed to copy to clipboard');

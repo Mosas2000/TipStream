@@ -19,6 +19,13 @@ const DEFAULT_METRICS = {
   scheduledTipsCancelled: 0,
   scheduledTipsExecuted: 0,
   scheduledTipsFailed: 0,
+  addressBookAdded: 0,
+  addressBookUpdated: 0,
+  addressBookDeleted: 0,
+  addressBookImported: 0,
+  addressBookExported: 0,
+  addressBookSearched: 0,
+  addressBookSelected: 0,
   tabNavigations: {},
   routeRedirects: {},
   errors: {},
@@ -157,6 +164,38 @@ export const analytics = {
 
   trackScheduledTipFailed() {
     increment('scheduledTipsFailed');
+  },
+
+  trackAddressBookAdded() {
+    increment('addressBookAdded');
+  },
+
+  trackAddressBookUpdated() {
+    increment('addressBookUpdated');
+  },
+
+  trackAddressBookDeleted() {
+    increment('addressBookDeleted');
+  },
+
+  trackAddressBookImported(count) {
+    increment('addressBookImported');
+    const metrics = loadMetrics();
+    if (!metrics.addressBookImportCounts) metrics.addressBookImportCounts = {};
+    metrics.addressBookImportCounts[String(count)] = (metrics.addressBookImportCounts[String(count)] || 0) + 1;
+    saveMetrics(metrics);
+  },
+
+  trackAddressBookExported() {
+    increment('addressBookExported');
+  },
+
+  trackAddressBookSearched() {
+    increment('addressBookSearched');
+  },
+
+  trackAddressBookSelected() {
+    increment('addressBookSelected');
   },
 
   trackTabNavigation(tab) {

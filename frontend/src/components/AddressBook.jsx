@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { addressBook } from '../lib/addressBook';
 import { validateAddressBookEntry, formatAddress } from '../lib/addressValidation';
+import { analytics } from '../lib/analytics';
 import AddressBookEntry from './AddressBookEntry';
 import AddressBookForm from './AddressBookForm';
 import AddressBookSearch from './AddressBookSearch';
@@ -24,6 +25,7 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
   const handleAdd = (label, address, notes) => {
     try {
       addressBook.add(label, address, notes);
+      analytics.trackAddressBookAdded();
       loadEntries();
       setShowForm(false);
       return { success: true };
@@ -35,6 +37,7 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
   const handleUpdate = (id, updates) => {
     try {
       addressBook.update(id, updates);
+      analytics.trackAddressBookUpdated();
       loadEntries();
       setEditingEntry(null);
       return { success: true };
@@ -47,6 +50,7 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
     if (window.confirm('Are you sure you want to delete this address?')) {
       try {
         addressBook.delete(id);
+        analytics.trackAddressBookDeleted();
         loadEntries();
       } catch (error) {
         alert(`Failed to delete: ${error.message}`);
@@ -56,6 +60,7 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
 
   const handleSelect = (entry) => {
     if (onSelectAddress) {
+      analytics.trackAddressBookSelected();
       onSelectAddress(entry.address, entry.label);
     }
   };
@@ -71,6 +76,7 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
   };
 
   const handleImport = (result) => {
+    analytics.trackAddressBookImported(result.imported.length);
     loadEntries();
     setShowImportExport(false);
     alert(`Imported ${result.imported.length} addresses. Skipped ${result.skipped.length} duplicates.`);
@@ -79,6 +85,12 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
   const filteredEntries = searchQuery
     ? addressBook.search(searchQuery)
     : entries;
+
+  useEffect(() => {
+    if (searchQuery) {
+      analytics.trackAddressBookSearched();
+    }
+  }, [searchQuery]);
 
   if (compact) {
     return (
