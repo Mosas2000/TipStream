@@ -82,27 +82,27 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
 
   if (compact) {
     return (
-      <div className="address-book-compact">
+      <div className="space-y-3">
         <AddressBookSearch
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search saved addresses..."
         />
-        <div className="address-book-list-compact">
+        <div className="max-h-64 overflow-y-auto space-y-2">
           {filteredEntries.length === 0 ? (
-            <p className="no-entries">
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
               {searchQuery ? 'No addresses found' : 'No saved addresses'}
             </p>
           ) : (
             filteredEntries.map(entry => (
               <button
                 key={entry.id}
-                className="address-book-item-compact"
+                className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-left"
                 onClick={() => handleSelect(entry)}
                 type="button"
               >
-                <span className="label">{entry.label}</span>
-                <span className="address">{formatAddress(entry.address)}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{entry.label}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">{formatAddress(entry.address)}</span>
               </button>
             ))
           )}
@@ -112,20 +112,20 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
   }
 
   return (
-    <div className="address-book">
-      <div className="address-book-header">
-        <h2>Address Book</h2>
-        <div className="address-book-actions">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Address Book</h2>
+        <div className="flex gap-3">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="btn-primary"
+            className="px-4 py-2 bg-gray-900 dark:bg-amber-500 text-white dark:text-black rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-amber-400 transition-colors"
             type="button"
           >
             {showForm ? 'Cancel' : 'Add Address'}
           </button>
           <button
             onClick={() => setShowImportExport(!showImportExport)}
-            className="btn-secondary"
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             type="button"
           >
             Import/Export
@@ -154,15 +154,15 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
         placeholder="Search by label, address, or notes..."
       />
 
-      <div className="address-book-list">
+      <div className="space-y-3 mt-6">
         {filteredEntries.length === 0 ? (
-          <div className="no-entries">
+          <div className="text-center py-12">
             {searchQuery ? (
-              <p>No addresses found matching "{searchQuery}"</p>
+              <p className="text-gray-500 dark:text-gray-400">No addresses found matching "{searchQuery}"</p>
             ) : (
-              <div>
-                <p>Your address book is empty</p>
-                <p>Add frequently used addresses for quick access</p>
+              <div className="space-y-2">
+                <p className="text-gray-900 dark:text-white font-semibold">Your address book is empty</p>
+                <p className="text-gray-500 dark:text-gray-400">Add frequently used addresses for quick access</p>
               </div>
             )}
           </div>
@@ -180,8 +180,10 @@ export default function AddressBook({ onSelectAddress, compact = false }) {
       </div>
 
       {entries.length > 0 && (
-        <div className="address-book-footer">
-          <p>{entries.length} address{entries.length !== 1 ? 'es' : ''} saved</p>
+        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            {entries.length} address{entries.length !== 1 ? 'es' : ''} saved
+          </p>
         </div>
       )}
     </div>
