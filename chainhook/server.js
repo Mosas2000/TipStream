@@ -450,19 +450,28 @@ const server = http.createServer(async (req, res) => {
   }
 
   // GET /api/tips/user/:address -- tips sent or received by address
+  // Uses optimized database query with JSONB indexes for fast lookups
   if (req.method === "GET" && path.startsWith("/api/tips/user/")) {
     const store = await getEventStore();
     const address = path.split("/api/tips/user/")[1];
+    
+    if (!address || address.trim() === "") {
+      return sendError(res, new BadRequestError("address parameter is required"), requestId, {
+        path,
+      });
+    }
+    
     if (!isValidStacksAddress(address)) {
       return sendError(res, new BadRequestError("invalid address format"), requestId, {
         path,
         address,
       });
     }
-    const allEvents = await store.listEvents();
-    const tips = allEvents
+    
+    const userEvents = await store.listEventsByUser(address);
+    const tips = userEvents
       .map(parseTipEvent)
-      .filter((t) => t && (t.sender === address || t.recipient === address))
+      .filter(Boolean)
       .reverse();
     return sendJson(res, 200, { tips, total: tips.length });
   }

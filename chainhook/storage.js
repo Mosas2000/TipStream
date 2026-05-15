@@ -162,6 +162,29 @@ class MemoryEventStore {
     };
   }
 
+  /**
+   * List all tip events for a specific user address.
+   * Returns events where the address is either sender or recipient.
+   * Results are sorted chronologically by event timestamp.
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @returns {Promise<Array>} Array of raw events
+   */
+  async listEventsByUser(address) {
+    if (!address || typeof address !== 'string') {
+      throw new Error('address must be a non-empty string');
+    }
+    
+    return this.records
+      .filter((record) => {
+        const event = record.rawEvent?.event;
+        if (!event) return false;
+        return event.sender === address || event.recipient === address;
+      })
+      .sort((a, b) => a.eventTimestamp - b.eventTimestamp)
+      .map((record) => record.rawEvent);
+  }
+
   async close() {}
 }
 
@@ -209,6 +232,8 @@ class PostgresEventStore {
     await this.pool.query('CREATE INDEX IF NOT EXISTS chainhook_events_block_height_idx ON chainhook_events (block_height DESC);');
     await this.pool.query('CREATE INDEX IF NOT EXISTS chainhook_events_contract_idx ON chainhook_events (contract);');
     await this.pool.query('CREATE INDEX IF NOT EXISTS chainhook_events_ingested_at_idx ON chainhook_events (ingested_at DESC);');
+    await this.pool.query(`CREATE INDEX IF NOT EXISTS chainhook_events_sender_idx ON chainhook_events ((raw_event->'event'->>'sender')) WHERE event_type = 'tip-sent';`);
+    await this.pool.query(`CREATE INDEX IF NOT EXISTS chainhook_events_recipient_idx ON chainhook_events ((raw_event->'event'->>'recipient')) WHERE event_type = 'tip-sent';`);
   }
 
   async insertEvents(events) {
@@ -323,6 +348,34 @@ class PostgresEventStore {
         statement_timeout_ms: this.poolConfig.statement_timeout,
       },
     };
+  }
+
+  /**
+   * List all tip events for a specific user address.
+   * Uses JSONB indexes for fast lookups on sender and recipient fields.
+   * Returns events where the address is either sender or recipient.
+   * Results are sorted chronologically by ingestion time.
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @returns {Promise<Array>} Array of raw events
+   */
+  async listEventsByUser(address) {
+    if (!address || typeof address !== 'string') {
+      throw new Error('address must be a non-empty string');
+    }
+    
+    await this.init();
+    const result = await this.pool.query(`
+      SELECT raw_event 
+      FROM chainhook_events 
+      WHERE event_type = 'tip-sent'
+        AND (
+          raw_event->'event'->>'sender' = $1 
+          OR raw_event->'event'->>'recipient' = $1
+        )
+      ORDER BY ingested_at ASC, event_key ASC
+    `, [address]);
+    return result.rows.map(toRawEvent);
   }
 
   async close() {
