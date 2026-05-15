@@ -5,9 +5,20 @@ export default function AddressBookEntry({ entry, onSelect, onEdit, onDelete }) 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(entry.address);
-      alert('Address copied to clipboard');
     } catch (error) {
-      console.error('Failed to copy:', error);
+      console.error('Failed to copy address:', error);
+      const textarea = document.createElement('textarea');
+      textarea.value = entry.address;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } catch (fallbackError) {
+        console.error('Fallback copy failed:', fallbackError);
+      }
+      document.body.removeChild(textarea);
     }
   };
 
