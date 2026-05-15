@@ -19,3 +19,26 @@ CREATE INDEX IF NOT EXISTS chainhook_events_ingested_at_idx ON chainhook_events 
 -- These partial indexes enable fast O(log n) lookups for /api/tips/user/:address
 CREATE INDEX IF NOT EXISTS chainhook_events_sender_idx ON chainhook_events ((raw_event->'event'->>'sender')) WHERE event_type = 'tip-sent';
 CREATE INDEX IF NOT EXISTS chainhook_events_recipient_idx ON chainhook_events ((raw_event->'event'->>'recipient')) WHERE event_type = 'tip-sent';
+
+CREATE TABLE IF NOT EXISTS scheduled_tips (
+  id TEXT PRIMARY KEY,
+  sender TEXT NOT NULL,
+  recipient TEXT NOT NULL,
+  amount BIGINT NOT NULL,
+  scheduled_for TIMESTAMPTZ NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  category INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  executed_at TIMESTAMPTZ,
+  tx_id TEXT,
+  failure_reason TEXT,
+  notified_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS scheduled_tips_sender_idx ON scheduled_tips (sender);
+CREATE INDEX IF NOT EXISTS scheduled_tips_recipient_idx ON scheduled_tips (recipient);
+CREATE INDEX IF NOT EXISTS scheduled_tips_status_idx ON scheduled_tips (status);
+CREATE INDEX IF NOT EXISTS scheduled_tips_scheduled_for_idx ON scheduled_tips (scheduled_for);
+CREATE INDEX IF NOT EXISTS scheduled_tips_pending_due_idx ON scheduled_tips (scheduled_for) WHERE status = 'pending';

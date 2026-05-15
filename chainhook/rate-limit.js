@@ -79,6 +79,32 @@ export class RateLimiter {
       }
     }
   }
+
+  /**
+   * Update rate limit configuration at runtime.
+   * Changes apply immediately to all subsequent requests.
+   * Existing rate limit counters are preserved.
+   * 
+   * @param {number} maxRequests - New maximum requests per window
+   * @param {number} windowMs - New time window in milliseconds
+   */
+  updateConfig(maxRequests, windowMs) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
+  }
+
+  /**
+   * Get current rate limit configuration.
+   * Useful for monitoring and audit purposes.
+   * 
+   * @returns {object} Current configuration with maxRequests and windowMs
+   */
+  getConfig() {
+    return {
+      maxRequests: this.maxRequests,
+      windowMs: this.windowMs,
+    };
+  }
 }
 
 /**
@@ -93,4 +119,32 @@ export function getClientIp(req) {
     return forwarded.split(',')[0].trim();
   }
   return req.socket?.remoteAddress || 'unknown';
+}
+
+/**
+ * Validate rate limit configuration parameters.
+ * Ensures values are within acceptable ranges for production use.
+ * 
+ * @param {number} maxRequests - Maximum requests per window
+ * @param {number} windowMs - Time window in milliseconds
+ * @returns {object} Validation result with valid flag and error message if invalid
+ */
+export function validateRateLimitConfig(maxRequests, windowMs) {
+  if (typeof maxRequests !== 'number' || isNaN(maxRequests)) {
+    return { valid: false, error: 'maxRequests must be a number' };
+  }
+
+  if (typeof windowMs !== 'number' || isNaN(windowMs)) {
+    return { valid: false, error: 'windowMs must be a number' };
+  }
+
+  if (maxRequests < 1 || maxRequests > 10000) {
+    return { valid: false, error: 'maxRequests must be between 1 and 10000' };
+  }
+
+  if (windowMs < 1000 || windowMs > 3600000) {
+    return { valid: false, error: 'windowMs must be between 1000 and 3600000' };
+  }
+
+  return { valid: true };
 }

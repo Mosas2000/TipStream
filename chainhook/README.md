@@ -55,6 +55,8 @@ RATE_LIMIT_MAX_REQUESTS=100
 RATE_LIMIT_WINDOW_MS=60000
 ```
 
+Rate limits can be reconfigured at runtime without restarting the service. See [RATE_LIMIT_RUNTIME_CONFIG.md](./RATE_LIMIT_RUNTIME_CONFIG.md) for details.
+
 ## Running
 
 ```bash
@@ -74,6 +76,10 @@ npm test
 - `GET /api/tips/:id` - Get tip by ID
 - `GET /api/tips/user/:address` - Get tips for user (optimized with JSONB indexes)
 - `GET /api/stats` - Platform statistics
+- `GET /api/admin/events` - Admin event log
+- `GET /api/admin/bypasses` - Detected timelock bypasses
+- `GET /api/admin/rate-limit` - Get current rate limit configuration
+- `POST /api/admin/rate-limit` - Update rate limit configuration
 - `GET /health` - Health check
 - `GET /metrics` - Prometheus metrics
 

@@ -6,12 +6,13 @@ import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
-import { RateLimiter, getClientIp } from "./rate-limit.js";
+import { RateLimiter, getClientIp, validateRateLimitConfig } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
-import { createEventStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
+import { createEventStore, createScheduledTipStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
 import { normalizeClarityEventFields } from "../shared/clarityValues.js";
 import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, ServiceUnavailableError, classifyError, toErrorResponse } from "./errors.js";
+import { ScheduledTip, validateScheduledTipParams, SCHEDULED_TIP_STATUSES } from "./scheduler.js";
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
@@ -26,6 +27,17 @@ const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || 
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
 let eventStore = null;
+let scheduledTipStore = null;
+
+/**
+ * Get the rate limiter instance for runtime configuration.
+ * Exposed for admin endpoints to query and update configuration.
+ * 
+ * @returns {RateLimiter} The active rate limiter instance
+ */
+function getRateLimiter() {
+  return rateLimiter;
+}
 
 async function getEventStore() {
   if (!eventStore) {
@@ -40,6 +52,20 @@ async function getEventStore() {
     await eventStore.init();
   }
   return eventStore;
+}
+
+async function getScheduledTipStore() {
+  if (!scheduledTipStore) {
+    if (STORAGE_MODE === "postgres" && !DATABASE_URL) {
+      throw new Error("DATABASE_URL is required when CHAINHOOK_STORAGE=postgres");
+    }
+    scheduledTipStore = await createScheduledTipStore({
+      mode: STORAGE_MODE,
+      databaseUrl: DATABASE_URL,
+    });
+    await scheduledTipStore.init();
+  }
+  return scheduledTipStore;
 }
 
 /**
@@ -247,7 +273,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -482,6 +508,136 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // POST /api/scheduled-tips -- create a scheduled tip
+  if (req.method === "POST" && path === "/api/scheduled-tips") {
+    const startTime = Date.now();
+
+    try {
+      const body = await parseBody(req);
+      const validation = validateScheduledTipParams(body);
+
+      if (!validation.valid) {
+        return sendError(res, new BadRequestError(validation.error), requestId, { path });
+      }
+
+      const scheduledTip = new ScheduledTip({
+        sender: body.sender,
+        recipient: body.recipient,
+        amount: body.amount,
+        scheduledFor: body.scheduledFor,
+        message: body.message || '',
+        category: body.category ?? 0,
+      });
+
+      const store = await getScheduledTipStore();
+      const result = await store.insertScheduledTip(scheduledTip);
+
+      if (!result.inserted) {
+        return sendError(res, new BadRequestError('Scheduled tip with this ID already exists'), requestId, { path });
+      }
+
+      const processingMs = Date.now() - startTime;
+      logger.info('Scheduled tip created', {
+        id: scheduledTip.id,
+        sender: scheduledTip.sender,
+        recipient: scheduledTip.recipient,
+        scheduled_for: scheduledTip.scheduledFor.toISOString(),
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 201, { ok: true, scheduledTip: result.tip });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // GET /api/scheduled-tips -- list scheduled tips with filters
+  if (req.method === "GET" && path === "/api/scheduled-tips") {
+    try {
+      const sender = url.searchParams.get("sender");
+      const recipient = url.searchParams.get("recipient");
+      const status = url.searchParams.get("status");
+      const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
+      const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
+
+      if (isNaN(limit)) {
+        return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, { path });
+      }
+      if (isNaN(offset)) {
+        return sendError(res, new BadRequestError("offset must be a non-negative integer"), requestId, { path });
+      }
+
+      const store = await getScheduledTipStore();
+      const result = await store.listScheduledTips({ sender, recipient, status, limit, offset });
+
+      return sendJson(res, 200, { scheduledTips: result.tips, total: result.total });
+    } catch (err) {
+      return sendError(res, err, requestId, { path });
+    }
+  }
+
+  // GET /api/scheduled-tips/:id -- get a single scheduled tip
+  if (req.method === "GET" && path.match(/^\/api\/scheduled-tips\/[a-f0-9-]+$/)) {
+    try {
+      const id = path.split("/api/scheduled-tips/")[1];
+      const store = await getScheduledTipStore();
+      const tip = await store.getScheduledTip(id);
+
+      if (!tip) {
+        return sendJson(res, 404, { error: "scheduled tip not found" });
+      }
+
+      return sendJson(res, 200, tip);
+    } catch (err) {
+      return sendError(res, err, requestId, { path });
+    }
+  }
+
+  // DELETE /api/scheduled-tips/:id -- cancel a scheduled tip
+  if (req.method === "DELETE" && path.match(/^\/api\/scheduled-tips\/[a-f0-9-]+$/)) {
+    const startTime = Date.now();
+
+    try {
+      const id = path.split("/api/scheduled-tips/")[1];
+      const body = await parseBody(req);
+
+      if (!body.sender || typeof body.sender !== 'string') {
+        return sendError(res, new BadRequestError('sender address is required'), requestId, { path });
+      }
+
+      const store = await getScheduledTipStore();
+      const result = await store.cancelScheduledTip(id, body.sender);
+
+      if (!result.cancelled) {
+        if (result.reason === 'not_found') {
+          return sendJson(res, 404, { error: "scheduled tip not found or you are not the sender" });
+        }
+        if (result.reason === 'not_pending') {
+          return sendError(res, new BadRequestError('can only cancel pending scheduled tips'), requestId, { path });
+        }
+      }
+
+      const processingMs = Date.now() - startTime;
+      logger.info('Scheduled tip cancelled', {
+        id,
+        sender: body.sender,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, { ok: true, scheduledTip: result.tip });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
   // GET /api/admin/events -- admin event log
   if (req.method === "GET" && path === "/api/admin/events") {
     const store = await getEventStore();
@@ -510,6 +666,105 @@ const server = http.createServer(async (req, res) => {
       }
     }
     return sendJson(res, 200, { bypasses, total: bypasses.length });
+  }
+
+  // GET /api/admin/rate-limit -- get current rate limit configuration
+  if (req.method === "GET" && path === "/api/admin/rate-limit") {
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(
+          res,
+          new UnauthorizedError("unauthorized"),
+          requestId,
+          { path }
+        );
+      }
+    }
+    const config = rateLimiter.getConfig();
+    logger.logResponse(req, 200, 0, {
+      request_id: requestId,
+      max_requests: config.maxRequests,
+      window_ms: config.windowMs,
+    });
+    return sendJson(res, 200, {
+      maxRequests: config.maxRequests,
+      windowMs: config.windowMs,
+      windowSeconds: Math.round(config.windowMs / 1000),
+    });
+  }
+
+  // POST /api/admin/rate-limit -- update rate limit configuration
+  if (req.method === "POST" && path === "/api/admin/rate-limit") {
+    const startTime = Date.now();
+    
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(
+          res,
+          new UnauthorizedError("unauthorized"),
+          requestId,
+          { path }
+        );
+      }
+    }
+
+    try {
+      const body = await parseBody(req);
+      const maxRequests = parseInt(body.maxRequests, 10);
+      const windowMs = parseInt(body.windowMs, 10);
+
+      const validation = validateRateLimitConfig(maxRequests, windowMs);
+      if (!validation.valid) {
+        return sendError(
+          res,
+          new BadRequestError(validation.error),
+          requestId,
+          { path, maxRequests: body.maxRequests, windowMs: body.windowMs }
+        );
+      }
+
+      const oldConfig = rateLimiter.getConfig();
+      rateLimiter.updateConfig(maxRequests, windowMs);
+      const newConfig = rateLimiter.getConfig();
+
+      const processingMs = Date.now() - startTime;
+
+      logger.info("Rate limit configuration updated", {
+        old_max_requests: oldConfig.maxRequests,
+        old_window_ms: oldConfig.windowMs,
+        new_max_requests: newConfig.maxRequests,
+        new_window_ms: newConfig.windowMs,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      
+      logger.logResponse(req, 200, processingMs, {
+        request_id: requestId,
+        old_max_requests: oldConfig.maxRequests,
+        new_max_requests: newConfig.maxRequests,
+      });
+
+      return sendJson(res, 200, {
+        ok: true,
+        previous: {
+          maxRequests: oldConfig.maxRequests,
+          windowMs: oldConfig.windowMs,
+        },
+        current: {
+          maxRequests: newConfig.maxRequests,
+          windowMs: newConfig.windowMs,
+          windowSeconds: Math.round(newConfig.windowMs / 1000),
+        },
+      });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
   }
 
   // GET /health -- health check endpoint (always accessible for orchestration)
