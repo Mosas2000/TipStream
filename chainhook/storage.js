@@ -220,6 +220,8 @@ class PostgresEventStore {
     await this.pool.query('CREATE INDEX IF NOT EXISTS chainhook_events_block_height_idx ON chainhook_events (block_height DESC);');
     await this.pool.query('CREATE INDEX IF NOT EXISTS chainhook_events_contract_idx ON chainhook_events (contract);');
     await this.pool.query('CREATE INDEX IF NOT EXISTS chainhook_events_ingested_at_idx ON chainhook_events (ingested_at DESC);');
+    await this.pool.query(`CREATE INDEX IF NOT EXISTS chainhook_events_sender_idx ON chainhook_events ((raw_event->'event'->>'sender')) WHERE event_type = 'tip-sent';`);
+    await this.pool.query(`CREATE INDEX IF NOT EXISTS chainhook_events_recipient_idx ON chainhook_events ((raw_event->'event'->>'recipient')) WHERE event_type = 'tip-sent';`);
   }
 
   async insertEvents(events) {
