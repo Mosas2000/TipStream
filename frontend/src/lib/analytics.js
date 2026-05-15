@@ -19,6 +19,13 @@ const DEFAULT_METRICS = {
   scheduledTipsCancelled: 0,
   scheduledTipsExecuted: 0,
   scheduledTipsFailed: 0,
+  addressBookAdded: 0,
+  addressBookUpdated: 0,
+  addressBookDeleted: 0,
+  addressBookImported: 0,
+  addressBookExported: 0,
+  addressBookSearched: 0,
+  addressBookSelected: 0,
   tabNavigations: {},
   routeRedirects: {},
   errors: {},
@@ -159,6 +166,38 @@ export const analytics = {
     increment('scheduledTipsFailed');
   },
 
+  trackAddressBookAdded() {
+    increment('addressBookAdded');
+  },
+
+  trackAddressBookUpdated() {
+    increment('addressBookUpdated');
+  },
+
+  trackAddressBookDeleted() {
+    increment('addressBookDeleted');
+  },
+
+  trackAddressBookImported(count) {
+    increment('addressBookImported');
+    const metrics = loadMetrics();
+    if (!metrics.addressBookImportCounts) metrics.addressBookImportCounts = {};
+    metrics.addressBookImportCounts[String(count)] = (metrics.addressBookImportCounts[String(count)] || 0) + 1;
+    saveMetrics(metrics);
+  },
+
+  trackAddressBookExported() {
+    increment('addressBookExported');
+  },
+
+  trackAddressBookSearched() {
+    increment('addressBookSearched');
+  },
+
+  trackAddressBookSelected() {
+    increment('addressBookSelected');
+  },
+
   trackTabNavigation(tab) {
     incrementMap('tabNavigations', tab);
   },
@@ -230,6 +269,9 @@ export const analytics = {
     const averageBatchSize = totalBatches > 0 ? (weightedSum / totalBatches).toFixed(1) : '0.0';
     const sortedBatchSizes = batchSizeEntries.sort((a, b) => b[1] - a[1]);
 
+    const addressBookImportCounts = m.addressBookImportCounts || {};
+    const totalImports = Object.values(addressBookImportCounts).reduce((sum, count) => sum + count, 0);
+
     return {
       totalPageViews,
       walletConnections: m.walletConnections,
@@ -247,6 +289,14 @@ export const analytics = {
       scheduledTipsCancelled: m.scheduledTipsCancelled || 0,
       scheduledTipsExecuted: m.scheduledTipsExecuted || 0,
       scheduledTipsFailed: m.scheduledTipsFailed || 0,
+      addressBookAdded: m.addressBookAdded || 0,
+      addressBookUpdated: m.addressBookUpdated || 0,
+      addressBookDeleted: m.addressBookDeleted || 0,
+      addressBookImported: m.addressBookImported || 0,
+      addressBookExported: m.addressBookExported || 0,
+      addressBookSearched: m.addressBookSearched || 0,
+      addressBookSelected: m.addressBookSelected || 0,
+      totalImports,
       batchCompletionRate,
       batchDropOffRate,
       averageBatchSize,

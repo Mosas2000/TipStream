@@ -74,6 +74,12 @@ export const ROUTE_ACTIVITY = '/activity';
 export const ROUTE_PROFILE = '/profile';
 
 /**
+ * Address book for managing saved addresses.
+ * @type {string}
+ */
+export const ROUTE_ADDRESS_BOOK = '/address-book';
+
+/**
  * Block/unblock addresses.
  * @type {string}
  */
@@ -119,6 +125,7 @@ export const ROUTE_LABELS = {
   [ROUTE_LEADERBOARD]: 'Leaderboard',
   [ROUTE_ACTIVITY]: 'My Activity',
   [ROUTE_PROFILE]: 'Profile',
+  [ROUTE_ADDRESS_BOOK]: 'Address Book',
   [ROUTE_BLOCK]: 'Block',
   [ROUTE_STATS]: 'Stats',
   [ROUTE_ADMIN]: 'Admin',
@@ -143,6 +150,7 @@ export const ROUTE_TITLES = {
   [ROUTE_LEADERBOARD]: 'Leaderboard -- TipStream',
   [ROUTE_ACTIVITY]: 'My Activity -- TipStream',
   [ROUTE_PROFILE]: 'Profile -- TipStream',
+  [ROUTE_ADDRESS_BOOK]: 'Address Book -- TipStream',
   [ROUTE_BLOCK]: 'Block Manager -- TipStream',
   [ROUTE_STATS]: 'Platform Stats -- TipStream',
   [ROUTE_ADMIN]: 'Admin Dashboard -- TipStream',
@@ -208,6 +216,11 @@ export const ROUTE_META = {
   },
   [ROUTE_PROFILE]: {
     description: 'Manage display name, bio, and avatar.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_ADDRESS_BOOK]: {
+    description: 'Save and manage frequently used addresses.',
     requiresAuth: true,
     adminOnly: false,
   },
