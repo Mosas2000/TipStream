@@ -433,10 +433,10 @@ const server = http.createServer(async (req, res) => {
         address,
       });
     }
-    const allEvents = await store.listEvents();
-    const tips = allEvents
+    const userEvents = await store.listEventsByUser(address);
+    const tips = userEvents
       .map(parseTipEvent)
-      .filter((t) => t && (t.sender === address || t.recipient === address))
+      .filter(Boolean)
       .reverse();
     return sendJson(res, 200, { tips, total: tips.length });
   }
