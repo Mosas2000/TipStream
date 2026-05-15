@@ -22,6 +22,7 @@ import { useSenderAddress } from '../hooks/useSenderAddress';
 import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
+import AddressBook from './AddressBook';
 
 const MIN_TIP_STX = 0.001; // minimum tip in STX
 const MAX_TIP_STX = 10000; // maximum tip in STX
@@ -63,6 +64,7 @@ export default function SendTip({ addToast }) {
     const [recipientError, setRecipientError] = useState('');
     const [amountError, setAmountError] = useState('');
     const [cooldown, setCooldown] = useState(0);
+    const [showAddressBook, setShowAddressBook] = useState(false);
   const cooldownRef = useRef(null);
 
   const walletSenderAddress = useSenderAddress();
@@ -125,6 +127,12 @@ export default function SendTip({ addToast }) {
 
     const handleRecipientChange = (value) => {
         setRecipient(value);
+    };
+
+    const handleSelectAddress = (address, label) => {
+        setRecipient(address);
+        setShowAddressBook(false);
+        addToast(`Selected: ${label}`, 'success');
     };
 
     const handleAmountChange = (value) => {
@@ -295,7 +303,21 @@ export default function SendTip({ addToast }) {
                 <div className="space-y-4">
                     {/* Recipient */}
                     <div>
-                        <label htmlFor="tip-recipient" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Recipient Address</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label htmlFor="tip-recipient" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Recipient Address</label>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddressBook(!showAddressBook)}
+                                className="text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                            >
+                                {showAddressBook ? 'Hide' : 'Address Book'}
+                            </button>
+                        </div>
+                        {showAddressBook && (
+                            <div className="mb-3">
+                                <AddressBook onSelectAddress={handleSelectAddress} compact={true} />
+                            </div>
+                        )}
                         {(() => {
                             const isRisky = !canProceedWithRecipient(recipient, blockedWarning);
                             const validationMsg = getRecipientValidationMessage(recipient, blockedWarning);
