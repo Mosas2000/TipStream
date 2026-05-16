@@ -213,6 +213,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed, onTimeout }) {
               type="button"
               onClick={handleRetry}
               className="text-xs font-semibold underline hover:opacity-70 transition-opacity"
+              aria-label="Retry polling for transaction status"
             >
               Retry polling
             </button>
@@ -221,6 +222,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed, onTimeout }) {
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs underline hover:opacity-70 transition-opacity"
+              aria-label="View transaction details on Stacks Explorer"
             >
               Check on explorer
             </a>
