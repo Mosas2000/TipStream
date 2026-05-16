@@ -10,6 +10,11 @@ export const POLL_INTERVAL = 8000;
 /**
  * Maximum number of poll attempts before the component transitions to the
  * timed_out state.  At 8 s per poll this gives a ~5-minute window.
+ *
+ * Reduced from 60 to 38 to implement a reasonable timeout that prevents
+ * indefinite polling while still allowing sufficient time for typical
+ * Stacks block confirmation times (10-30 minutes for finality, but most
+ * transactions appear in mempool within 5 minutes).
  */
 export const MAX_POLLS = 38;
 
