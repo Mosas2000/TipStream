@@ -138,6 +138,9 @@ export default function TxStatus({ txId, onConfirmed, onFailed, onTimeout }) {
   useEffect(() => {
     if (status !== 'pending') return;
 
+    // Transition to timed_out state when polling limit is exhausted.
+    // This prevents indefinite polling and provides users with a clear
+    // timeout message and retry option.
     if (pollCount >= MAX_POLLS) {
       setStatus('timed_out');
       onTimeoutRef.current?.(txId);
