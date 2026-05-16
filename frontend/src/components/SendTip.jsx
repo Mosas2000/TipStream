@@ -262,6 +262,11 @@ export default function SendTip({ addToast }) {
         addToast(`Transaction failed: ${reason}`, 'error');
     }, [addToast, refetchBalance]);
 
+    /** Called by TxStatus when polling exhausts MAX_POLLS without a result. */
+    const handleTxTimeout = useCallback(() => {
+        addToast('Transaction confirmation timed out. Check the explorer for the latest status.', 'warning');
+    }, [addToast]);
+
     return (
         <div className="max-w-md mx-auto">
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
@@ -405,7 +410,8 @@ export default function SendTip({ addToast }) {
                         </p>
                         <TxStatus txId={pendingTx.txId}
                             onConfirmed={handleTxConfirmed}
-                            onFailed={handleTxFailed} />
+                            onFailed={handleTxFailed}
+                            onTimeout={handleTxTimeout} />
                         <button onClick={() => setPendingTx(null)} className="mt-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Dismiss</button>
                     </div>
                 )}
