@@ -32,6 +32,10 @@ export const STACKS_API_BASE = NETWORK === 'mainnet'
 
 export const APP_URL = import.meta.env.VITE_APP_URL || 'https://tipstream-silk.vercel.app';
 
+// WebSocket endpoint for real-time tip notifications (chainhook backend).
+// When undefined the frontend falls back to polling.
+export const WS_URL = import.meta.env.VITE_WS_URL || null;
+
 // ----- Contract function names -----
 // Tipping
 export const FN_SEND_CATEGORIZED_TIP = 'send-categorized-tip';

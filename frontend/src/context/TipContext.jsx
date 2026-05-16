@@ -5,15 +5,32 @@
  * and a shared event cache so that multiple components do not independently
  * poll the same Stacks API endpoint.
  *
+ * When a WebSocket URL is configured (VITE_WS_URL), the context connects to
+ * the chainhook backend and receives tip events in real time. Polling is kept
+ * as a fallback and runs at a reduced frequency while the socket is healthy.
+ *
  * @module context/TipContext
  */
-import { createContext, useContext, useReducer, useCallback, useState, useEffect, useRef } from 'react';
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+} from 'react';
 import { fetchAllContractEvents, POLL_INTERVAL_MS } from '../lib/contractEvents';
 import { updatePaginationState } from '../lib/eventPageCache';
 import { mergeAndDeduplicateEvents, sortEventsStably } from '../lib/eventDeduplication.js';
 import { useDemoMode } from './DemoContext';
+import { useWebSocket, WS_STATUS } from '../hooks/useWebSocket';
+import { WS_URL } from '../config/contracts';
 
 const TipContext = createContext(null);
+
+// Polling interval while WebSocket is healthy (reduced load).
+const POLL_INTERVAL_WS_ACTIVE_MS = 120_000;
 
 const initialState = {
   refreshCounter: 0,
@@ -50,6 +67,9 @@ export function TipProvider({ children }) {
   const [lastEventRefresh, setLastEventRefresh] = useState(null);
   const fetchIdRef = useRef(0);
 
+  // ---- WebSocket state ---------------------------------------------------
+  const [wsConnected, setWsConnected] = useState(false);
+
   const demoEvents = useCallback(() => {
     return demoTips.map((tip) => ({
       event: 'tip-sent',
@@ -65,16 +85,14 @@ export function TipProvider({ children }) {
     }));
   }, [demoTips]);
 
-
   /**
    * Fetch contract events from the Stacks API and update the shared cache.
    * Uses a fetchId counter to discard stale responses when a newer fetch
-   * has already been triggered (e.g. from a rapid manual refresh).
+   * has already been triggered.
    */
   const refreshEvents = useCallback(async () => {
     if (demoEnabled) {
       setEventsLoading(true);
-      // Brief delay to simulate network feel
       await new Promise(r => setTimeout(r, 600));
       const demoEventData = demoEvents();
       setEvents(demoEventData);
@@ -104,19 +122,51 @@ export function TipProvider({ children }) {
     }
   }, [demoEnabled, demoEvents]);
 
+  /**
+   * Handle an incoming tip event pushed over WebSocket.
+   * Prepends the event to the local cache without a full API round-trip.
+   */
+  const handleWsMessage = useCallback((message) => {
+    if (message.type !== 'tip_event') return;
+
+    const incoming = message.data;
+    if (!incoming) return;
+
+    setEvents(prev => {
+      const merged = mergeAndDeduplicateEvents([incoming], prev);
+      return sortEventsStably(merged);
+    });
+    setLastEventRefresh(new Date());
+  }, []);
+
+  const handleWsConnect = useCallback(() => {
+    setWsConnected(true);
+  }, []);
+
+  const handleWsDisconnect = useCallback(() => {
+    setWsConnected(false);
+  }, []);
+
+  // WebSocket connection — only when a URL is configured and not in demo mode.
+  const { status: wsStatus } = useWebSocket(
+    !demoEnabled ? WS_URL : null,
+    {
+      enabled: !demoEnabled && Boolean(WS_URL),
+      onMessage: handleWsMessage,
+      onConnect: handleWsConnect,
+      onDisconnect: handleWsDisconnect,
+    }
+  );
 
   /**
    * Load the next batch of events beyond the current apiOffset.
    * Appends new events to the existing cache rather than replacing it.
    */
   const loadMoreEvents = useCallback(async () => {
-    if (demoEnabled) {
-      return;
-    }
+    if (demoEnabled) return;
 
     try {
       const result = await fetchAllContractEvents({ startOffset: eventsMeta.apiOffset });
-      // Merge and deduplicate to prevent duplicates from pagination overlap
       const merged = mergeAndDeduplicateEvents(events, result.events);
       const sorted = sortEventsStably(merged);
       setEvents(sorted);
@@ -127,9 +177,7 @@ export function TipProvider({ children }) {
   }, [demoEnabled, eventsMeta.apiOffset, events]);
 
   const notifyTipSent = useCallback(() => {
-    if (demoEnabled) {
-      return;
-    }
+    if (demoEnabled) return;
     dispatch({ type: 'TIP_SENT' });
   }, [demoEnabled]);
 
@@ -149,18 +197,19 @@ export function TipProvider({ children }) {
     triggerRefresh();
   }, [addDemoTip, triggerRefresh]);
 
-  // Fetch events on mount and whenever refreshCounter bumps.
-  useEffect(() => { refreshEvents(); }, [refreshEvents, state.refreshCounter, demoEnabled, demoEvents]);
-
-  // Single polling interval shared across all consumers.
+  // Initial fetch and re-fetch on manual refresh triggers.
   useEffect(() => {
-    if (demoEnabled) {
-      return () => {};
-    }
+    refreshEvents();
+  }, [refreshEvents, state.refreshCounter, demoEnabled, demoEvents]);
 
-    const id = setInterval(refreshEvents, POLL_INTERVAL_MS);
+  // Polling interval — runs at reduced frequency when WebSocket is healthy.
+  useEffect(() => {
+    if (demoEnabled) return;
+
+    const interval = wsConnected ? POLL_INTERVAL_WS_ACTIVE_MS : POLL_INTERVAL_MS;
+    const id = setInterval(refreshEvents, interval);
     return () => clearInterval(id);
-  }, [demoEnabled, refreshEvents]);
+  }, [demoEnabled, refreshEvents, wsConnected]);
 
   return (
     <TipContext.Provider value={{
@@ -176,6 +225,9 @@ export function TipProvider({ children }) {
       lastEventRefresh,
       refreshEvents,
       loadMoreEvents,
+      // WebSocket connection state
+      wsStatus,
+      wsConnected,
     }}>
       {children}
     </TipContext.Provider>
