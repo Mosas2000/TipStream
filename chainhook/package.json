@@ -12,6 +12,7 @@
   },
   "description": "Chainhook webhook listener for TipStream on-chain events with configurable PostgreSQL connection pooling, graceful shutdown, and payload validation",
   "dependencies": {
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "ws": "8.18.2"
   }
 }
