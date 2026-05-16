@@ -45,11 +45,33 @@ const STATUS_CONFIG = {
   },
 };
 
+/**
+ * TxStatus -- polls the Stacks API for a transaction's on-chain status and
+ * renders a visual indicator (pending / confirmed / failed / timed_out) along
+ * with an explorer link.
+ *
+ * Polling stops automatically when the transaction reaches a terminal state
+ * (confirmed or failed) or when MAX_POLLS attempts have been exhausted.  In
+ * the latter case the component transitions to the timed_out state and
+ * surfaces a retry button so the user can resume polling without reloading
+ * the page.
+ *
+ * @param {Object}   props
+ * @param {string}   props.txId          - The transaction ID to monitor.
+ * @param {Function} [props.onConfirmed] - Called with the tx data object once
+ *                                         the transaction is confirmed.
+ * @param {Function} [props.onFailed]    - Called with the failure reason string
+ *                                         when the transaction fails.
+ * @param {Function} [props.onTimeout]   - Called with the txId when polling
+ *                                         exhausts MAX_POLLS without a result.
+ */
 export default function TxStatus({ txId, onConfirmed, onFailed, onTimeout }) {
   const { demoEnabled } = useDemoMode();
   const [status, setStatus] = useState('pending');
   const [pollCount, setPollCount] = useState(0);
 
+  // Store callbacks in refs so the polling loop is not restarted when the
+  // parent passes new arrow-function references on every render (see #232).
   const onConfirmedRef = useRef(onConfirmed);
   const onFailedRef = useRef(onFailed);
   const onTimeoutRef = useRef(onTimeout);
@@ -58,14 +80,33 @@ export default function TxStatus({ txId, onConfirmed, onFailed, onTimeout }) {
   useEffect(() => { onFailedRef.current = onFailed; }, [onFailed]);
   useEffect(() => { onTimeoutRef.current = onTimeout; }, [onTimeout]);
 
+  // Keep pollCount accessible inside checkStatus without adding it as a
+  // dependency, which would recreate the callback on every increment and
+  // trigger an extra immediate fetch via the mount effect below.
+  const pollCountRef = useRef(pollCount);
+  useEffect(() => { pollCountRef.current = pollCount; }, [pollCount]);
+
+  /**
+   * Reset polling state so the user can retry after a timeout.
+   * Transitions back to pending and resets the poll counter to zero.
+   */
   const handleRetry = useCallback(() => {
     setPollCount(0);
     setStatus('pending');
   }, []);
 
+  /**
+   * Poll the Stacks API for the current transaction status.
+   * Invokes the appropriate callback ref when the transaction reaches a
+   * terminal state (success or abort).
+   *
+   * pollCount is read from a ref so this callback is stable across renders
+   * and does not cause the mount effect to re-fire on every increment.
+   */
   const checkStatus = useCallback(async () => {
+    // Handle demo transaction confirmation simulation
     if (demoEnabled && txId.startsWith('0x')) {
-      if (pollCount >= 1) {
+      if (pollCountRef.current >= 1) {
         setStatus('confirmed');
         onConfirmedRef.current?.({ tx_status: 'success', tx_id: txId });
       }
@@ -89,8 +130,11 @@ export default function TxStatus({ txId, onConfirmed, onFailed, onTimeout }) {
     } catch {
       // Network error -- keep polling
     }
-  }, [txId, demoEnabled, pollCount]);
+  }, [txId, demoEnabled]);
 
+  // Schedule the next poll using setTimeout (not setInterval) so the
+  // effect correctly cleans up when the component unmounts or when a
+  // terminal state is reached.
   useEffect(() => {
     if (status !== 'pending') return;
 
@@ -110,6 +154,7 @@ export default function TxStatus({ txId, onConfirmed, onFailed, onTimeout }) {
     return () => clearTimeout(timer);
   }, [status, pollCount, checkStatus, demoEnabled, txId]);
 
+  // Fire an immediate check on mount (and whenever txId changes).
   useEffect(() => {
     Promise.resolve().then(() => checkStatus());
   }, [checkStatus]);
