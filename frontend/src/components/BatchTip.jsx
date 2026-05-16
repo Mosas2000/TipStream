@@ -291,6 +291,10 @@ export default function BatchTip({ addToast }) {
         addToast?.(`Batch transaction failed: ${reason}`, 'error');
     }, [addToast]);
 
+    const handleBatchTxTimeout = useCallback(() => {
+        addToast?.('Batch transaction confirmation timed out. Check the explorer for the latest status.', 'warning');
+    }, [addToast]);
+
     return (
         <div className="max-w-2xl mx-auto">
             {demoEnabled && (
@@ -502,6 +506,7 @@ export default function BatchTip({ addToast }) {
                         txId={pendingTx.txId}
                         onConfirmed={handleBatchTxConfirmed}
                         onFailed={handleBatchTxFailed}
+                        onTimeout={handleBatchTxTimeout}
                     />
                 )}
             </div>
