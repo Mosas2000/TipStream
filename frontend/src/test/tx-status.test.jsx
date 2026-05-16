@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, act } from '@testing-library/react';
+import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import TxStatus from '../components/ui/tx-status';
-import { POLL_INTERVAL, MAX_POLLS } from '../components/ui/tx-status';
+import { POLL_INTERVAL, MAX_POLLS, POLL_TIMEOUT_MS } from '../components/ui/tx-status';
 
 // ---------------------------------------------------------------------------
 // Mock fetch so we never hit a real network during tests.
@@ -294,6 +294,221 @@ describe('TxStatus', () => {
             });
 
             expect(screen.getByText('Pending confirmation...')).toBeInTheDocument();
+        });
+    });
+
+    // -- Timeout ----------------------------------------------------------
+
+    describe('timeout', () => {
+        /**
+         * Advance fake timers through enough poll cycles to exhaust MAX_POLLS.
+         * Each cycle requires: advancing the clock by POLL_INTERVAL, then
+         * flushing the resulting microtask queue so the fetch promise resolves
+         * and React re-renders before the next cycle begins.
+         */
+        async function exhaustPolls() {
+            for (let i = 0; i < MAX_POLLS; i++) {
+                await act(async () => {
+                    vi.advanceTimersByTime(POLL_INTERVAL);
+                });
+            }
+        }
+
+        it('transitions to timed_out after MAX_POLLS attempts', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            await exhaustPolls();
+
+            expect(screen.getByTestId('tx-status')).toHaveAttribute('data-status', 'timed_out');
+            expect(screen.getByText('Confirmation timed out')).toBeInTheDocument();
+        });
+
+        it('stops fetching after timeout', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            await exhaustPolls();
+
+            const callsAtTimeout = global.fetch.mock.calls.length;
+
+            await act(async () => {
+                vi.advanceTimersByTime(POLL_INTERVAL * 5);
+            });
+
+            expect(global.fetch.mock.calls.length).toBe(callsAtTimeout);
+        });
+
+        it('invokes onTimeout with the txId when polling expires', async () => {
+            const onTimeout = vi.fn();
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} onTimeout={onTimeout} />);
+            });
+
+            await exhaustPolls();
+
+            expect(onTimeout).toHaveBeenCalledTimes(1);
+            expect(onTimeout).toHaveBeenCalledWith(MOCK_TX_ID);
+        });
+
+        it('does not invoke onTimeout when transaction confirms before limit', async () => {
+            const onTimeout = vi.fn();
+            mockFetchWith({ tx_status: 'success', tx_id: MOCK_TX_ID });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} onTimeout={onTimeout} />);
+            });
+
+            expect(onTimeout).not.toHaveBeenCalled();
+        });
+
+        it('does not invoke onTimeout when transaction fails before limit', async () => {
+            const onTimeout = vi.fn();
+            mockFetchWith({ tx_status: 'abort_by_response' });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} onTimeout={onTimeout} />);
+            });
+
+            expect(onTimeout).not.toHaveBeenCalled();
+        });
+
+        it('shows a timeout message with the correct duration', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            await exhaustPolls();
+
+            const expectedMinutes = Math.round(POLL_TIMEOUT_MS / 60000);
+            expect(screen.getByText(new RegExp(`${expectedMinutes} minutes`))).toBeInTheDocument();
+        });
+
+        it('shows a retry button after timeout', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            await exhaustPolls();
+
+            expect(screen.getByRole('button', { name: /retry polling/i })).toBeInTheDocument();
+        });
+
+        it('shows an explorer link after timeout', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            await exhaustPolls();
+
+            const links = screen.getAllByRole('link');
+            const explorerLinks = links.filter((l) => l.href.includes('explorer.hiro.so'));
+            expect(explorerLinks.length).toBeGreaterThan(0);
+        });
+
+        it('POLL_TIMEOUT_MS equals MAX_POLLS multiplied by POLL_INTERVAL', () => {
+            expect(POLL_TIMEOUT_MS).toBe(MAX_POLLS * POLL_INTERVAL);
+        });
+    });
+
+    // -- Retry ------------------------------------------------------------
+
+    describe('retry', () => {
+        async function exhaustPolls() {
+            for (let i = 0; i < MAX_POLLS; i++) {
+                await act(async () => {
+                    vi.advanceTimersByTime(POLL_INTERVAL);
+                });
+            }
+        }
+
+        async function renderTimedOut() {
+            render(<TxStatus txId={MOCK_TX_ID} />);
+            await act(async () => {});
+            await exhaustPolls();
+        }
+
+        it('returns to pending state when retry is clicked', async () => {
+            await renderTimedOut();
+
+            expect(screen.getByTestId('tx-status')).toHaveAttribute('data-status', 'timed_out');
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /retry polling/i }));
+            });
+
+            expect(screen.getByTestId('tx-status')).toHaveAttribute('data-status', 'pending');
+            expect(screen.getByText('Pending confirmation...')).toBeInTheDocument();
+        });
+
+        it('resumes polling after retry', async () => {
+            await renderTimedOut();
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /retry polling/i }));
+            });
+
+            const callsAfterRetry = global.fetch.mock.calls.length;
+
+            await act(async () => {
+                vi.advanceTimersByTime(POLL_INTERVAL);
+            });
+
+            expect(global.fetch.mock.calls.length).toBeGreaterThan(callsAfterRetry);
+        });
+
+        it('confirms successfully after retry', async () => {
+            const onConfirmed = vi.fn();
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} onConfirmed={onConfirmed} />);
+            });
+
+            await exhaustPolls();
+
+            mockFetchWith({ tx_status: 'success', tx_id: MOCK_TX_ID });
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /retry polling/i }));
+            });
+
+            await act(async () => {
+                vi.advanceTimersByTime(POLL_INTERVAL);
+            });
+
+            expect(onConfirmed).toHaveBeenCalledTimes(1);
+            expect(screen.getByTestId('tx-status')).toHaveAttribute('data-status', 'confirmed');
+        });
+
+        it('hides the retry button while polling is active', async () => {
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            expect(screen.queryByRole('button', { name: /retry polling/i })).not.toBeInTheDocument();
+        });
+
+        it('does not show retry button in confirmed state', async () => {
+            mockFetchWith({ tx_status: 'success', tx_id: MOCK_TX_ID });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            expect(screen.queryByRole('button', { name: /retry polling/i })).not.toBeInTheDocument();
+        });
+
+        it('does not show retry button in failed state', async () => {
+            mockFetchWith({ tx_status: 'abort_by_response' });
+
+            await act(async () => {
+                render(<TxStatus txId={MOCK_TX_ID} />);
+            });
+
+            expect(screen.queryByRole('button', { name: /retry polling/i })).not.toBeInTheDocument();
         });
     });
 });
