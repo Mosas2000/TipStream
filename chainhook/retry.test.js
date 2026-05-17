@@ -302,3 +302,92 @@ describe('parseRetryConfig', () => {
     assert.strictEqual(config.baseDelayMs, 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Metrics integration
+// ---------------------------------------------------------------------------
+
+import { metrics } from './metrics.js';
+
+describe('withRetry metrics tracking', () => {
+  it('does not record retry metrics on first-attempt success', async () => {
+    const before = {
+      attempts: metrics.dbRetryAttempts,
+      successes: metrics.dbRetrySuccesses,
+      exhausted: metrics.dbRetryExhausted,
+    };
+
+    await withRetry(() => Promise.resolve('ok'), {
+      maxAttempts: 3,
+      baseDelayMs: 1,
+      jitterMs: 0,
+      operationName: 'test_no_retry',
+    });
+
+    assert.strictEqual(metrics.dbRetryAttempts, before.attempts);
+    assert.strictEqual(metrics.dbRetrySuccesses, before.successes);
+    assert.strictEqual(metrics.dbRetryExhausted, before.exhausted);
+  });
+
+  it('increments dbRetryAttempts on each retry', async () => {
+    const before = metrics.dbRetryAttempts;
+    let calls = 0;
+    const err = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+
+    await withRetry(
+      () => {
+        calls++;
+        if (calls < 3) throw err;
+        return Promise.resolve('ok');
+      },
+      { maxAttempts: 5, baseDelayMs: 1, jitterMs: 0, operationName: 'test_attempts' }
+    );
+
+    assert.strictEqual(metrics.dbRetryAttempts, before + 2);
+  });
+
+  it('increments dbRetrySuccesses when operation recovers after retries', async () => {
+    const before = metrics.dbRetrySuccesses;
+    let calls = 0;
+    const err = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+
+    await withRetry(
+      () => {
+        calls++;
+        if (calls < 2) throw err;
+        return Promise.resolve('ok');
+      },
+      { maxAttempts: 3, baseDelayMs: 1, jitterMs: 0, operationName: 'test_success' }
+    );
+
+    assert.strictEqual(metrics.dbRetrySuccesses, before + 1);
+  });
+
+  it('increments dbRetryExhausted when all attempts fail', async () => {
+    const before = metrics.dbRetryExhausted;
+    const err = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+
+    await assert.rejects(
+      () => withRetry(
+        () => Promise.reject(err),
+        { maxAttempts: 3, baseDelayMs: 1, jitterMs: 0, operationName: 'test_exhausted' }
+      )
+    );
+
+    assert.strictEqual(metrics.dbRetryExhausted, before + 1);
+  });
+
+  it('does not increment dbRetryExhausted on non-retryable error', async () => {
+    const before = metrics.dbRetryExhausted;
+    const err = new Error('invalid input');
+
+    await assert.rejects(
+      () => withRetry(
+        () => Promise.reject(err),
+        { maxAttempts: 3, baseDelayMs: 1, jitterMs: 0, operationName: 'test_non_retryable' }
+      )
+    );
+
+    assert.strictEqual(metrics.dbRetryExhausted, before);
+  });
+});
