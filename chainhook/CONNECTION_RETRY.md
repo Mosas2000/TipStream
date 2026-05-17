@@ -206,3 +206,21 @@ Test coverage includes:
 - `parseRetryConfig` — env var parsing and defaults
 - Storage integration — recovery from transient failures in query operations
 - Health endpoint — 200/503 based on storage state
+
+## Metrics
+
+Retry activity is tracked in the `/metrics` endpoint:
+
+```json
+{
+  "db_retry_attempts": 12,
+  "db_retry_successes": 10,
+  "db_retry_exhausted": 2
+}
+```
+
+- `db_retry_attempts` — total number of retry attempts made (not counting the first try)
+- `db_retry_successes` — operations that eventually succeeded after one or more retries
+- `db_retry_exhausted` — operations that failed after exhausting all retry attempts
+
+A healthy service should have `db_retry_exhausted` at or near zero. A non-zero value indicates the database was unreachable for longer than the configured retry window.
