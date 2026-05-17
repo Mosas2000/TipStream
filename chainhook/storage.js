@@ -1,6 +1,9 @@
 import { Pool } from 'pg';
 import { generateEventKey } from './deduplication.js';
 import { StorageUnavailableError } from './errors.js';
+import { withRetry, parseRetryConfig } from './retry.js';
+
+const retryConfig = parseRetryConfig(process.env);
 
 const DEFAULT_POOL_MAX = 20;
 const DEFAULT_POOL_IDLE_TIMEOUT_MS = 30000;
@@ -189,20 +192,21 @@ class MemoryEventStore {
 }
 
 class PostgresEventStore {
-  constructor({ databaseUrl, retentionDays = 30, ssl = false, poolConfig = {} } = {}) {
+  constructor({ databaseUrl, retentionDays = 30, ssl = false, poolConfig = {}, retryOptions = {} } = {}) {
     if (!databaseUrl) {
       throw new StorageUnavailableError('DATABASE_URL is required for postgres storage');
     }
 
     this.retentionDays = retentionDays;
     this.poolConfig = poolConfig;
+    this.retryOptions = { ...retryConfig, ...retryOptions };
     this.pool = new Pool({
       connectionString: databaseUrl,
       ssl: ssl ? { rejectUnauthorized: false } : undefined,
-      max: poolConfig.max, // Maximum number of clients in the pool
-      idleTimeoutMillis: poolConfig.idleTimeoutMillis, // Close idle clients after this time
-      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis, // Wait time for connection from pool
-      statement_timeout: poolConfig.statement_timeout, // Query execution timeout
+      max: poolConfig.max,
+      idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+      statement_timeout: poolConfig.statement_timeout,
     });
     this.ready = null;
   }
@@ -215,6 +219,11 @@ class PostgresEventStore {
   }
 
   async #initialize() {
+    await withRetry(
+      () => this.pool.query('SELECT 1'),
+      { operationName: 'postgres_connect', maxAttempts: 5, baseDelayMs: 500 }
+    );
+
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS chainhook_events (
         event_key TEXT PRIMARY KEY,
@@ -263,21 +272,24 @@ class PostgresEventStore {
       return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}::jsonb)`;
     });
 
-    const result = await this.pool.query(
-      `
-        INSERT INTO chainhook_events (
-          event_key,
-          tx_id,
-          block_height,
-          event_timestamp,
-          contract,
-          event_type,
-          raw_event
-        ) VALUES ${placeholders.join(', ')}
-        ON CONFLICT (event_key) DO NOTHING
-        RETURNING event_key;
-      `,
-      values,
+    const result = await withRetry(
+      () => this.pool.query(
+        `
+          INSERT INTO chainhook_events (
+            event_key,
+            tx_id,
+            block_height,
+            event_timestamp,
+            contract,
+            event_type,
+            raw_event
+          ) VALUES ${placeholders.join(', ')}
+          ON CONFLICT (event_key) DO NOTHING
+          RETURNING event_key;
+        `,
+        values,
+      ),
+      { ...this.retryOptions, operationName: 'postgres_insert_events' },
     );
 
     return {
@@ -289,13 +301,19 @@ class PostgresEventStore {
 
   async listEvents() {
     await this.init();
-    const result = await this.pool.query('SELECT raw_event FROM chainhook_events ORDER BY ingested_at ASC, event_key ASC');
+    const result = await withRetry(
+      () => this.pool.query('SELECT raw_event FROM chainhook_events ORDER BY ingested_at ASC, event_key ASC'),
+      { ...this.retryOptions, operationName: 'postgres_list_events' },
+    );
     return result.rows.map(toRawEvent);
   }
 
   async countEvents() {
     await this.init();
-    const result = await this.pool.query('SELECT COUNT(*)::int AS count FROM chainhook_events');
+    const result = await withRetry(
+      () => this.pool.query('SELECT COUNT(*)::int AS count FROM chainhook_events'),
+      { ...this.retryOptions, operationName: 'postgres_count_events' },
+    );
     return Number(result.rows[0]?.count || 0);
   }
 
@@ -306,9 +324,12 @@ class PostgresEventStore {
       return { deletedCount: 0 };
     }
 
-    const result = await this.pool.query(
-      'DELETE FROM chainhook_events WHERE ingested_at < to_timestamp($1 / 1000.0)',
-      [cutoffMs],
+    const result = await withRetry(
+      () => this.pool.query(
+        'DELETE FROM chainhook_events WHERE ingested_at < to_timestamp($1 / 1000.0)',
+        [cutoffMs],
+      ),
+      { ...this.retryOptions, operationName: 'postgres_prune_events' },
     );
 
     return { deletedCount: result.rowCount };
@@ -316,13 +337,16 @@ class PostgresEventStore {
 
   async getStats() {
     await this.init();
-    const result = await this.pool.query(`
-      SELECT
-        COUNT(*)::int AS total_events,
-        MIN(ingested_at) AS oldest_ingested_at,
-        MAX(ingested_at) AS newest_ingested_at
-      FROM chainhook_events;
-    `);
+    const result = await withRetry(
+      () => this.pool.query(`
+        SELECT
+          COUNT(*)::int AS total_events,
+          MIN(ingested_at) AS oldest_ingested_at,
+          MAX(ingested_at) AS newest_ingested_at
+        FROM chainhook_events;
+      `),
+      { ...this.retryOptions, operationName: 'postgres_get_stats' },
+    );
 
     const row = result.rows[0] || {};
     return {
@@ -336,45 +360,59 @@ class PostgresEventStore {
 
   async health() {
     await this.init();
-    await this.pool.query('SELECT 1');
-    return {
-      healthy: true,
-      storage_mode: 'postgres',
-      total_events: await this.countEvents(),
-      pool_config: {
-        max: this.poolConfig.max,
-        idle_timeout_ms: this.poolConfig.idleTimeoutMillis,
-        connection_timeout_ms: this.poolConfig.connectionTimeoutMillis,
-        statement_timeout_ms: this.poolConfig.statement_timeout,
-      },
-    };
+    try {
+      await withRetry(
+        () => this.pool.query('SELECT 1'),
+        { operationName: 'postgres_health_check', maxAttempts: 2, baseDelayMs: 200 },
+      );
+      return {
+        healthy: true,
+        storage_mode: 'postgres',
+        total_events: await this.countEvents(),
+        pool_config: {
+          max: this.poolConfig.max,
+          idle_timeout_ms: this.poolConfig.idleTimeoutMillis,
+          connection_timeout_ms: this.poolConfig.connectionTimeoutMillis,
+          statement_timeout_ms: this.poolConfig.statement_timeout,
+        },
+      };
+    } catch (err) {
+      return {
+        healthy: false,
+        storage_mode: 'postgres',
+        error: err.message,
+        pool_config: {
+          max: this.poolConfig.max,
+          idle_timeout_ms: this.poolConfig.idleTimeoutMillis,
+          connection_timeout_ms: this.poolConfig.connectionTimeoutMillis,
+          statement_timeout_ms: this.poolConfig.statement_timeout,
+        },
+      };
+    }
   }
 
-  /**
-   * List all tip events for a specific user address.
-   * Uses JSONB indexes for fast lookups on sender and recipient fields.
-   * Returns events where the address is either sender or recipient.
-   * Results are sorted chronologically by ingestion time.
-   * 
-   * @param {string} address - Stacks address to lookup
-   * @returns {Promise<Array>} Array of raw events
-   */
   async listEventsByUser(address) {
     if (!address || typeof address !== 'string') {
       throw new Error('address must be a non-empty string');
     }
-    
+
     await this.init();
-    const result = await this.pool.query(`
-      SELECT raw_event 
-      FROM chainhook_events 
-      WHERE event_type = 'tip-sent'
-        AND (
-          raw_event->'event'->>'sender' = $1 
-          OR raw_event->'event'->>'recipient' = $1
-        )
-      ORDER BY ingested_at ASC, event_key ASC
-    `, [address]);
+    const result = await withRetry(
+      () => this.pool.query(
+        `
+          SELECT raw_event
+          FROM chainhook_events
+          WHERE event_type = 'tip-sent'
+            AND (
+              raw_event->'event'->>'sender' = $1
+              OR raw_event->'event'->>'recipient' = $1
+            )
+          ORDER BY ingested_at ASC, event_key ASC
+        `,
+        [address],
+      ),
+      { ...this.retryOptions, operationName: 'postgres_list_events_by_user' },
+    );
     return result.rows.map(toRawEvent);
   }
 
@@ -397,7 +435,7 @@ export async function createEventStore(options = {}) {
   const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
   const poolConfig = options.poolConfig || parsePoolConfig(process.env);
   
-  return new PostgresEventStore({ databaseUrl, retentionDays, ssl, poolConfig });
+  return new PostgresEventStore({ databaseUrl, retentionDays, ssl, poolConfig, retryOptions: options.retryOptions || {} });
 }
 
 export { MemoryEventStore, PostgresEventStore };
@@ -495,9 +533,10 @@ class MemoryScheduledTipStore {
 }
 
 class PostgresScheduledTipStore {
-  constructor(pool, poolConfig = {}) {
+  constructor(pool, poolConfig = {}, retryOptions = {}) {
     this.pool = pool;
     this.poolConfig = poolConfig;
+    this.retryOptions = { ...retryConfig, ...retryOptions };
     this.ready = null;
   }
 
@@ -509,6 +548,11 @@ class PostgresScheduledTipStore {
   }
 
   async #initialize() {
+    await withRetry(
+      () => this.pool.query('SELECT 1'),
+      { operationName: 'postgres_scheduled_connect', maxAttempts: 5, baseDelayMs: 500 }
+    );
+
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS scheduled_tips (
         id TEXT PRIMARY KEY,
@@ -538,23 +582,26 @@ class PostgresScheduledTipStore {
   async insertScheduledTip(tip) {
     await this.init();
 
-    const result = await this.pool.query(
-      `INSERT INTO scheduled_tips (id, sender, recipient, amount, scheduled_for, message, category, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       ON CONFLICT (id) DO NOTHING
-       RETURNING *`,
-      [
-        tip.id,
-        tip.sender,
-        tip.recipient,
-        tip.amount,
-        tip.scheduledFor,
-        tip.message || '',
-        tip.category || 0,
-        tip.status || 'pending',
-        tip.createdAt || new Date(),
-        tip.updatedAt || new Date(),
-      ]
+    const result = await withRetry(
+      () => this.pool.query(
+        `INSERT INTO scheduled_tips (id, sender, recipient, amount, scheduled_for, message, category, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (id) DO NOTHING
+         RETURNING *`,
+        [
+          tip.id,
+          tip.sender,
+          tip.recipient,
+          tip.amount,
+          tip.scheduledFor,
+          tip.message || '',
+          tip.category || 0,
+          tip.status || 'pending',
+          tip.createdAt || new Date(),
+          tip.updatedAt || new Date(),
+        ]
+      ),
+      { ...this.retryOptions, operationName: 'postgres_insert_scheduled_tip' },
     );
 
     if (result.rowCount === 0) {
@@ -567,7 +614,10 @@ class PostgresScheduledTipStore {
 
   async getScheduledTip(id) {
     await this.init();
-    const result = await this.pool.query('SELECT * FROM scheduled_tips WHERE id = $1', [id]);
+    const result = await withRetry(
+      () => this.pool.query('SELECT * FROM scheduled_tips WHERE id = $1', [id]),
+      { ...this.retryOptions, operationName: 'postgres_get_scheduled_tip' },
+    );
     return result.rows[0] ? this.#rowToTip(result.rows[0]) : null;
   }
 
@@ -598,14 +648,20 @@ class PostgresScheduledTipStore {
     query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     values.push(limit, offset);
 
-    const result = await this.pool.query(query, values);
+    const result = await withRetry(
+      () => this.pool.query(query, values),
+      { ...this.retryOptions, operationName: 'postgres_list_scheduled_tips' },
+    );
 
-    const countResult = await this.pool.query(
-      'SELECT COUNT(*)::int AS count FROM scheduled_tips WHERE 1=1' +
-      (filters.sender ? ' AND sender = $1' : '') +
-      (filters.recipient ? ` AND recipient = $${filters.sender ? 2 : 1}` : '') +
-      (filters.status ? ` AND status = $${(filters.sender ? 1 : 0) + (filters.recipient ? 1 : 0) + 1}` : ''),
-      values.slice(0, -2)
+    const countResult = await withRetry(
+      () => this.pool.query(
+        'SELECT COUNT(*)::int AS count FROM scheduled_tips WHERE 1=1' +
+        (filters.sender ? ' AND sender = $1' : '') +
+        (filters.recipient ? ` AND recipient = $${filters.sender ? 2 : 1}` : '') +
+        (filters.status ? ` AND status = $${(filters.sender ? 1 : 0) + (filters.recipient ? 1 : 0) + 1}` : ''),
+        values.slice(0, -2)
+      ),
+      { ...this.retryOptions, operationName: 'postgres_count_scheduled_tips' },
     );
 
     return {
@@ -647,9 +703,12 @@ class PostgresScheduledTipStore {
 
     values.push(id);
 
-    const result = await this.pool.query(
-      `UPDATE scheduled_tips SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      values
+    const result = await withRetry(
+      () => this.pool.query(
+        `UPDATE scheduled_tips SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+        values
+      ),
+      { ...this.retryOptions, operationName: 'postgres_update_scheduled_tip' },
     );
 
     if (result.rowCount === 0) {
@@ -662,11 +721,14 @@ class PostgresScheduledTipStore {
   async cancelScheduledTip(id, sender) {
     await this.init();
 
-    const result = await this.pool.query(
-      `UPDATE scheduled_tips SET status = 'cancelled', updated_at = NOW()
-       WHERE id = $1 AND sender = $2 AND status = 'pending'
-       RETURNING *`,
-      [id, sender]
+    const result = await withRetry(
+      () => this.pool.query(
+        `UPDATE scheduled_tips SET status = 'cancelled', updated_at = NOW()
+         WHERE id = $1 AND sender = $2 AND status = 'pending'
+         RETURNING *`,
+        [id, sender]
+      ),
+      { ...this.retryOptions, operationName: 'postgres_cancel_scheduled_tip' },
     );
 
     if (result.rowCount === 0) {
@@ -682,22 +744,28 @@ class PostgresScheduledTipStore {
 
   async getPendingScheduledTips() {
     await this.init();
-    const result = await this.pool.query(
-      "SELECT * FROM scheduled_tips WHERE status = 'pending' AND scheduled_for <= NOW() ORDER BY scheduled_for ASC"
+    const result = await withRetry(
+      () => this.pool.query(
+        "SELECT * FROM scheduled_tips WHERE status = 'pending' AND scheduled_for <= NOW() ORDER BY scheduled_for ASC"
+      ),
+      { ...this.retryOptions, operationName: 'postgres_get_pending_tips' },
     );
     return result.rows.map(r => this.#rowToTip(r));
   }
 
   async getNotifiableScheduledTips(leadMinutes = 60) {
     await this.init();
-    const result = await this.pool.query(
-      `SELECT * FROM scheduled_tips
-       WHERE status = 'pending'
-         AND notified_at IS NULL
-         AND scheduled_for <= NOW() + INTERVAL '1 minute' * $1
-         AND scheduled_for > NOW()
-       ORDER BY scheduled_for ASC`,
-      [leadMinutes]
+    const result = await withRetry(
+      () => this.pool.query(
+        `SELECT * FROM scheduled_tips
+         WHERE status = 'pending'
+           AND notified_at IS NULL
+           AND scheduled_for <= NOW() + INTERVAL '1 minute' * $1
+           AND scheduled_for > NOW()
+         ORDER BY scheduled_for ASC`,
+        [leadMinutes]
+      ),
+      { ...this.retryOptions, operationName: 'postgres_get_notifiable_tips' },
     );
     return result.rows.map(r => this.#rowToTip(r));
   }
@@ -705,10 +773,16 @@ class PostgresScheduledTipStore {
   async countScheduledTips(status = null) {
     await this.init();
     if (status) {
-      const result = await this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips WHERE status = $1', [status]);
+      const result = await withRetry(
+        () => this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips WHERE status = $1', [status]),
+        { ...this.retryOptions, operationName: 'postgres_count_scheduled_tips_by_status' },
+      );
       return result.rows[0]?.count || 0;
     }
-    const result = await this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips');
+    const result = await withRetry(
+      () => this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips'),
+      { ...this.retryOptions, operationName: 'postgres_count_all_scheduled_tips' },
+    );
     return result.rows[0]?.count || 0;
   }
 
@@ -754,7 +828,7 @@ export async function createScheduledTipStore(options = {}) {
     statement_timeout: poolConfig.statement_timeout,
   });
 
-  return new PostgresScheduledTipStore(pool, poolConfig);
+  return new PostgresScheduledTipStore(pool, poolConfig, options.retryOptions || {});
 }
 
 export { MemoryScheduledTipStore, PostgresScheduledTipStore };

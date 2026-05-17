@@ -173,3 +173,52 @@ describe('pool configuration constants', () => {
     assert.strictEqual(DEFAULT_STATEMENT_TIMEOUT_MS, 30000);
   });
 });
+
+describe('PostgresEventStore constructor validation', () => {
+  it('throws StorageUnavailableError when databaseUrl is missing', async () => {
+    const { PostgresEventStore } = await import('./storage.js');
+    assert.throws(
+      () => new PostgresEventStore({ databaseUrl: '' }),
+      (err) => {
+        assert.ok(err.message.includes('DATABASE_URL'));
+        return true;
+      }
+    );
+  });
+
+  it('throws when databaseUrl is undefined', async () => {
+    const { PostgresEventStore } = await import('./storage.js');
+    assert.throws(
+      () => new PostgresEventStore({}),
+      (err) => {
+        assert.ok(err.message.includes('DATABASE_URL'));
+        return true;
+      }
+    );
+  });
+});
+
+describe('createEventStore factory', () => {
+  it('creates MemoryEventStore when mode is memory', async () => {
+    const { createEventStore, MemoryEventStore } = await import('./storage.js');
+    const store = await createEventStore({ mode: 'memory' });
+    assert.ok(store instanceof MemoryEventStore);
+    await store.close();
+  });
+
+  it('MemoryEventStore health returns healthy true', async () => {
+    const { MemoryEventStore } = await import('./storage.js');
+    const store = new MemoryEventStore();
+    const health = await store.health();
+    assert.strictEqual(health.healthy, true);
+    assert.strictEqual(health.storage_mode, 'memory');
+  });
+
+  it('MemoryEventStore getStats returns storage_mode memory', async () => {
+    const { MemoryEventStore } = await import('./storage.js');
+    const store = new MemoryEventStore();
+    const stats = await store.getStats();
+    assert.strictEqual(stats.storage_mode, 'memory');
+    assert.strictEqual(stats.total_events, 0);
+  });
+});

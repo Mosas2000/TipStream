@@ -779,8 +779,9 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && path === "/health") {
     const store = await getEventStore();
     const storage = await store.health();
-    return sendJson(res, 200, {
-      status: "healthy",
+    const status = storage.healthy ? "healthy" : "degraded";
+    return sendJson(res, storage.healthy ? 200 : 503, {
+      status,
       timestamp: new Date().toISOString(),
       uptime_seconds: Math.round((Date.now() - metrics.startTime) / 1000),
       storage,
@@ -850,6 +851,8 @@ if (isMain) {
         rate_limit: `${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_WINDOW_MS}ms`,
         storage_mode: STORAGE_MODE,
         retention_days: RETENTION_DAYS,
+        db_retry_max_attempts: parseInt(process.env.DB_RETRY_MAX_ATTEMPTS || "5", 10),
+        db_retry_base_delay_ms: parseInt(process.env.DB_RETRY_BASE_DELAY_MS || "200", 10),
         websocket: `ws://localhost:${PORT}/ws`,
       });
     });
