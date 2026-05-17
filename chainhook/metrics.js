@@ -16,6 +16,19 @@ export class Metrics {
     this.processingTimeMs = [];
     this.lastIndexTime = null;
     this.startTime = Date.now();
+    this.dbRetryAttempts = 0;
+    this.dbRetrySuccesses = 0;
+    this.dbRetryExhausted = 0;
+  }
+
+  /**
+   * Record a database retry attempt.
+   * @param {'attempt'|'success'|'exhausted'} outcome
+   */
+  recordDbRetry(outcome) {
+    if (outcome === 'attempt') this.dbRetryAttempts++;
+    else if (outcome === 'success') this.dbRetrySuccesses++;
+    else if (outcome === 'exhausted') this.dbRetryExhausted++;
   }
 
   /**
@@ -89,6 +102,9 @@ export class Metrics {
       success_rate_percent: this.getSuccessRate(),
       avg_processing_ms: this.getAverageProcessingTime(),
       last_index_time: this.lastIndexTime ? new Date(this.lastIndexTime).toISOString() : null,
+      db_retry_attempts: this.dbRetryAttempts,
+      db_retry_successes: this.dbRetrySuccesses,
+      db_retry_exhausted: this.dbRetryExhausted,
     };
   }
 }

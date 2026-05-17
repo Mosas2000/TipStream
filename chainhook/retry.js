@@ -1,4 +1,5 @@
 import { logger } from './logging.js';
+import { metrics } from './metrics.js';
 
 const DEFAULT_MAX_ATTEMPTS = 5;
 const DEFAULT_BASE_DELAY_MS = 200;
@@ -115,10 +116,15 @@ export async function withRetry(operation, options = {}) {
   } = options;
 
   let lastError;
+  let retried = false;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      return await operation();
+      const result = await operation();
+      if (retried) {
+        metrics.recordDbRetry('success');
+      }
+      return result;
     } catch (error) {
       lastError = error;
 
@@ -126,6 +132,7 @@ export async function withRetry(operation, options = {}) {
 
       if (!retrying) {
         if (attempt > 1) {
+          metrics.recordDbRetry('exhausted');
           logger.error('Operation failed after retries', error, {
             operation: operationName,
             attempts: attempt,
@@ -134,6 +141,8 @@ export async function withRetry(operation, options = {}) {
         throw error;
       }
 
+      retried = true;
+      metrics.recordDbRetry('attempt');
       const delayMs = calculateBackoff(attempt - 1, baseDelayMs, maxDelayMs, jitterMs);
 
       logger.warn('Retrying operation after transient error', {
