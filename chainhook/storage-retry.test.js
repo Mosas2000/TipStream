@@ -235,3 +235,43 @@ describe('storage retry integration', () => {
     }
   });
 });
+
+describe('retry with custom shouldRetry predicate', () => {
+  it('uses custom predicate to retry on application-level errors', async () => {
+    let calls = 0;
+    const result = await withRetry(
+      () => {
+        calls++;
+        if (calls < 3) throw new Error('rate limit exceeded');
+        return Promise.resolve('done');
+      },
+      {
+        maxAttempts: 5,
+        baseDelayMs: 1,
+        jitterMs: 0,
+        operationName: 'test_custom',
+        shouldRetry: (e) => e.message.includes('rate limit'),
+      }
+    );
+    assert.strictEqual(result, 'done');
+    assert.strictEqual(calls, 3);
+  });
+
+  it('custom predicate returning false stops retries immediately', async () => {
+    let calls = 0;
+    const err = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    await assert.rejects(
+      () => withRetry(
+        () => { calls++; throw err; },
+        {
+          maxAttempts: 5,
+          baseDelayMs: 1,
+          jitterMs: 0,
+          operationName: 'test_no_retry',
+          shouldRetry: () => false,
+        }
+      )
+    );
+    assert.strictEqual(calls, 1);
+  });
+});
