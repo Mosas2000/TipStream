@@ -72,3 +72,29 @@ describe('health endpoint with storage state', () => {
     assert.ok(second.uptime_seconds >= first.uptime_seconds);
   });
 });
+
+describe('metrics endpoint includes retry counters', () => {
+  before(async () => {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  });
+
+  after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  it('GET /metrics includes db_retry_attempts counter', async () => {
+    const { status, body } = await get('/metrics');
+    assert.strictEqual(status, 200);
+    assert.ok(typeof body.db_retry_attempts === 'number');
+  });
+
+  it('GET /metrics includes db_retry_successes counter', async () => {
+    const { body } = await get('/metrics');
+    assert.ok(typeof body.db_retry_successes === 'number');
+  });
+
+  it('GET /metrics includes db_retry_exhausted counter', async () => {
+    const { body } = await get('/metrics');
+    assert.ok(typeof body.db_retry_exhausted === 'number');
+  });
+});
