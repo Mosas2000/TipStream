@@ -113,3 +113,26 @@ describe('classifyError connection and postgres codes', () => {
     assert.ok(!(classified instanceof StorageUnavailableError));
   });
 });
+
+describe('toErrorResponse for storage errors', () => {
+  it('returns 503 for StorageUnavailableError', () => {
+    const err = new StorageUnavailableError('db down');
+    const { statusCode, body } = toErrorResponse(err, 'req-abc');
+    assert.strictEqual(statusCode, 503);
+    assert.strictEqual(body.error, 'storage_unavailable');
+    assert.strictEqual(body.request_id, 'req-abc');
+  });
+
+  it('returns 503 for ECONNREFUSED classified error', () => {
+    const err = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    const { statusCode, body } = toErrorResponse(err, 'req-xyz');
+    assert.strictEqual(statusCode, 503);
+    assert.strictEqual(body.error, 'storage_unavailable');
+  });
+
+  it('returns 503 for 57P03 classified error', () => {
+    const err = Object.assign(new Error('database starting up'), { code: '57P03' });
+    const { statusCode } = toErrorResponse(err, 'req-1');
+    assert.strictEqual(statusCode, 503);
+  });
+});
