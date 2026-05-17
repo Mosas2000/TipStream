@@ -74,8 +74,8 @@ export function classifyError(error) {
   const code = error?.code;
   const message = lowerMessage;
   if (
-    ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENOTFOUND', '57P03', '53300',
-     '08000', '08003', '08006', '08001', '08004', '40001', '40P01'].includes(code) ||
+    ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENOTFOUND', 'EPIPE', 'ENETUNREACH',
+     '57P03', '53300', '08000', '08003', '08006', '08001', '08004', '40001', '40P01'].includes(code) ||
     message.includes('postgres') ||
     message.includes('database') ||
     message.includes('connection refused') ||
