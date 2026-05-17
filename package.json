@@ -18,7 +18,8 @@
   "author": "Mosas2000",
   "dependencies": {
     "@hirosystems/clarinet-sdk": "^3.6.0",
-    "@stacks/transactions": "^7.2.0",
+    "@stacks/network": "^7.3.1",
+    "@stacks/transactions": "^7.4.0",
     "@stacks/wallet-sdk": "^7.2.0",
     "@types/node": "^24.4.0",
     "chokidar-cli": "^3.0.0",
