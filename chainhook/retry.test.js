@@ -471,3 +471,14 @@ describe('withRetry edge cases', () => {
     assert.strictEqual(result, 0);
   });
 });
+
+describe('calculateBackoff with zero base delay', () => {
+  it('returns 0 when baseDelayMs is 0 and jitterMs is 0', () => {
+    assert.strictEqual(calculateBackoff(0, 0, 30000, 0), 0);
+    assert.strictEqual(calculateBackoff(3, 0, 30000, 0), 0);
+  });
+
+  it('still caps at maxDelayMs when base is large', () => {
+    assert.strictEqual(calculateBackoff(10, 1000, 500, 0), 500);
+  });
+});
