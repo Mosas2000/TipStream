@@ -7,6 +7,7 @@ import { NETWORK_NAME } from '../config/contracts';
 import { formatAddress } from '../lib/utils';
 import { getMainnetAddress } from '../utils/stacks';
 import { Sun, Moon } from 'lucide-react';
+import { WsConnectionBadge } from './WsConnectionBadge';
 
 const NotificationBell = lazy(() => import('./NotificationBell'));
 
@@ -70,7 +71,7 @@ export default function Header({ userData, onAuth, onTryDemo, authLoading, demoL
                                     {apiReachable === null ? 'Checking connection' : apiReachable ? 'API connected' : 'API disconnected'}
                                 </span>
                             </div>
-                        </div>
+                            <WsConnectionBadge className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-white/5 border border-white/5" />                        </div>
                     </div>
 
                     {/* Right side */}

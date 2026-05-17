@@ -13,6 +13,7 @@ import { createEventStore, createScheduledTipStore, getRetentionCutoff, parseRet
 import { normalizeClarityEventFields } from "../shared/clarityValues.js";
 import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, ServiceUnavailableError, classifyError, toErrorResponse } from "./errors.js";
 import { ScheduledTip, validateScheduledTipParams, SCHEDULED_TIP_STATUSES } from "./scheduler.js";
+import { wsManager } from "./websocket.js";
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
@@ -273,7 +274,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, wsManager };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -383,6 +384,13 @@ const server = http.createServer(async (req, res) => {
         insertedCount = result.insertedCount;
         duplicateCount = totalDuplicates;
         await store.pruneExpired(getRetentionCutoff(RETENTION_DAYS));
+
+        for (const evt of deduplicated) {
+          const tip = parseTipEvent(evt);
+          if (tip) {
+            wsManager.broadcast(tip);
+          }
+        }
 
         const processingMs = Date.now() - startTime;
         metrics.recordEventIndex(insertedCount, duplicateCount, processingMs);
@@ -797,6 +805,14 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // GET /api/ws/stats -- WebSocket connection statistics
+  if (req.method === "GET" && path === "/api/ws/stats") {
+    return sendJson(res, 200, {
+      connectedClients: wsManager.clientCount,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   sendJson(res, 404, { error: "not found", path: path });
 });
 
@@ -818,8 +834,11 @@ if (isMain) {
       }
     }, 60000);
 
+    wsManager.attach(server);
+
     setupGracefulShutdown(server, async () => {
       clearInterval(cleanupInterval);
+      wsManager.close();
       await store.close();
       logger.info("Shutdown initiated");
     });
