@@ -325,3 +325,29 @@ describe('retry on postgres connection pool exhaustion', () => {
     assert.strictEqual(calls, 2);
   });
 });
+
+describe('retry backoff timing', () => {
+  it('withRetry with maxAttempts=1 makes exactly one call', async () => {
+    let calls = 0;
+    const err = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    await assert.rejects(
+      () => withRetry(
+        () => { calls++; throw err; },
+        { maxAttempts: 1, baseDelayMs: 1, jitterMs: 0, operationName: 'test_single' }
+      )
+    );
+    assert.strictEqual(calls, 1);
+  });
+
+  it('withRetry with maxAttempts=2 makes exactly two calls on persistent failure', async () => {
+    let calls = 0;
+    const err = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    await assert.rejects(
+      () => withRetry(
+        () => { calls++; throw err; },
+        { maxAttempts: 2, baseDelayMs: 1, jitterMs: 0, operationName: 'test_two' }
+      )
+    );
+    assert.strictEqual(calls, 2);
+  });
+});
