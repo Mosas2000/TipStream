@@ -771,8 +771,9 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && path === "/health") {
     const store = await getEventStore();
     const storage = await store.health();
-    return sendJson(res, 200, {
-      status: "healthy",
+    const status = storage.healthy ? "healthy" : "degraded";
+    return sendJson(res, storage.healthy ? 200 : 503, {
+      status,
       timestamp: new Date().toISOString(),
       uptime_seconds: Math.round((Date.now() - metrics.startTime) / 1000),
       storage,
