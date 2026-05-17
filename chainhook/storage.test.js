@@ -173,3 +173,27 @@ describe('pool configuration constants', () => {
     assert.strictEqual(DEFAULT_STATEMENT_TIMEOUT_MS, 30000);
   });
 });
+
+describe('PostgresEventStore constructor validation', () => {
+  it('throws StorageUnavailableError when databaseUrl is missing', async () => {
+    const { PostgresEventStore } = await import('./storage.js');
+    assert.throws(
+      () => new PostgresEventStore({ databaseUrl: '' }),
+      (err) => {
+        assert.ok(err.message.includes('DATABASE_URL'));
+        return true;
+      }
+    );
+  });
+
+  it('throws when databaseUrl is undefined', async () => {
+    const { PostgresEventStore } = await import('./storage.js');
+    assert.throws(
+      () => new PostgresEventStore({}),
+      (err) => {
+        assert.ok(err.message.includes('DATABASE_URL'));
+        return true;
+      }
+    );
+  });
+});
