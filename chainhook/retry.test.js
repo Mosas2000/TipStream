@@ -1,6 +1,6 @@
 import { describe, it, before, after, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { isRetryable, calculateBackoff, withRetry, DEFAULT_MAX_ATTEMPTS, DEFAULT_BASE_DELAY_MS, DEFAULT_MAX_DELAY_MS } from './retry.js';
+import { isRetryable, calculateBackoff, withRetry, parseRetryConfig, DEFAULT_MAX_ATTEMPTS, DEFAULT_BASE_DELAY_MS, DEFAULT_MAX_DELAY_MS } from './retry.js';
 
 // ---------------------------------------------------------------------------
 // isRetryable
@@ -240,5 +240,65 @@ describe('withRetry', () => {
     );
     assert.strictEqual(result, 'last');
     assert.strictEqual(calls, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseRetryConfig
+// ---------------------------------------------------------------------------
+
+describe('parseRetryConfig', () => {
+  it('returns defaults when env is empty', () => {
+    const config = parseRetryConfig({});
+    assert.strictEqual(config.maxAttempts, DEFAULT_MAX_ATTEMPTS);
+    assert.strictEqual(config.baseDelayMs, DEFAULT_BASE_DELAY_MS);
+    assert.strictEqual(config.maxDelayMs, DEFAULT_MAX_DELAY_MS);
+  });
+
+  it('parses valid environment variables', () => {
+    const config = parseRetryConfig({
+      DB_RETRY_MAX_ATTEMPTS: '3',
+      DB_RETRY_BASE_DELAY_MS: '100',
+      DB_RETRY_MAX_DELAY_MS: '5000',
+    });
+    assert.strictEqual(config.maxAttempts, 3);
+    assert.strictEqual(config.baseDelayMs, 100);
+    assert.strictEqual(config.maxDelayMs, 5000);
+  });
+
+  it('falls back to defaults for non-numeric values', () => {
+    const config = parseRetryConfig({
+      DB_RETRY_MAX_ATTEMPTS: 'abc',
+      DB_RETRY_BASE_DELAY_MS: 'xyz',
+      DB_RETRY_MAX_DELAY_MS: '',
+    });
+    assert.strictEqual(config.maxAttempts, DEFAULT_MAX_ATTEMPTS);
+    assert.strictEqual(config.baseDelayMs, DEFAULT_BASE_DELAY_MS);
+    assert.strictEqual(config.maxDelayMs, DEFAULT_MAX_DELAY_MS);
+  });
+
+  it('falls back to defaults for maxAttempts below 1', () => {
+    const config = parseRetryConfig({ DB_RETRY_MAX_ATTEMPTS: '0' });
+    assert.strictEqual(config.maxAttempts, DEFAULT_MAX_ATTEMPTS);
+  });
+
+  it('falls back to defaults for negative baseDelayMs', () => {
+    const config = parseRetryConfig({ DB_RETRY_BASE_DELAY_MS: '-1' });
+    assert.strictEqual(config.baseDelayMs, DEFAULT_BASE_DELAY_MS);
+  });
+
+  it('falls back to defaults for negative maxDelayMs', () => {
+    const config = parseRetryConfig({ DB_RETRY_MAX_DELAY_MS: '-100' });
+    assert.strictEqual(config.maxDelayMs, DEFAULT_MAX_DELAY_MS);
+  });
+
+  it('accepts maxAttempts of 1', () => {
+    const config = parseRetryConfig({ DB_RETRY_MAX_ATTEMPTS: '1' });
+    assert.strictEqual(config.maxAttempts, 1);
+  });
+
+  it('accepts baseDelayMs of 0', () => {
+    const config = parseRetryConfig({ DB_RETRY_BASE_DELAY_MS: '0' });
+    assert.strictEqual(config.baseDelayMs, 0);
   });
 });

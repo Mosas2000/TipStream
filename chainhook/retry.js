@@ -5,6 +5,27 @@ const DEFAULT_BASE_DELAY_MS = 200;
 const DEFAULT_MAX_DELAY_MS = 30_000;
 const DEFAULT_JITTER_MS = 100;
 
+/**
+ * Read retry configuration from environment variables, falling back to
+ * the module defaults when values are absent or invalid.
+ *
+ * Environment variables:
+ *   DB_RETRY_MAX_ATTEMPTS  - Maximum total attempts (default: 5)
+ *   DB_RETRY_BASE_DELAY_MS - Base delay in ms for backoff (default: 200)
+ *   DB_RETRY_MAX_DELAY_MS  - Maximum delay cap in ms (default: 30000)
+ */
+export function parseRetryConfig(env = {}) {
+  const maxAttempts = Number.parseInt(env.DB_RETRY_MAX_ATTEMPTS, 10);
+  const baseDelayMs = Number.parseInt(env.DB_RETRY_BASE_DELAY_MS, 10);
+  const maxDelayMs = Number.parseInt(env.DB_RETRY_MAX_DELAY_MS, 10);
+
+  return {
+    maxAttempts: Number.isNaN(maxAttempts) || maxAttempts < 1 ? DEFAULT_MAX_ATTEMPTS : maxAttempts,
+    baseDelayMs: Number.isNaN(baseDelayMs) || baseDelayMs < 0 ? DEFAULT_BASE_DELAY_MS : baseDelayMs,
+    maxDelayMs: Number.isNaN(maxDelayMs) || maxDelayMs < 0 ? DEFAULT_MAX_DELAY_MS : maxDelayMs,
+  };
+}
+
 const RETRYABLE_PG_CODES = new Set([
   '08000', // connection_exception
   '08003', // connection_does_not_exist
