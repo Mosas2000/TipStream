@@ -435,7 +435,7 @@ export async function createEventStore(options = {}) {
   const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
   const poolConfig = options.poolConfig || parsePoolConfig(process.env);
   
-  return new PostgresEventStore({ databaseUrl, retentionDays, ssl, poolConfig });
+  return new PostgresEventStore({ databaseUrl, retentionDays, ssl, poolConfig, retryOptions: options.retryOptions || {} });
 }
 
 export { MemoryEventStore, PostgresEventStore };
@@ -828,7 +828,7 @@ export async function createScheduledTipStore(options = {}) {
     statement_timeout: poolConfig.statement_timeout,
   });
 
-  return new PostgresScheduledTipStore(pool, poolConfig);
+  return new PostgresScheduledTipStore(pool, poolConfig, options.retryOptions || {});
 }
 
 export { MemoryScheduledTipStore, PostgresScheduledTipStore };
