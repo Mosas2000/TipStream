@@ -482,3 +482,20 @@ describe('calculateBackoff with zero base delay', () => {
     assert.strictEqual(calculateBackoff(10, 1000, 500, 0), 500);
   });
 });
+
+describe('parseRetryConfig large values', () => {
+  it('accepts large maxAttempts', () => {
+    const config = parseRetryConfig({ DB_RETRY_MAX_ATTEMPTS: '20' });
+    assert.strictEqual(config.maxAttempts, 20);
+  });
+
+  it('accepts large maxDelayMs', () => {
+    const config = parseRetryConfig({ DB_RETRY_MAX_DELAY_MS: '300000' });
+    assert.strictEqual(config.maxDelayMs, 300000);
+  });
+
+  it('accepts float strings by truncating to integer', () => {
+    const config = parseRetryConfig({ DB_RETRY_MAX_ATTEMPTS: '3.9' });
+    assert.strictEqual(config.maxAttempts, 3);
+  });
+});
