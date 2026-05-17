@@ -1,7 +1,9 @@
 import { Pool } from 'pg';
 import { generateEventKey } from './deduplication.js';
 import { StorageUnavailableError } from './errors.js';
-import { withRetry } from './retry.js';
+import { withRetry, parseRetryConfig } from './retry.js';
+
+const retryConfig = parseRetryConfig(process.env);
 
 const DEFAULT_POOL_MAX = 20;
 const DEFAULT_POOL_IDLE_TIMEOUT_MS = 30000;
@@ -190,20 +192,21 @@ class MemoryEventStore {
 }
 
 class PostgresEventStore {
-  constructor({ databaseUrl, retentionDays = 30, ssl = false, poolConfig = {} } = {}) {
+  constructor({ databaseUrl, retentionDays = 30, ssl = false, poolConfig = {}, retryOptions = {} } = {}) {
     if (!databaseUrl) {
       throw new StorageUnavailableError('DATABASE_URL is required for postgres storage');
     }
 
     this.retentionDays = retentionDays;
     this.poolConfig = poolConfig;
+    this.retryOptions = { ...retryConfig, ...retryOptions };
     this.pool = new Pool({
       connectionString: databaseUrl,
       ssl: ssl ? { rejectUnauthorized: false } : undefined,
-      max: poolConfig.max, // Maximum number of clients in the pool
-      idleTimeoutMillis: poolConfig.idleTimeoutMillis, // Close idle clients after this time
-      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis, // Wait time for connection from pool
-      statement_timeout: poolConfig.statement_timeout, // Query execution timeout
+      max: poolConfig.max,
+      idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+      statement_timeout: poolConfig.statement_timeout,
     });
     this.ready = null;
   }
@@ -286,7 +289,7 @@ class PostgresEventStore {
         `,
         values,
       ),
-      { operationName: 'postgres_insert_events' },
+      { ...this.retryOptions, operationName: 'postgres_insert_events' },
     );
 
     return {
@@ -300,7 +303,7 @@ class PostgresEventStore {
     await this.init();
     const result = await withRetry(
       () => this.pool.query('SELECT raw_event FROM chainhook_events ORDER BY ingested_at ASC, event_key ASC'),
-      { operationName: 'postgres_list_events' },
+      { ...this.retryOptions, operationName: 'postgres_list_events' },
     );
     return result.rows.map(toRawEvent);
   }
@@ -309,7 +312,7 @@ class PostgresEventStore {
     await this.init();
     const result = await withRetry(
       () => this.pool.query('SELECT COUNT(*)::int AS count FROM chainhook_events'),
-      { operationName: 'postgres_count_events' },
+      { ...this.retryOptions, operationName: 'postgres_count_events' },
     );
     return Number(result.rows[0]?.count || 0);
   }
@@ -326,7 +329,7 @@ class PostgresEventStore {
         'DELETE FROM chainhook_events WHERE ingested_at < to_timestamp($1 / 1000.0)',
         [cutoffMs],
       ),
-      { operationName: 'postgres_prune_events' },
+      { ...this.retryOptions, operationName: 'postgres_prune_events' },
     );
 
     return { deletedCount: result.rowCount };
@@ -342,7 +345,7 @@ class PostgresEventStore {
           MAX(ingested_at) AS newest_ingested_at
         FROM chainhook_events;
       `),
-      { operationName: 'postgres_get_stats' },
+      { ...this.retryOptions, operationName: 'postgres_get_stats' },
     );
 
     const row = result.rows[0] || {};
@@ -408,7 +411,7 @@ class PostgresEventStore {
         `,
         [address],
       ),
-      { operationName: 'postgres_list_events_by_user' },
+      { ...this.retryOptions, operationName: 'postgres_list_events_by_user' },
     );
     return result.rows.map(toRawEvent);
   }
@@ -530,9 +533,10 @@ class MemoryScheduledTipStore {
 }
 
 class PostgresScheduledTipStore {
-  constructor(pool, poolConfig = {}) {
+  constructor(pool, poolConfig = {}, retryOptions = {}) {
     this.pool = pool;
     this.poolConfig = poolConfig;
+    this.retryOptions = { ...retryConfig, ...retryOptions };
     this.ready = null;
   }
 
@@ -597,7 +601,7 @@ class PostgresScheduledTipStore {
           tip.updatedAt || new Date(),
         ]
       ),
-      { operationName: 'postgres_insert_scheduled_tip' },
+      { ...this.retryOptions, operationName: 'postgres_insert_scheduled_tip' },
     );
 
     if (result.rowCount === 0) {
@@ -612,7 +616,7 @@ class PostgresScheduledTipStore {
     await this.init();
     const result = await withRetry(
       () => this.pool.query('SELECT * FROM scheduled_tips WHERE id = $1', [id]),
-      { operationName: 'postgres_get_scheduled_tip' },
+      { ...this.retryOptions, operationName: 'postgres_get_scheduled_tip' },
     );
     return result.rows[0] ? this.#rowToTip(result.rows[0]) : null;
   }
@@ -646,7 +650,7 @@ class PostgresScheduledTipStore {
 
     const result = await withRetry(
       () => this.pool.query(query, values),
-      { operationName: 'postgres_list_scheduled_tips' },
+      { ...this.retryOptions, operationName: 'postgres_list_scheduled_tips' },
     );
 
     const countResult = await withRetry(
@@ -657,7 +661,7 @@ class PostgresScheduledTipStore {
         (filters.status ? ` AND status = $${(filters.sender ? 1 : 0) + (filters.recipient ? 1 : 0) + 1}` : ''),
         values.slice(0, -2)
       ),
-      { operationName: 'postgres_count_scheduled_tips' },
+      { ...this.retryOptions, operationName: 'postgres_count_scheduled_tips' },
     );
 
     return {
@@ -704,7 +708,7 @@ class PostgresScheduledTipStore {
         `UPDATE scheduled_tips SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
         values
       ),
-      { operationName: 'postgres_update_scheduled_tip' },
+      { ...this.retryOptions, operationName: 'postgres_update_scheduled_tip' },
     );
 
     if (result.rowCount === 0) {
@@ -724,7 +728,7 @@ class PostgresScheduledTipStore {
          RETURNING *`,
         [id, sender]
       ),
-      { operationName: 'postgres_cancel_scheduled_tip' },
+      { ...this.retryOptions, operationName: 'postgres_cancel_scheduled_tip' },
     );
 
     if (result.rowCount === 0) {
@@ -744,7 +748,7 @@ class PostgresScheduledTipStore {
       () => this.pool.query(
         "SELECT * FROM scheduled_tips WHERE status = 'pending' AND scheduled_for <= NOW() ORDER BY scheduled_for ASC"
       ),
-      { operationName: 'postgres_get_pending_tips' },
+      { ...this.retryOptions, operationName: 'postgres_get_pending_tips' },
     );
     return result.rows.map(r => this.#rowToTip(r));
   }
@@ -761,7 +765,7 @@ class PostgresScheduledTipStore {
          ORDER BY scheduled_for ASC`,
         [leadMinutes]
       ),
-      { operationName: 'postgres_get_notifiable_tips' },
+      { ...this.retryOptions, operationName: 'postgres_get_notifiable_tips' },
     );
     return result.rows.map(r => this.#rowToTip(r));
   }
@@ -771,13 +775,13 @@ class PostgresScheduledTipStore {
     if (status) {
       const result = await withRetry(
         () => this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips WHERE status = $1', [status]),
-        { operationName: 'postgres_count_scheduled_tips_by_status' },
+        { ...this.retryOptions, operationName: 'postgres_count_scheduled_tips_by_status' },
       );
       return result.rows[0]?.count || 0;
     }
     const result = await withRetry(
       () => this.pool.query('SELECT COUNT(*)::int AS count FROM scheduled_tips'),
-      { operationName: 'postgres_count_all_scheduled_tips' },
+      { ...this.retryOptions, operationName: 'postgres_count_all_scheduled_tips' },
     );
     return result.rows[0]?.count || 0;
   }
