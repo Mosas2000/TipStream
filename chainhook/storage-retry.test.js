@@ -275,3 +275,53 @@ describe('retry with custom shouldRetry predicate', () => {
     assert.strictEqual(calls, 1);
   });
 });
+
+describe('retry on postgres connection pool exhaustion', () => {
+  it('recovers from pool exhaustion (53300) after one retry', async () => {
+    let calls = 0;
+    const result = await withRetry(
+      () => {
+        calls++;
+        if (calls === 1) {
+          throw Object.assign(new Error('too many connections for role "app"'), { code: '53300' });
+        }
+        return Promise.resolve({ rows: [] });
+      },
+      { maxAttempts: 3, baseDelayMs: 1, jitterMs: 0, operationName: 'test_pool' }
+    );
+    assert.ok(result);
+    assert.strictEqual(calls, 2);
+  });
+
+  it('recovers from deadlock (40P01) after one retry', async () => {
+    let calls = 0;
+    const result = await withRetry(
+      () => {
+        calls++;
+        if (calls === 1) {
+          throw Object.assign(new Error('deadlock detected'), { code: '40P01' });
+        }
+        return Promise.resolve({ rowCount: 1 });
+      },
+      { maxAttempts: 3, baseDelayMs: 1, jitterMs: 0, operationName: 'test_deadlock' }
+    );
+    assert.strictEqual(result.rowCount, 1);
+    assert.strictEqual(calls, 2);
+  });
+
+  it('recovers from serialization failure (40001) after one retry', async () => {
+    let calls = 0;
+    const result = await withRetry(
+      () => {
+        calls++;
+        if (calls === 1) {
+          throw Object.assign(new Error('could not serialize access'), { code: '40001' });
+        }
+        return Promise.resolve({ rowCount: 1 });
+      },
+      { maxAttempts: 3, baseDelayMs: 1, jitterMs: 0, operationName: 'test_serial' }
+    );
+    assert.strictEqual(result.rowCount, 1);
+    assert.strictEqual(calls, 2);
+  });
+});
