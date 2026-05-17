@@ -391,3 +391,83 @@ describe('withRetry metrics tracking', () => {
     assert.strictEqual(metrics.dbRetryExhausted, before);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Edge cases
+// ---------------------------------------------------------------------------
+
+describe('isRetryable edge cases', () => {
+  it('returns false for an error with no message and no code', () => {
+    const err = new Error('');
+    assert.strictEqual(isRetryable(err), false);
+  });
+
+  it('returns true for ENOTFOUND (DNS failure)', () => {
+    const err = Object.assign(new Error('getaddrinfo ENOTFOUND db.example.com'), { code: 'ENOTFOUND' });
+    assert.strictEqual(isRetryable(err), true);
+  });
+
+  it('returns true for postgres 08001 (client unable to establish connection)', () => {
+    const err = Object.assign(new Error('sqlclient unable to establish sqlconnection'), { code: '08001' });
+    assert.strictEqual(isRetryable(err), true);
+  });
+
+  it('returns true for postgres 08004 (server rejected connection)', () => {
+    const err = Object.assign(new Error('sqlserver rejected establishment of sqlconnection'), { code: '08004' });
+    assert.strictEqual(isRetryable(err), true);
+  });
+
+  it('returns false for a TypeError (programming error)', () => {
+    const err = new TypeError('Cannot read properties of undefined');
+    assert.strictEqual(isRetryable(err), false);
+  });
+
+  it('returns false for a RangeError', () => {
+    const err = new RangeError('Maximum call stack size exceeded');
+    assert.strictEqual(isRetryable(err), false);
+  });
+});
+
+describe('withRetry edge cases', () => {
+  it('handles an operation that throws a non-Error object', async () => {
+    await assert.rejects(
+      () => withRetry(
+        () => Promise.reject('string error'),
+        { maxAttempts: 1, baseDelayMs: 1, jitterMs: 0, operationName: 'test' }
+      )
+    );
+  });
+
+  it('handles an operation that throws null', async () => {
+    await assert.rejects(
+      () => withRetry(
+        () => Promise.reject(null),
+        { maxAttempts: 1, baseDelayMs: 1, jitterMs: 0, operationName: 'test' }
+      )
+    );
+  });
+
+  it('returns undefined when operation resolves with undefined', async () => {
+    const result = await withRetry(
+      () => Promise.resolve(undefined),
+      { maxAttempts: 1, baseDelayMs: 1, jitterMs: 0, operationName: 'test' }
+    );
+    assert.strictEqual(result, undefined);
+  });
+
+  it('returns null when operation resolves with null', async () => {
+    const result = await withRetry(
+      () => Promise.resolve(null),
+      { maxAttempts: 1, baseDelayMs: 1, jitterMs: 0, operationName: 'test' }
+    );
+    assert.strictEqual(result, null);
+  });
+
+  it('returns 0 when operation resolves with 0', async () => {
+    const result = await withRetry(
+      () => Promise.resolve(0),
+      { maxAttempts: 1, baseDelayMs: 1, jitterMs: 0, operationName: 'test' }
+    );
+    assert.strictEqual(result, 0);
+  });
+});
