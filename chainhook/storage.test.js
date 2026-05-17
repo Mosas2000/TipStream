@@ -197,3 +197,28 @@ describe('PostgresEventStore constructor validation', () => {
     );
   });
 });
+
+describe('createEventStore factory', () => {
+  it('creates MemoryEventStore when mode is memory', async () => {
+    const { createEventStore, MemoryEventStore } = await import('./storage.js');
+    const store = await createEventStore({ mode: 'memory' });
+    assert.ok(store instanceof MemoryEventStore);
+    await store.close();
+  });
+
+  it('MemoryEventStore health returns healthy true', async () => {
+    const { MemoryEventStore } = await import('./storage.js');
+    const store = new MemoryEventStore();
+    const health = await store.health();
+    assert.strictEqual(health.healthy, true);
+    assert.strictEqual(health.storage_mode, 'memory');
+  });
+
+  it('MemoryEventStore getStats returns storage_mode memory', async () => {
+    const { MemoryEventStore } = await import('./storage.js');
+    const store = new MemoryEventStore();
+    const stats = await store.getStats();
+    assert.strictEqual(stats.storage_mode, 'memory');
+    assert.strictEqual(stats.total_events, 0);
+  });
+});
