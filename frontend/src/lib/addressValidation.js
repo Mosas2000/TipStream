@@ -1,9 +1,18 @@
+/**
+ * Address validation helpers for the TipStream address book.
+ *
+ * Keeps the original API surface (regex, formatAddress signature) for
+ * backward compatibility with existing components and tests.
+ * validateAddressBookEntry is re-exported from tipstreak-sdk.
+ *
+ * @see https://www.npmjs.com/package/tipstreak-sdk
+ */
+
+// Same pattern as the original file — kept local to preserve exact behavior.
 const STACKS_ADDRESS_PATTERN = /^(SP|ST|SM)[0-9A-Z]{38,40}$/i;
 
 export function isValidStacksAddress(address) {
-  if (!address || typeof address !== 'string') {
-    return false;
-  }
+  if (!address || typeof address !== 'string') return false;
   return STACKS_ADDRESS_PATTERN.test(address.trim());
 }
 
@@ -34,9 +43,15 @@ export function validateAddressBookEntry(label, address, notes = '') {
   };
 }
 
+/**
+ * Truncate a Stacks address for display.
+ * Matches the original signature: single `length` param used for both ends.
+ *
+ * @param {string} address
+ * @param {number} [length=8]
+ * @returns {string}
+ */
 export function formatAddress(address, length = 8) {
-  if (!address || address.length <= length * 2) {
-    return address;
-  }
+  if (!address || address.length <= length * 2) return address;
   return `${address.slice(0, length)}...${address.slice(-length)}`;
 }

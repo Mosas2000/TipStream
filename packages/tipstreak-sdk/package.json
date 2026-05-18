@@ -1,0 +1,76 @@
+{
+  "name": "tipstreak-sdk",
+  "version": "0.1.1",
+  "description": "Utilities, hooks, and UI components for building on the Stacks blockchain — extracted from TipStream",
+  "license": "MIT",
+  "type": "module",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/tipstream.git",
+    "directory": "packages/tipstreak-sdk"
+  },
+  "keywords": [
+    "stacks",
+    "blockchain",
+    "bitcoin",
+    "stx",
+    "clarity",
+    "react",
+    "hooks",
+    "web3",
+    "tipstream"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react.js",
+      "types": "./dist/react.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationDir dist",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@stacks/transactions": "^7.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.14",
+    "@vitejs/plugin-react": "^5.1.1",
+    "jsdom": "^28.1.0",
+    "lucide-react": "^0.563.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^4.0.18"
+  }
+}
