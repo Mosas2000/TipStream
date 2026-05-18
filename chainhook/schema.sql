@@ -42,3 +42,21 @@ CREATE INDEX IF NOT EXISTS scheduled_tips_recipient_idx ON scheduled_tips (recip
 CREATE INDEX IF NOT EXISTS scheduled_tips_status_idx ON scheduled_tips (status);
 CREATE INDEX IF NOT EXISTS scheduled_tips_scheduled_for_idx ON scheduled_tips (scheduled_for);
 CREATE INDEX IF NOT EXISTS scheduled_tips_pending_due_idx ON scheduled_tips (scheduled_for) WHERE status = 'pending';
+
+CREATE TABLE IF NOT EXISTS refund_requests (
+  tip_id TEXT PRIMARY KEY,
+  tx_id TEXT NOT NULL DEFAULT '',
+  sender TEXT NOT NULL,
+  recipient TEXT NOT NULL,
+  amount BIGINT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  reason TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ,
+  refund_tx_id TEXT
+);
+
+CREATE INDEX IF NOT EXISTS refund_requests_sender_idx ON refund_requests (sender);
+CREATE INDEX IF NOT EXISTS refund_requests_recipient_idx ON refund_requests (recipient);
+CREATE INDEX IF NOT EXISTS refund_requests_status_idx ON refund_requests (status);
