@@ -9,11 +9,12 @@ import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
 import { RateLimiter, getClientIp, validateRateLimitConfig } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
-import { createEventStore, createScheduledTipStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
+import { createEventStore, createScheduledTipStore, createRefundStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
 import { normalizeClarityEventFields } from "../shared/clarityValues.js";
 import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, ServiceUnavailableError, classifyError, toErrorResponse } from "./errors.js";
 import { ScheduledTip, validateScheduledTipParams, SCHEDULED_TIP_STATUSES } from "./scheduler.js";
 import { wsManager } from "./websocket.js";
+import { REFUND_STATUSES, REFUND_WINDOW_MS } from "./storage.js";
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
@@ -29,6 +30,7 @@ const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
 let eventStore = null;
 let scheduledTipStore = null;
+let refundStore = null;
 
 /**
  * Get the rate limiter instance for runtime configuration.
@@ -67,6 +69,20 @@ async function getScheduledTipStore() {
     await scheduledTipStore.init();
   }
   return scheduledTipStore;
+}
+
+async function getRefundStore() {
+  if (!refundStore) {
+    if (STORAGE_MODE === "postgres" && !DATABASE_URL) {
+      throw new Error("DATABASE_URL is required when CHAINHOOK_STORAGE=postgres");
+    }
+    refundStore = await createRefundStore({
+      mode: STORAGE_MODE,
+      databaseUrl: DATABASE_URL,
+    });
+    await refundStore.init();
+  }
+  return refundStore;
 }
 
 /**
@@ -274,7 +290,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, wsManager };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, wsManager, getRefundStore };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -639,6 +655,189 @@ const server = http.createServer(async (req, res) => {
 
       metrics.recordRequest(true);
       return sendJson(res, 200, { ok: true, scheduledTip: result.tip });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // POST /api/refunds -- create a refund request
+  if (req.method === "POST" && path === "/api/refunds") {
+    const startTime = Date.now();
+
+    try {
+      const body = await parseBody(req);
+      const { tipId, txId, sender, recipient, amount, reason } = body;
+
+      if (!tipId || typeof tipId !== 'string') {
+        return sendError(res, new BadRequestError('tipId is required'), requestId, { path });
+      }
+      if (!txId || typeof txId !== 'string') {
+        return sendError(res, new BadRequestError('txId is required'), requestId, { path });
+      }
+      if (!sender || typeof sender !== 'string') {
+        return sendError(res, new BadRequestError('sender address is required'), requestId, { path });
+      }
+      if (!isValidStacksAddress(sender)) {
+        return sendError(res, new BadRequestError('invalid sender address format'), requestId, { path });
+      }
+      if (!recipient || typeof recipient !== 'string') {
+        return sendError(res, new BadRequestError('recipient address is required'), requestId, { path });
+      }
+      if (!isValidStacksAddress(recipient)) {
+        return sendError(res, new BadRequestError('invalid recipient address format'), requestId, { path });
+      }
+      const amountNum = Number(amount);
+      if (!amount || isNaN(amountNum) || amountNum <= 0) {
+        return sendError(res, new BadRequestError('amount must be a positive number'), requestId, { path });
+      }
+
+      const store = await getRefundStore();
+
+      const existing = await store.getRefundRequest(tipId);
+      if (existing) {
+        return sendError(res, new BadRequestError('a refund request already exists for this tip'), requestId, { path });
+      }
+
+      const request = {
+        tipId,
+        txId,
+        sender,
+        recipient,
+        amount: amountNum,
+        status: REFUND_STATUSES.PENDING,
+        reason: reason || '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result = await store.insertRefundRequest(request);
+
+      const processingMs = Date.now() - startTime;
+      logger.info('Refund request created', {
+        tip_id: tipId,
+        sender,
+        recipient,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 201, { ok: true, refundRequest: result.request });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // GET /api/refunds -- list refund requests with optional filters
+  if (req.method === "GET" && path === "/api/refunds") {
+    try {
+      const sender = url.searchParams.get("sender");
+      const recipient = url.searchParams.get("recipient");
+      const status = url.searchParams.get("status");
+      const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
+      const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
+
+      if (isNaN(limit)) {
+        return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, { path });
+      }
+      if (isNaN(offset)) {
+        return sendError(res, new BadRequestError("offset must be a non-negative integer"), requestId, { path });
+      }
+
+      if (sender && !isValidStacksAddress(sender)) {
+        return sendError(res, new BadRequestError("invalid sender address format"), requestId, { path });
+      }
+      if (recipient && !isValidStacksAddress(recipient)) {
+        return sendError(res, new BadRequestError("invalid recipient address format"), requestId, { path });
+      }
+      if (status && !Object.values(REFUND_STATUSES).includes(status)) {
+        return sendError(res, new BadRequestError("invalid status value"), requestId, { path });
+      }
+
+      const store = await getRefundStore();
+      const result = await store.listRefundRequests({ sender, recipient, status, limit, offset });
+
+      return sendJson(res, 200, { refundRequests: result.requests, total: result.total });
+    } catch (err) {
+      return sendError(res, err, requestId, { path });
+    }
+  }
+
+  // GET /api/refunds/:tipId -- get a single refund request
+  if (req.method === "GET" && path.match(/^\/api\/refunds\/[^/]+$/)) {
+    try {
+      const tipId = path.split("/api/refunds/")[1];
+      const store = await getRefundStore();
+      const request = await store.getRefundRequest(tipId);
+
+      if (!request) {
+        return sendJson(res, 404, { error: "refund request not found" });
+      }
+
+      return sendJson(res, 200, request);
+    } catch (err) {
+      return sendError(res, err, requestId, { path });
+    }
+  }
+
+  // PATCH /api/refunds/:tipId -- approve or reject a refund request
+  if (req.method === "PATCH" && path.match(/^\/api\/refunds\/[^/]+$/)) {
+    const startTime = Date.now();
+
+    try {
+      const tipId = path.split("/api/refunds/")[1];
+      const body = await parseBody(req);
+      const { action, recipient, refundTxId } = body;
+
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return sendError(res, new BadRequestError("action must be 'approve' or 'reject'"), requestId, { path });
+      }
+      if (!recipient || typeof recipient !== 'string') {
+        return sendError(res, new BadRequestError('recipient address is required'), requestId, { path });
+      }
+      if (!isValidStacksAddress(recipient)) {
+        return sendError(res, new BadRequestError('invalid recipient address format'), requestId, { path });
+      }
+
+      const store = await getRefundStore();
+      const existing = await store.getRefundRequest(tipId);
+
+      if (!existing) {
+        return sendJson(res, 404, { error: "refund request not found" });
+      }
+      if (existing.recipient !== recipient) {
+        return sendError(res, new BadRequestError('only the tip recipient can approve or reject a refund'), requestId, { path });
+      }
+      if (existing.status !== REFUND_STATUSES.PENDING) {
+        return sendError(res, new BadRequestError('refund request is no longer pending'), requestId, { path });
+      }
+
+      const newStatus = action === 'approve' ? REFUND_STATUSES.APPROVED : REFUND_STATUSES.REJECTED;
+      const updates = {
+        status: newStatus,
+        resolvedAt: new Date(),
+      };
+      if (action === 'approve' && refundTxId) {
+        updates.refundTxId = refundTxId;
+      }
+
+      const result = await store.updateRefundRequest(tipId, updates);
+
+      const processingMs = Date.now() - startTime;
+      logger.info('Refund request updated', {
+        tip_id: tipId,
+        action,
+        recipient,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, { ok: true, refundRequest: result.request });
     } catch (err) {
       const processingMs = Date.now() - startTime;
       metrics.recordRequest(false);

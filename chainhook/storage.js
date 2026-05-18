@@ -832,3 +832,282 @@ export async function createScheduledTipStore(options = {}) {
 }
 
 export { MemoryScheduledTipStore, PostgresScheduledTipStore };
+
+const REFUND_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const REFUND_STATUSES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+};
+
+class MemoryRefundStore {
+  constructor() {
+    this.requests = [];
+  }
+
+  async init() {
+    return this;
+  }
+
+  async insertRefundRequest(request) {
+    const existing = this.requests.find(r => r.tipId === request.tipId);
+    if (existing) {
+      return { inserted: false, request: existing };
+    }
+    this.requests.push({ ...request });
+    return { inserted: true, request };
+  }
+
+  async getRefundRequest(tipId) {
+    return this.requests.find(r => r.tipId === tipId) || null;
+  }
+
+  async listRefundRequests(filters = {}) {
+    let results = [...this.requests];
+
+    if (filters.sender) {
+      results = results.filter(r => r.sender === filters.sender);
+    }
+    if (filters.recipient) {
+      results = results.filter(r => r.recipient === filters.recipient);
+    }
+    if (filters.status) {
+      results = results.filter(r => r.status === filters.status);
+    }
+
+    results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const offset = filters.offset || 0;
+    const limit = filters.limit || 50;
+    const total = results.length;
+    results = results.slice(offset, offset + limit);
+
+    return { requests: results, total };
+  }
+
+  async updateRefundRequest(tipId, updates) {
+    const index = this.requests.findIndex(r => r.tipId === tipId);
+    if (index === -1) {
+      return { updated: false, request: null };
+    }
+    this.requests[index] = { ...this.requests[index], ...updates, updatedAt: new Date() };
+    return { updated: true, request: this.requests[index] };
+  }
+
+  async close() {}
+}
+
+class PostgresRefundStore {
+  constructor(pool, poolConfig = {}, retryOptions = {}) {
+    this.pool = pool;
+    this.poolConfig = poolConfig;
+    this.retryOptions = { ...retryConfig, ...retryOptions };
+    this.ready = null;
+  }
+
+  async init() {
+    if (!this.ready) {
+      this.ready = this.#initialize();
+    }
+    return this.ready;
+  }
+
+  async #initialize() {
+    await withRetry(
+      () => this.pool.query('SELECT 1'),
+      { operationName: 'postgres_refund_connect', maxAttempts: 5, baseDelayMs: 500 }
+    );
+
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS refund_requests (
+        tip_id TEXT PRIMARY KEY,
+        tx_id TEXT NOT NULL,
+        sender TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        amount BIGINT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        reason TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        resolved_at TIMESTAMPTZ,
+        refund_tx_id TEXT
+      );
+    `);
+
+    await this.pool.query('CREATE INDEX IF NOT EXISTS refund_requests_sender_idx ON refund_requests (sender);');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS refund_requests_recipient_idx ON refund_requests (recipient);');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS refund_requests_status_idx ON refund_requests (status);');
+  }
+
+  async insertRefundRequest(request) {
+    await this.init();
+
+    const result = await withRetry(
+      () => this.pool.query(
+        `INSERT INTO refund_requests (tip_id, tx_id, sender, recipient, amount, status, reason, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (tip_id) DO NOTHING
+         RETURNING *`,
+        [
+          request.tipId,
+          request.txId || '',
+          request.sender,
+          request.recipient,
+          request.amount,
+          request.status || REFUND_STATUSES.PENDING,
+          request.reason || '',
+          request.createdAt || new Date(),
+          request.updatedAt || new Date(),
+        ]
+      ),
+      { ...this.retryOptions, operationName: 'postgres_insert_refund_request' },
+    );
+
+    if (result.rowCount === 0) {
+      const existing = await this.getRefundRequest(request.tipId);
+      return { inserted: false, request: existing };
+    }
+
+    return { inserted: true, request: this.#rowToRequest(result.rows[0]) };
+  }
+
+  async getRefundRequest(tipId) {
+    await this.init();
+    const result = await withRetry(
+      () => this.pool.query('SELECT * FROM refund_requests WHERE tip_id = $1', [tipId]),
+      { ...this.retryOptions, operationName: 'postgres_get_refund_request' },
+    );
+    return result.rows[0] ? this.#rowToRequest(result.rows[0]) : null;
+  }
+
+  async listRefundRequests(filters = {}) {
+    await this.init();
+
+    const conditions = ['1=1'];
+    const values = [];
+    let paramIndex = 1;
+
+    if (filters.sender) {
+      conditions.push(`sender = $${paramIndex++}`);
+      values.push(filters.sender);
+    }
+    if (filters.recipient) {
+      conditions.push(`recipient = $${paramIndex++}`);
+      values.push(filters.recipient);
+    }
+    if (filters.status) {
+      conditions.push(`status = $${paramIndex++}`);
+      values.push(filters.status);
+    }
+
+    const where = conditions.join(' AND ');
+    const offset = filters.offset || 0;
+    const limit = filters.limit || 50;
+
+    const dataQuery = `SELECT * FROM refund_requests WHERE ${where} ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    const countQuery = `SELECT COUNT(*)::int AS count FROM refund_requests WHERE ${where}`;
+
+    const dataValues = [...values, limit, offset];
+    const countValues = [...values];
+
+    const [dataResult, countResult] = await Promise.all([
+      withRetry(
+        () => this.pool.query(dataQuery, dataValues),
+        { ...this.retryOptions, operationName: 'postgres_list_refund_requests' },
+      ),
+      withRetry(
+        () => this.pool.query(countQuery, countValues),
+        { ...this.retryOptions, operationName: 'postgres_count_refund_requests' },
+      ),
+    ]);
+
+    return {
+      requests: dataResult.rows.map(r => this.#rowToRequest(r)),
+      total: countResult.rows[0]?.count || 0,
+    };
+  }
+
+  async updateRefundRequest(tipId, updates) {
+    await this.init();
+
+    const setClauses = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (updates.status !== undefined) {
+      setClauses.push(`status = $${paramIndex++}`);
+      values.push(updates.status);
+    }
+    if (updates.resolvedAt !== undefined) {
+      setClauses.push(`resolved_at = $${paramIndex++}`);
+      values.push(updates.resolvedAt);
+    }
+    if (updates.refundTxId !== undefined) {
+      setClauses.push(`refund_tx_id = $${paramIndex++}`);
+      values.push(updates.refundTxId);
+    }
+
+    setClauses.push(`updated_at = $${paramIndex++}`);
+    values.push(new Date());
+
+    values.push(tipId);
+
+    const result = await withRetry(
+      () => this.pool.query(
+        `UPDATE refund_requests SET ${setClauses.join(', ')} WHERE tip_id = $${paramIndex} RETURNING *`,
+        values
+      ),
+      { ...this.retryOptions, operationName: 'postgres_update_refund_request' },
+    );
+
+    if (result.rowCount === 0) {
+      return { updated: false, request: null };
+    }
+
+    return { updated: true, request: this.#rowToRequest(result.rows[0]) };
+  }
+
+  async close() {}
+
+  #rowToRequest(row) {
+    return {
+      tipId: row.tip_id,
+      txId: row.tx_id,
+      sender: row.sender,
+      recipient: row.recipient,
+      amount: Number(row.amount),
+      status: row.status,
+      reason: row.reason || '',
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      resolvedAt: row.resolved_at,
+      refundTxId: row.refund_tx_id,
+    };
+  }
+}
+
+export async function createRefundStore(options = {}) {
+  const mode = options.mode || process.env.CHAINHOOK_STORAGE || (process.env.NODE_ENV === 'test' ? 'memory' : 'postgres');
+
+  if (mode === 'memory') {
+    return new MemoryRefundStore();
+  }
+
+  const databaseUrl = options.databaseUrl || process.env.DATABASE_URL;
+  const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
+  const poolConfig = options.poolConfig || parsePoolConfig(process.env);
+
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: ssl ? { rejectUnauthorized: false } : undefined,
+    max: poolConfig.max,
+    idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+    connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+    statement_timeout: poolConfig.statement_timeout,
+  });
+
+  return new PostgresRefundStore(pool, poolConfig, options.retryOptions || {});
+}
+
+export { MemoryRefundStore, PostgresRefundStore, REFUND_STATUSES, REFUND_WINDOW_MS };

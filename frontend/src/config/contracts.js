@@ -61,6 +61,15 @@ export const FN_GET_USER_STATS = 'get-user-stats';
 export const FN_GET_PLATFORM_STATS = 'get-platform-stats';
 export const FN_GET_CURRENT_FEE_BASIS_POINTS = 'get-current-fee-basis-points';
 
+// Refund
+export const FN_REQUEST_REFUND = 'request-refund';
+export const FN_APPROVE_REFUND = 'approve-refund';
+export const FN_REJECT_REFUND = 'reject-refund';
+export const FN_GET_REFUND_REQUEST = 'get-refund-request';
+export const FN_IS_TIP_REFUNDED = 'is-tip-refunded';
+export const FN_IS_REFUND_ELIGIBLE = 'is-refund-eligible';
+export const FN_GET_REFUND_WINDOW_BLOCKS = 'get-refund-window-blocks';
+
 // Contract validation helper
 export function validateContractDeployment() {
   return {

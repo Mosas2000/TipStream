@@ -24,6 +24,11 @@
 (define-constant err-token-transfer-failed (err u112))
 (define-constant err-token-not-whitelisted (err u113))
 (define-constant err-invalid-category (err u114))
+(define-constant err-refund-window-expired (err u115))
+(define-constant err-already-refunded (err u116))
+(define-constant err-not-tip-sender (err u117))
+(define-constant err-refund-not-found (err u118))
+(define-constant err-refund-not-pending (err u119))
 
 ;; Tip Categories (uint enum)
 (define-constant category-general u0)
@@ -39,6 +44,14 @@
 (define-constant min-tip-amount u1000)
 (define-constant min-fee u1)
 (define-constant timelock-delay u144)
+
+;; Refund window: ~24 hours at ~10 min/block = 144 blocks
+(define-constant refund-window-blocks u144)
+
+;; Refund request statuses
+(define-constant refund-status-pending u0)
+(define-constant refund-status-approved u1)
+(define-constant refund-status-rejected u2)
 
 ;; Data Variables
 (define-data-var contract-owner principal tx-sender)
@@ -98,6 +111,20 @@
         tip-height: uint
     }
 )
+
+;; Refund tracking
+(define-map refund-requests
+    { tip-id: uint }
+    {
+        sender: principal,
+        recipient: principal,
+        amount: uint,
+        request-height: uint,
+        status: uint
+    }
+)
+
+(define-map refunded-tips { tip-id: uint } bool)
 
 ;; Private Functions
 (define-private (calculate-fee (amount uint))
@@ -460,6 +487,121 @@
     (fold strict-tip-fold tips-list (ok u0))
 )
 
+;; Refund Functions
+
+(define-public (request-refund (tip-id uint))
+    (let
+        (
+            (tip (unwrap! (map-get? tips { tip-id: tip-id }) err-not-found))
+            (sender (get sender tip))
+            (recipient (get recipient tip))
+            (amount (get amount tip))
+            (tip-height (get tip-height tip))
+        )
+        (asserts! (not (var-get is-paused)) err-contract-paused)
+        (asserts! (is-eq tx-sender sender) err-not-tip-sender)
+        (asserts! (is-none (map-get? refunded-tips { tip-id: tip-id })) err-already-refunded)
+        (asserts! (is-none (map-get? refund-requests { tip-id: tip-id })) err-already-refunded)
+        (asserts! (<= block-height (+ tip-height refund-window-blocks)) err-refund-window-expired)
+
+        (map-set refund-requests
+            { tip-id: tip-id }
+            {
+                sender: sender,
+                recipient: recipient,
+                amount: amount,
+                request-height: block-height,
+                status: refund-status-pending
+            }
+        )
+
+        (print {
+            event: "refund-requested",
+            tip-id: tip-id,
+            sender: sender,
+            recipient: recipient,
+            amount: amount,
+            request-height: block-height
+        })
+
+        (ok tip-id)
+    )
+)
+
+(define-public (approve-refund (tip-id uint))
+    (let
+        (
+            (request (unwrap! (map-get? refund-requests { tip-id: tip-id }) err-refund-not-found))
+            (tip (unwrap! (map-get? tips { tip-id: tip-id }) err-not-found))
+            (sender (get sender request))
+            (recipient (get recipient request))
+            (amount (get amount tip))
+            (fee (calculate-fee amount))
+            (net-amount (- amount fee))
+            (status (get status request))
+        )
+        (asserts! (not (var-get is-paused)) err-contract-paused)
+        (asserts! (is-eq tx-sender recipient) err-not-authorized)
+        (asserts! (is-eq status refund-status-pending) err-refund-not-pending)
+        (asserts! (is-none (map-get? refunded-tips { tip-id: tip-id })) err-already-refunded)
+
+        (try! (stx-transfer? net-amount tx-sender sender))
+
+        (map-set refund-requests
+            { tip-id: tip-id }
+            (merge request { status: refund-status-approved })
+        )
+        (map-set refunded-tips { tip-id: tip-id } true)
+
+        (map-set user-total-sent sender
+            (let ((current (default-to u0 (map-get? user-total-sent sender))))
+                (if (>= current amount) (- current amount) u0)
+            )
+        )
+        (map-set user-total-received recipient
+            (let ((current (default-to u0 (map-get? user-total-received recipient))))
+                (if (>= current net-amount) (- current net-amount) u0)
+            )
+        )
+
+        (print {
+            event: "refund-approved",
+            tip-id: tip-id,
+            sender: sender,
+            recipient: recipient,
+            refund-amount: net-amount
+        })
+
+        (ok tip-id)
+    )
+)
+
+(define-public (reject-refund (tip-id uint))
+    (let
+        (
+            (request (unwrap! (map-get? refund-requests { tip-id: tip-id }) err-refund-not-found))
+            (recipient (get recipient request))
+            (status (get status request))
+        )
+        (asserts! (is-eq tx-sender recipient) err-not-authorized)
+        (asserts! (is-eq status refund-status-pending) err-refund-not-pending)
+
+        (map-set refund-requests
+            { tip-id: tip-id }
+            (merge request { status: refund-status-rejected })
+        )
+
+        (print {
+            event: "refund-rejected",
+            tip-id: tip-id,
+            sender: (get sender request),
+            recipient: recipient
+        })
+
+        (ok tip-id)
+    )
+)
+
 ;; Read-only Functions
 (define-read-only (get-tip (tip-id uint))
     (map-get? tips { tip-id: tip-id })
@@ -569,4 +711,27 @@
 
 (define-read-only (get-category-count (category uint))
     (ok (default-to u0 (map-get? category-tip-count category)))
+)
+
+(define-read-only (get-refund-request (tip-id uint))
+    (ok (map-get? refund-requests { tip-id: tip-id }))
+)
+
+(define-read-only (is-tip-refunded (tip-id uint))
+    (ok (default-to false (map-get? refunded-tips { tip-id: tip-id })))
+)
+
+(define-read-only (get-refund-window-blocks)
+    (ok refund-window-blocks)
+)
+
+(define-read-only (is-refund-eligible (tip-id uint))
+    (match (map-get? tips { tip-id: tip-id })
+        tip (ok (and
+            (<= block-height (+ (get tip-height tip) refund-window-blocks))
+            (is-none (map-get? refunded-tips { tip-id: tip-id }))
+            (is-none (map-get? refund-requests { tip-id: tip-id }))
+        ))
+        (err err-not-found)
+    )
 )

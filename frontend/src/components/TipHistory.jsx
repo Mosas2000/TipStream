@@ -7,6 +7,8 @@ import { getTipRowKey } from '../lib/tipRowKey';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
 import { useDemoMode } from '../context/DemoContext';
+import RefundRequest from './RefundRequest';
+import RefundApproval from './RefundApproval';
 
 const CATEGORY_LABELS = {
     0: 'General', 1: 'Content Creation', 2: 'Open Source',
@@ -42,8 +44,11 @@ function parseUtf8(repr) {
  *
  * @param {Object} props
  * @param {string} props.userAddress - The STX address of the logged-in user.
+ * @param {Function} [props.addToast] - Callback to display a toast notification.
  */
-export default function TipHistory({ userAddress }) {
+export default function TipHistory({ userAddress, addToast }) {
+    const noop = () => {};
+    const toast = addToast || noop;
     const { demoEnabled, getDemoData, demoTips: contextDemoTips } = useDemoMode();
     const [tips, setTips] = useState([]);
     const [tipsLoading, setTipsLoading] = useState(true);
@@ -297,28 +302,48 @@ export default function TipHistory({ userAddress }) {
                 ) : (
                     <div id="tip-history-panel" role="tabpanel" className="space-y-2">
                         {filteredTips.map((tip) => (
-                            <div key={getTipRowKey(tip)} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${tip.direction === 'sent' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>
-                                        {tip.direction === 'sent' ? '-' : '+'}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-1 text-sm">
-                                            <span className="text-gray-500 dark:text-gray-400">{tip.direction === 'sent' ? 'To' : 'From'}</span>
-                                            <span className="font-semibold text-gray-700 dark:text-gray-200">{formatAddress(tip.direction === 'sent' ? tip.recipient : tip.sender, 8, 6)}</span>
-                                            <CopyButton text={tip.direction === 'sent' ? tip.recipient : tip.sender} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                            <div key={getTipRowKey(tip)} className="p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${tip.direction === 'sent' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>
+                                            {tip.direction === 'sent' ? '-' : '+'}
                                         </div>
-                                        {tip.message ? (
-                                            <span className="text-xs text-gray-400 italic">&ldquo;{tip.message}&rdquo;</span>
-                                        ) : null}
+                                        <div>
+                                            <div className="flex items-center gap-1 text-sm">
+                                                <span className="text-gray-500 dark:text-gray-400">{tip.direction === 'sent' ? 'To' : 'From'}</span>
+                                                <span className="font-semibold text-gray-700 dark:text-gray-200">{formatAddress(tip.direction === 'sent' ? tip.recipient : tip.sender, 8, 6)}</span>
+                                                <CopyButton text={tip.direction === 'sent' ? tip.recipient : tip.sender} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                                            </div>
+                                            {tip.message ? (
+                                                <span className="text-xs text-gray-400 italic">&ldquo;{tip.message}&rdquo;</span>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <p className={`font-bold text-sm ${tip.direction === 'sent' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                            {tip.direction === 'sent' ? '-' : '+'}{formatSTX(tip.amount, 2)} STX
+                                        </p>
+                                        <ShareTip tip={{ type: tip.direction, amount: formatSTX(tip.amount, 6) }} />
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <p className={`font-bold text-sm ${tip.direction === 'sent' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                        {tip.direction === 'sent' ? '-' : '+'}{formatSTX(tip.amount, 2)} STX
-                                    </p>
-                                    <ShareTip tip={{ type: tip.direction, amount: formatSTX(tip.amount, 6) }} />
-                                </div>
+                                {tip.direction === 'sent' && (
+                                    <div className="mt-1 pl-10">
+                                        <RefundRequest
+                                            tip={tip}
+                                            senderAddress={userAddress}
+                                            addToast={toast}
+                                        />
+                                    </div>
+                                )}
+                                {tip.direction === 'received' && (
+                                    <div className="pl-10">
+                                        <RefundApproval
+                                            tip={tip}
+                                            recipientAddress={userAddress}
+                                            addToast={toast}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

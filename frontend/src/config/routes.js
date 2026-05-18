@@ -104,6 +104,12 @@ export const ROUTE_ADMIN = '/admin';
 export const ROUTE_TELEMETRY = '/telemetry';
 
 /**
+ * Refund requests management.
+ * @type {string}
+ */
+export const ROUTE_REFUNDS = '/refunds';
+
+/**
  * The route that "/" redirects to when the user is authenticated.
  * Change this single value to alter the default landing page site-wide.
  * @type {string}
@@ -130,6 +136,7 @@ export const ROUTE_LABELS = {
   [ROUTE_STATS]: 'Stats',
   [ROUTE_ADMIN]: 'Admin',
   [ROUTE_TELEMETRY]: 'Telemetry',
+  [ROUTE_REFUNDS]: 'Refunds',
 };
 
 /**
@@ -155,6 +162,7 @@ export const ROUTE_TITLES = {
   [ROUTE_STATS]: 'Platform Stats -- TipStream',
   [ROUTE_ADMIN]: 'Admin Dashboard -- TipStream',
   [ROUTE_TELEMETRY]: 'Telemetry -- TipStream',
+  [ROUTE_REFUNDS]: 'Refunds -- TipStream',
 };
 
 /**
@@ -243,5 +251,10 @@ export const ROUTE_META = {
     description: 'Production telemetry, Web Vitals, conversion metrics, and error tracking.',
     requiresAuth: true,
     adminOnly: true,
+  },
+  [ROUTE_REFUNDS]: {
+    description: 'View and manage refund requests for sent and received tips.',
+    requiresAuth: true,
+    adminOnly: false,
   },
 };
