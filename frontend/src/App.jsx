@@ -20,10 +20,10 @@ import { useDemoMode } from './context/DemoContext';
 import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_SCHEDULE, ROUTE_SCHEDULED_TIPS, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_ADDRESS_BOOK,
-  ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY,
+  ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY, ROUTE_REFUNDS,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
 
 const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
@@ -43,6 +43,7 @@ const TokenTip = lazy(() => import('./components/TokenTip'));
 const NotFound = lazy(() => import('./components/NotFound'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const TelemetryDashboard = lazy(() => import('./components/TelemetryDashboard'));
+const RefundManager = lazy(() => import('./components/RefundManager'));
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -168,6 +169,7 @@ function App() {
       { path: ROUTE_PROFILE, label: 'Profile', icon: UserCircle },
       { path: ROUTE_ADDRESS_BOOK, label: 'Address Book', icon: BookUser },
       { path: ROUTE_BLOCK, label: 'Block', icon: ShieldBan },
+      { path: ROUTE_REFUNDS, label: 'Refunds', icon: RotateCcw },
       { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
     ];
     
@@ -338,10 +340,10 @@ function App() {
                     path={ROUTE_ACTIVITY} 
                     element={
                       userData || demoEnabled ? (
-                        <TipHistory userAddress={userAddress} />
+                        <TipHistory userAddress={userAddress} addToast={addToast} />
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_ACTIVITY}>
-                          <TipHistory userAddress={userAddress} />
+                          <TipHistory userAddress={userAddress} addToast={addToast} />
                         </RequireAuth>
                       )
                     } 
@@ -386,6 +388,20 @@ function App() {
                   {/* Admin-only routes */}
                   <Route path={ROUTE_ADMIN} element={<RequireAdmin><AdminDashboard userAddress={userAddress} addToast={addToast} /></RequireAdmin>} />
                   <Route path={ROUTE_TELEMETRY} element={<RequireAdmin><TelemetryDashboard addToast={addToast} /></RequireAdmin>} />
+
+                  {/* Refund management */}
+                  <Route
+                    path={ROUTE_REFUNDS}
+                    element={
+                      userData || demoEnabled ? (
+                        <RefundManager userAddress={userAddress} addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_REFUNDS}>
+                          <RefundManager userAddress={userAddress} addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    }
+                  />
                   
                   {/* Root and fallback */}
                   <Route path="/" element={<Navigate to={userData || demoEnabled ? DEFAULT_AUTHENTICATED_ROUTE : ROUTE_FEED} replace />} />
