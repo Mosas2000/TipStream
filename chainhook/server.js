@@ -6,7 +6,7 @@ import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
-import { RateLimiter, getClientIp, validateRateLimitConfig } from "./rate-limit.js";
+import { RateLimiter, getClientIp, validateRateLimitConfig, AddressRateLimiter, parseAddressWhitelist, validateAddressRateLimitConfig } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, createScheduledTipStore, createRefundStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
@@ -28,6 +28,15 @@ const CORS_ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGIN
 const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10);
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
 const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
+
+const ADDRESS_RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.ADDRESS_RATE_LIMIT_MAX_REQUESTS || "50", 10);
+const ADDRESS_RATE_LIMIT_WINDOW_MS = parseInt(process.env.ADDRESS_RATE_LIMIT_WINDOW_MS || "60000", 10);
+const ADDRESS_RATE_LIMIT_WHITELIST = parseAddressWhitelist(process.env.ADDRESS_RATE_LIMIT_WHITELIST || "");
+const addressRateLimiter = new AddressRateLimiter(
+  ADDRESS_RATE_LIMIT_MAX_REQUESTS,
+  ADDRESS_RATE_LIMIT_WINDOW_MS,
+  ADDRESS_RATE_LIMIT_WHITELIST
+);
 let eventStore = null;
 let scheduledTipStore = null;
 let refundStore = null;
@@ -40,6 +49,10 @@ let refundStore = null;
  */
 function getRateLimiter() {
   return rateLimiter;
+}
+
+function getAddressRateLimiter() {
+  return addressRateLimiter;
 }
 
 async function getEventStore() {
@@ -290,7 +303,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, wsManager, getRefundStore };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, getAddressRateLimiter, wsManager, getRefundStore };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -375,6 +388,22 @@ const server = http.createServer(async (req, res) => {
       const newEvents = extractEvents(payload);
       let insertedCount = 0;
       let duplicateCount = 0;
+
+      for (const evt of newEvents) {
+        const tip = parseTipEvent(evt);
+        if (tip && tip.sender) {
+          if (!addressRateLimiter.isAllowed(tip.sender)) {
+            metrics.recordRequest(false);
+            const remaining = addressRateLimiter.getRemaining(tip.sender);
+            return sendError(
+              res,
+              new RateLimitError("address rate limit exceeded", { remaining, address: tip.sender }),
+              requestId,
+              { address: tip.sender, remaining },
+            );
+          }
+        }
+      }
       
       if (newEvents.length > 0) {
         const existingEvents = await store.listEvents();
@@ -974,6 +1003,184 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // GET /api/admin/address-rate-limit -- get current address rate limit configuration
+  if (req.method === "GET" && path === "/api/admin/address-rate-limit") {
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(res, new UnauthorizedError("unauthorized"), requestId, { path });
+      }
+    }
+    const config = addressRateLimiter.getConfig();
+    return sendJson(res, 200, {
+      maxRequests: config.maxRequests,
+      windowMs: config.windowMs,
+      windowSeconds: Math.round(config.windowMs / 1000),
+      whitelistSize: config.whitelistSize,
+    });
+  }
+
+  // POST /api/admin/address-rate-limit -- update address rate limit configuration
+  if (req.method === "POST" && path === "/api/admin/address-rate-limit") {
+    const startTime = Date.now();
+
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(res, new UnauthorizedError("unauthorized"), requestId, { path });
+      }
+    }
+
+    try {
+      const body = await parseBody(req);
+      const maxRequests = parseInt(body.maxRequests, 10);
+      const windowMs = parseInt(body.windowMs, 10);
+
+      const validation = validateAddressRateLimitConfig(maxRequests, windowMs);
+      if (!validation.valid) {
+        return sendError(
+          res,
+          new BadRequestError(validation.error),
+          requestId,
+          { path, maxRequests: body.maxRequests, windowMs: body.windowMs }
+        );
+      }
+
+      const oldConfig = addressRateLimiter.getConfig();
+      addressRateLimiter.updateConfig(maxRequests, windowMs);
+      const newConfig = addressRateLimiter.getConfig();
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Address rate limit configuration updated", {
+        old_max_requests: oldConfig.maxRequests,
+        old_window_ms: oldConfig.windowMs,
+        new_max_requests: newConfig.maxRequests,
+        new_window_ms: newConfig.windowMs,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, {
+        ok: true,
+        previous: {
+          maxRequests: oldConfig.maxRequests,
+          windowMs: oldConfig.windowMs,
+        },
+        current: {
+          maxRequests: newConfig.maxRequests,
+          windowMs: newConfig.windowMs,
+          windowSeconds: Math.round(newConfig.windowMs / 1000),
+          whitelistSize: newConfig.whitelistSize,
+        },
+      });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // GET /api/admin/address-rate-limit/whitelist -- list whitelisted addresses
+  if (req.method === "GET" && path === "/api/admin/address-rate-limit/whitelist") {
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(res, new UnauthorizedError("unauthorized"), requestId, { path });
+      }
+    }
+    const whitelist = addressRateLimiter.getWhitelist();
+    return sendJson(res, 200, { whitelist, total: whitelist.length });
+  }
+
+  // POST /api/admin/address-rate-limit/whitelist -- add an address to the whitelist
+  if (req.method === "POST" && path === "/api/admin/address-rate-limit/whitelist") {
+    const startTime = Date.now();
+
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(res, new UnauthorizedError("unauthorized"), requestId, { path });
+      }
+    }
+
+    try {
+      const body = await parseBody(req);
+      const { address } = body;
+
+      if (!address || typeof address !== 'string') {
+        return sendError(res, new BadRequestError("address is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path });
+      }
+
+      addressRateLimiter.addToWhitelist(address);
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Address added to rate limit whitelist", {
+        address,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, {
+        ok: true,
+        address,
+        whitelist: addressRateLimiter.getWhitelist(),
+      });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // DELETE /api/admin/address-rate-limit/whitelist -- remove an address from the whitelist
+  if (req.method === "DELETE" && path === "/api/admin/address-rate-limit/whitelist") {
+    const startTime = Date.now();
+
+    if (AUTH_TOKEN) {
+      const authHeader = req.headers.authorization || "";
+      if (!validateBearerToken(authHeader, AUTH_TOKEN)) {
+        return sendError(res, new UnauthorizedError("unauthorized"), requestId, { path });
+      }
+    }
+
+    try {
+      const body = await parseBody(req);
+      const { address } = body;
+
+      if (!address || typeof address !== 'string') {
+        return sendError(res, new BadRequestError("address is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path });
+      }
+
+      addressRateLimiter.removeFromWhitelist(address);
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Address removed from rate limit whitelist", {
+        address,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, {
+        ok: true,
+        address,
+        whitelist: addressRateLimiter.getWhitelist(),
+      });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
   // GET /health -- health check endpoint (always accessible for orchestration)
   if (req.method === "GET" && path === "/health") {
     const store = await getEventStore();
@@ -1026,6 +1233,7 @@ if (isMain) {
     const store = await getEventStore();
     const cleanupInterval = setInterval(async () => {
       rateLimiter.cleanup();
+      addressRateLimiter.cleanup();
       try {
         await store.pruneExpired(getRetentionCutoff(RETENTION_DAYS));
       } catch (error) {
@@ -1048,6 +1256,8 @@ if (isMain) {
         auth_enabled: !!AUTH_TOKEN,
         cors_origins: CORS_ALLOWED_ORIGINS.join(", "),
         rate_limit: `${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_WINDOW_MS}ms`,
+        address_rate_limit: `${ADDRESS_RATE_LIMIT_MAX_REQUESTS} requests per ${ADDRESS_RATE_LIMIT_WINDOW_MS}ms`,
+        address_whitelist_size: ADDRESS_RATE_LIMIT_WHITELIST.length,
         storage_mode: STORAGE_MODE,
         retention_days: RETENTION_DAYS,
         db_retry_max_attempts: parseInt(process.env.DB_RETRY_MAX_ATTEMPTS || "5", 10),

@@ -1,13 +1,14 @@
 /**
  * Rate limiting for the webhook endpoint.
- * 
+ *
  * Implements per-IP rate limiting to prevent abuse and DoS attacks
- * on the event ingestion endpoint.
+ * on the event ingestion endpoint, and per-address rate limiting to
+ * prevent wallet-based abuse from users rotating IP addresses.
  */
 
 /**
  * Simple in-memory rate limiter using sliding window counters.
- * Tracks requests per IP address and enforces rate limits.
+ * Tracks requests per key (IP address or Stacks address) and enforces rate limits.
  */
 export class RateLimiter {
   /**
@@ -147,4 +148,178 @@ export function validateRateLimitConfig(maxRequests, windowMs) {
   }
 
   return { valid: true };
+}
+
+/**
+ * Per-address rate limiter with whitelist support.
+ *
+ * Tracks tip submissions per Stacks wallet address using the same sliding
+ * window algorithm as RateLimiter. Whitelisted addresses bypass all limits.
+ * Designed to complement IP-based limiting so that users rotating IPs cannot
+ * exceed the per-address quota.
+ */
+export class AddressRateLimiter {
+  /**
+   * @param {number} maxRequests - Maximum requests allowed per window per address
+   * @param {number} windowMs - Time window in milliseconds
+   * @param {string[]} [whitelist] - Addresses that are never rate limited
+   */
+  constructor(maxRequests, windowMs, whitelist = []) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
+    this.requests = new Map();
+    this.whitelist = new Set(
+      whitelist.map(a => (typeof a === 'string' ? a.trim().toUpperCase() : '')).filter(Boolean)
+    );
+  }
+
+  _key(address) {
+    return typeof address === 'string' ? address.trim().toUpperCase() : '';
+  }
+
+  isWhitelisted(address) {
+    return this.whitelist.has(this._key(address));
+  }
+
+  /**
+   * Check if an address has exceeded its rate limit.
+   * Whitelisted addresses always return true.
+   *
+   * @param {string} address - Stacks wallet address
+   * @returns {boolean} True if the request is allowed
+   */
+  isAllowed(address) {
+    if (!address || typeof address !== 'string') return true;
+    if (this.isWhitelisted(address)) return true;
+
+    const now = Date.now();
+    const key = this._key(address);
+
+    if (!this.requests.has(key)) {
+      this.requests.set(key, []);
+    }
+
+    const timestamps = this.requests.get(key);
+    const valid = timestamps.filter(ts => now - ts < this.windowMs);
+
+    if (valid.length >= this.maxRequests) {
+      return false;
+    }
+
+    valid.push(now);
+    this.requests.set(key, valid);
+    return true;
+  }
+
+  /**
+   * Get remaining requests for an address within the current window.
+   * Returns maxRequests for whitelisted addresses.
+   *
+   * @param {string} address - Stacks wallet address
+   * @returns {number}
+   */
+  getRemaining(address) {
+    if (!address || typeof address !== 'string') return this.maxRequests;
+    if (this.isWhitelisted(address)) return this.maxRequests;
+
+    const now = Date.now();
+    const key = this._key(address);
+
+    if (!this.requests.has(key)) return this.maxRequests;
+
+    const valid = this.requests.get(key).filter(ts => now - ts < this.windowMs);
+    return Math.max(0, this.maxRequests - valid.length);
+  }
+
+  /**
+   * Add an address to the whitelist.
+   * @param {string} address
+   */
+  addToWhitelist(address) {
+    if (address && typeof address === 'string') {
+      this.whitelist.add(this._key(address));
+    }
+  }
+
+  /**
+   * Remove an address from the whitelist.
+   * @param {string} address
+   */
+  removeFromWhitelist(address) {
+    if (address && typeof address === 'string') {
+      this.whitelist.delete(this._key(address));
+    }
+  }
+
+  /**
+   * Return the current whitelist as a sorted array of addresses.
+   * @returns {string[]}
+   */
+  getWhitelist() {
+    return Array.from(this.whitelist).sort();
+  }
+
+  /**
+   * Update rate limit configuration at runtime.
+   * Existing counters are preserved; the new limits apply immediately.
+   *
+   * @param {number} maxRequests
+   * @param {number} windowMs
+   */
+  updateConfig(maxRequests, windowMs) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
+  }
+
+  /**
+   * Get current configuration.
+   * @returns {{ maxRequests: number, windowMs: number, whitelistSize: number }}
+   */
+  getConfig() {
+    return {
+      maxRequests: this.maxRequests,
+      windowMs: this.windowMs,
+      whitelistSize: this.whitelist.size,
+    };
+  }
+
+  /**
+   * Remove expired entries to prevent unbounded memory growth.
+   * Should be called on the same interval as RateLimiter.cleanup().
+   */
+  cleanup() {
+    const now = Date.now();
+    for (const [key, timestamps] of this.requests.entries()) {
+      const valid = timestamps.filter(ts => now - ts < this.windowMs);
+      if (valid.length === 0) {
+        this.requests.delete(key);
+      } else {
+        this.requests.set(key, valid);
+      }
+    }
+  }
+}
+
+/**
+ * Parse a comma-separated whitelist string from an environment variable.
+ * Returns an array of trimmed, non-empty address strings.
+ *
+ * @param {string} [value] - Raw env var value
+ * @returns {string[]}
+ */
+export function parseAddressWhitelist(value) {
+  if (!value || typeof value !== 'string') return [];
+  return value.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+/**
+ * Validate address rate limit configuration parameters.
+ * Delegates to validateRateLimitConfig since the same bounds apply.
+ *
+ * @param {number} maxRequests
+ * @param {number} windowMs
+ * @returns {{ valid: boolean, error?: string }}
+ */
+export function validateAddressRateLimitConfig(maxRequests, windowMs) {
+  return validateRateLimitConfig(maxRequests, windowMs);
 }
