@@ -11,7 +11,7 @@ import { toMicroSTX, formatSTX } from '../lib/utils';
 import { formatBalance, hasSufficientMicroStx } from '../lib/balance-utils';
 import { isValidStacksPrincipal } from '../lib/stacks-principal';
 import { canProceedWithRecipient, getRecipientValidationMessage } from '../lib/recipient-validation';
-import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE, FEE_PERCENT } from '../lib/post-conditions';
+import { tipPostCondition, maxTransferForTip, feeForTip, totalDeduction, recipientReceives, SAFE_POST_CONDITION_MODE } from '../lib/post-conditions';
 import { useTipContext } from '../context/TipContext';
 import { useDemoMode } from '../context/DemoContext';
 import { useSendTipWithDemo } from '../hooks/useSendTipWithDemo';
@@ -19,6 +19,7 @@ import { useBalance } from '../hooks/useBalance';
 import { useBlockCheck } from '../hooks/useBlockCheck';
 import { useStxPrice } from '../hooks/useStxPrice';
 import { useSenderAddress } from '../hooks/useSenderAddress';
+import { useContractFee } from '../hooks/useContractFee';
 import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
@@ -77,6 +78,8 @@ export default function SendTip({ addToast }) {
     if (balance === null || balance === undefined) return null;
     return typeof balance === 'string' ? Number(balance) / 1000000 : balance / 1000000;
   }, [balance]);
+
+  const { feeBasisPoints, feePercent } = useContractFee();
 
     const isRecipientHighRisk = !canProceedWithRecipient(recipient, blockedWarning);
 
@@ -148,8 +151,8 @@ export default function SendTip({ addToast }) {
         } else if (balanceSTX !== null) {
             // Account for the platform fee when checking balance
             const microSTX = toMicroSTX(parsed.toString());
-            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX))) {
-                setAmountError('Insufficient balance (tip + 0.5% fee exceeds balance)');
+            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX, feeBasisPoints))) {
+                setAmountError('Insufficient balance (tip + fee exceeds balance)');
             } else {
                 setAmountError('');
             }
@@ -176,7 +179,7 @@ export default function SendTip({ addToast }) {
         if (parsedAmount > MAX_TIP_STX) { addToast(`Maximum tip is ${MAX_TIP_STX.toLocaleString()} STX`, 'warning'); return; }
         if (balanceSTX !== null) {
             const microSTX = toMicroSTX(amount);
-            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX))) {
+            if (!hasSufficientMicroStx(balance, totalDeduction(microSTX, feeBasisPoints))) {
                 addToast('Insufficient balance to cover tip plus platform fee', 'warning');
                 return;
             }
@@ -206,7 +209,7 @@ export default function SendTip({ addToast }) {
 
             const microSTX = toMicroSTX(amount);
             const postConditions = [
-                tipPostCondition(senderAddress, microSTX)
+                tipPostCondition(senderAddress, microSTX, feeBasisPoints)
             ];
 
             const functionArgs = [
@@ -379,24 +382,24 @@ export default function SendTip({ addToast }) {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Platform fee ({FEE_PERCENT}%)</span>
-                                    <span>{formatSTX(feeForTip(toMicroSTX(amount)), 6)} STX</span>
+                                    <span>Platform fee ({feePercent.toFixed(2)}%)</span>
+                                    <span>{formatSTX(feeForTip(toMicroSTX(amount), feeBasisPoints), 6)} STX</span>
                                 </div>
                                 <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-1 flex justify-between font-semibold text-gray-900 dark:text-white">
                                     <span>Total from wallet</span>
                                     <span>
-                                        {formatSTX(totalDeduction(toMicroSTX(amount)), 6)} STX
+                                        {formatSTX(totalDeduction(toMicroSTX(amount), feeBasisPoints), 6)} STX
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-gray-500 dark:text-gray-500">
                                     <span>Recipient receives</span>
                                     <span>
-                                        {formatSTX(recipientReceives(toMicroSTX(amount)), 6)} STX
+                                        {formatSTX(recipientReceives(toMicroSTX(amount), feeBasisPoints), 6)} STX
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-xs text-gray-400 dark:text-gray-600 pt-1">
                                     <span>Post-condition ceiling</span>
-                                    <span>{formatSTX(maxTransferForTip(toMicroSTX(amount)), 6)} STX</span>
+                                    <span>{formatSTX(maxTransferForTip(toMicroSTX(amount), feeBasisPoints), 6)} STX</span>
                                 </div>
                             </div>
                         </div>
@@ -441,12 +444,12 @@ export default function SendTip({ addToast }) {
                         {amount && parseFloat(amount) > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                 <div className="flex justify-between">
-                                    <span>Platform fee ({FEE_PERCENT}%)</span>
-                                    <span>{formatSTX(feeForTip(toMicroSTX(amount)), 6)} STX</span>
+                                    <span>Platform fee ({feePercent.toFixed(2)}%)</span>
+                                    <span>{formatSTX(feeForTip(toMicroSTX(amount), feeBasisPoints), 6)} STX</span>
                                 </div>
                                 <div className="flex justify-between font-semibold text-gray-900 dark:text-white">
                                     <span>Total from your wallet</span>
-                                    <span>{formatSTX(totalDeduction(toMicroSTX(amount)), 6)} STX</span>
+                                    <span>{formatSTX(totalDeduction(toMicroSTX(amount), feeBasisPoints), 6)} STX</span>
                                 </div>
                             </div>
                         )}
