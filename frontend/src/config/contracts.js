@@ -60,6 +60,8 @@ export const FN_WHITELIST_TOKEN = 'whitelist-token';
 export const FN_GET_USER_STATS = 'get-user-stats';
 export const FN_GET_PLATFORM_STATS = 'get-platform-stats';
 export const FN_GET_CURRENT_FEE_BASIS_POINTS = 'get-current-fee-basis-points';
+export const FN_GET_FEE_FOR_AMOUNT = 'get-fee-for-amount';
+export const FN_GET_FEE_SUMMARY = 'get-fee-summary';
 
 // Refund
 export const FN_REQUEST_REFUND = 'request-refund';

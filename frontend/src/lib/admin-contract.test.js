@@ -6,7 +6,9 @@ import {
     fetchCurrentBlockHeight,
     fetchPauseState,
     fetchContractOwner,
-    fetchMultisig
+    fetchMultisig,
+    fetchFeeForAmount,
+    fetchFeeSummary,
 } from './admin-contract';
 import { STACKS_API_BASE, CONTRACT_ADDRESS, CONTRACT_NAME } from '../config/contracts';
 
@@ -169,5 +171,89 @@ describe('Admin Contract Helpers', () => {
             const multisig = await fetchMultisig();
             expect(multisig).toBeDefined();
         });
+    });
+});
+
+describe('fetchFeeForAmount', () => {
+    beforeEach(() => {
+        global.fetch = vi.fn();
+    });
+
+    it('returns the computed fee for a given amount', async () => {
+        const mockResultHex = '0x070100000000000000000000000000001388';
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ result: mockResultHex }),
+        });
+
+        const fee = await fetchFeeForAmount(1000000);
+        expect(typeof fee).toBe('number');
+        expect(fee).toBeGreaterThanOrEqual(0);
+    });
+
+    it('throws when the API call fails', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: false,
+            statusText: 'Service Unavailable',
+        });
+
+        await expect(fetchFeeForAmount(1000000)).rejects.toThrow('Failed to fetch fee for amount');
+    });
+
+    it('returns 0 when the contract returns an error response', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ result: '0x08' }),
+        });
+
+        const fee = await fetchFeeForAmount(1000000);
+        expect(fee).toBe(0);
+    });
+});
+
+describe('fetchFeeSummary', () => {
+    beforeEach(() => {
+        global.fetch = vi.fn();
+    });
+
+    it('returns a structured fee summary object', async () => {
+        const mockResultHex = '0x070c000000070668616d6f756e74010000000000000000000000000000000032126261736973 2d706f696e74732d646976697365720100000000000000000000000000002710' +
+            '0e6665652d62617369732d706f696e74730100000000000000000000000000000032' +
+            '0e6665652d666f722d616d6f756e74010000000000000000000000000000000001' +
+            '0b6665652d70657263656e74010000000000000000000000000000000000' +
+            '0c6d696e2d6665652d757374780100000000000000000000000000000001' +
+            '0a6e65742d616d6f756e74010000000000000000000000000000000031';
+
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ result: mockResultHex }),
+        });
+
+        const summary = await fetchFeeSummary(50);
+        expect(summary).toHaveProperty('feeBasisPoints');
+        expect(summary).toHaveProperty('basisPointsDivisor');
+        expect(summary).toHaveProperty('minFeeUstx');
+        expect(summary).toHaveProperty('feePercent');
+        expect(summary).toHaveProperty('feeForAmount');
+        expect(summary).toHaveProperty('amount');
+        expect(summary).toHaveProperty('netAmount');
+    });
+
+    it('throws when the API call fails', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: false,
+            statusText: 'Bad Gateway',
+        });
+
+        await expect(fetchFeeSummary(1000000)).rejects.toThrow('Failed to fetch fee summary');
+    });
+
+    it('throws when the response shape is unexpected', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ result: '0x09' }),
+        });
+
+        await expect(fetchFeeSummary(1000000)).rejects.toThrow('Failed to fetch fee summary');
     });
 });

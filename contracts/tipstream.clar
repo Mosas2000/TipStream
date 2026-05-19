@@ -713,6 +713,24 @@
     (ok (default-to u0 (map-get? category-tip-count category)))
 )
 
+(define-read-only (get-fee-summary (amount uint))
+    (let
+        (
+            (bps (var-get current-fee-basis-points))
+            (computed-fee (calculate-fee amount))
+        )
+        (ok {
+            fee-basis-points: bps,
+            basis-points-divisor: basis-points-divisor,
+            min-fee-ustx: min-fee,
+            fee-percent: (/ (* bps u100) basis-points-divisor),
+            fee-for-amount: computed-fee,
+            amount: amount,
+            net-amount: (if (>= amount computed-fee) (- amount computed-fee) u0)
+        })
+    )
+)
+
 (define-read-only (get-refund-request (tip-id uint))
     (ok (map-get? refund-requests { tip-id: tip-id }))
 )

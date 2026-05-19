@@ -2196,3 +2196,228 @@ describe("TipStream Contract Tests", () => {
         });
     });
 });
+
+describe("Fee Read-Only Functions", () => {
+    describe("get-current-fee-basis-points", () => {
+        it("returns the default fee of 50 basis points", () => {
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-current-fee-basis-points",
+                [],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(50));
+        });
+
+        it("reflects an updated fee after set-fee-basis-points", () => {
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(100)], deployer);
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-current-fee-basis-points",
+                [],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(100));
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("returns zero when fee is disabled", () => {
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(0)], deployer);
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-current-fee-basis-points",
+                [],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(0));
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("returns the maximum allowed fee of 1000 basis points", () => {
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(1000)], deployer);
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-current-fee-basis-points",
+                [],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(1000));
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+    });
+
+    describe("get-fee-for-amount", () => {
+        it("returns 5000 uSTX fee for a 1 STX tip at 50 bps", () => {
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(5_000));
+        });
+
+        it("returns the minimum fee of 1 uSTX when raw calculation rounds to zero", () => {
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(1)], deployer);
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(1));
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("returns zero fee when fee is disabled", () => {
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(0)], deployer);
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(0));
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("scales correctly for a large tip amount", () => {
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(10_000_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(50_000_000));
+        });
+
+        it("matches the fee deducted in an actual send-tip call", () => {
+            const { events } = simnet.callPublicFn(
+                "tipstream",
+                "send-tip",
+                [Cl.principal(wallet2), Cl.uint(1_000_000), Cl.stringUtf8("fee check")],
+                wallet1
+            );
+            const feeTransfer = events
+                .filter(e => e.event === "stx_transfer_event")
+                .find(e => e.data.recipient === deployer);
+
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(1_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.uint(Number(feeTransfer!.data.amount)));
+        });
+    });
+
+    describe("get-fee-summary", () => {
+        it("returns a complete fee summary tuple for a 1 STX tip", () => {
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-summary",
+                [Cl.uint(1_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.tuple({
+                "fee-basis-points": Cl.uint(50),
+                "basis-points-divisor": Cl.uint(10_000),
+                "min-fee-ustx": Cl.uint(1),
+                "fee-percent": Cl.uint(0),
+                "fee-for-amount": Cl.uint(5_000),
+                "amount": Cl.uint(1_000_000),
+                "net-amount": Cl.uint(995_000),
+            }));
+        });
+
+        it("net-amount equals amount minus fee-for-amount", () => {
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-summary",
+                [Cl.uint(2_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.tuple({
+                "fee-basis-points": Cl.uint(50),
+                "basis-points-divisor": Cl.uint(10_000),
+                "min-fee-ustx": Cl.uint(1),
+                "fee-percent": Cl.uint(0),
+                "fee-for-amount": Cl.uint(10_000),
+                "amount": Cl.uint(2_000_000),
+                "net-amount": Cl.uint(1_990_000),
+            }));
+        });
+
+        it("reflects a changed fee rate in the summary", () => {
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(100)], deployer);
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-summary",
+                [Cl.uint(1_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.tuple({
+                "fee-basis-points": Cl.uint(100),
+                "basis-points-divisor": Cl.uint(10_000),
+                "min-fee-ustx": Cl.uint(1),
+                "fee-percent": Cl.uint(1),
+                "fee-for-amount": Cl.uint(10_000),
+                "amount": Cl.uint(1_000_000),
+                "net-amount": Cl.uint(990_000),
+            }));
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("returns zero fee-for-amount and full net-amount when fee is disabled", () => {
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(0)], deployer);
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-summary",
+                [Cl.uint(1_000_000)],
+                wallet1
+            );
+            expect(result).toBeOk(Cl.tuple({
+                "fee-basis-points": Cl.uint(0),
+                "basis-points-divisor": Cl.uint(10_000),
+                "min-fee-ustx": Cl.uint(1),
+                "fee-percent": Cl.uint(0),
+                "fee-for-amount": Cl.uint(0),
+                "amount": Cl.uint(1_000_000),
+                "net-amount": Cl.uint(1_000_000),
+            }));
+            simnet.callPublicFn("tipstream", "set-fee-basis-points", [Cl.uint(50)], deployer);
+        });
+
+        it("summary fee-for-amount matches get-fee-for-amount for the same input", () => {
+            const amount = 5_000_000;
+            const { result: summaryResult } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-summary",
+                [Cl.uint(amount)],
+                wallet1
+            );
+            const { result: feeResult } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-for-amount",
+                [Cl.uint(amount)],
+                wallet1
+            );
+            expect(summaryResult).toBeOk(expect.objectContaining({
+                value: expect.objectContaining({
+                    "fee-for-amount": feeResult.value,
+                })
+            }));
+        });
+
+        it("is callable by any principal, not just the owner", () => {
+            const { result } = simnet.callReadOnlyFn(
+                "tipstream",
+                "get-fee-summary",
+                [Cl.uint(1_000_000)],
+                wallet2
+            );
+            expect(result).toBeOk(expect.anything());
+        });
+    });
+});

@@ -276,7 +276,7 @@ export default function AdminDashboard({ userAddress, addToast }) {
             )}
 
             {/* Status Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatusCard
                     label="Block Height"
                     value={formatBlockHeight(blockHeight)}
@@ -286,6 +286,11 @@ export default function AdminDashboard({ userAddress, addToast }) {
                     label="Contract Owner"
                     value={contractOwner ? `${contractOwner.slice(0, 8)}...${contractOwner.slice(-4)}` : '--'}
                     icon={Shield}
+                />
+                <StatusCard
+                    label="Current Fee Rate"
+                    value={feeState.currentFeeBasisPoints != null ? formatBasisPoints(feeState.currentFeeBasisPoints) : '--'}
+                    icon={DollarSign}
                 />
                 <StatusCard
                     label="Timelock Delay"
