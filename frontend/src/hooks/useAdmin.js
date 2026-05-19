@@ -31,6 +31,7 @@ export function useAdmin(userAddress, options = {}) {
         effectiveHeight: 0,
     });
     const [feeState, setFeeState] = useState({
+        currentFeeBasisPoints: 0,
         pendingFee: null,
         effectiveHeight: 0,
     });
