@@ -7,7 +7,7 @@
  * enforce the 144-block timelock on all admin actions.
  */
 
-import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_GET_CURRENT_FEE_BASIS_POINTS } from '../config/contracts';
+import { CONTRACT_ADDRESS, CONTRACT_NAME, STACKS_API_BASE, FN_GET_CURRENT_FEE_BASIS_POINTS, FN_GET_FEE_FOR_AMOUNT, FN_GET_FEE_SUMMARY } from '../config/contracts';
 
 /**
  * Contract function names for read-only calls
@@ -168,6 +168,68 @@ export async function fetchCurrentFee() {
         return typeof result === 'number' ? result : 0;
     } catch (err) {
         throw new Error(`Failed to fetch current fee: ${err.message}`);
+    }
+}
+
+/**
+ * Fetch the computed fee for a specific tip amount from the contract.
+ * Uses the on-chain calculate-fee logic so the result is always exact.
+ *
+ * @param {number} amountMicroSTX - Tip amount in micro-STX
+ * @returns {Promise<number>} Fee in micro-STX
+ */
+export async function fetchFeeForAmount(amountMicroSTX) {
+    try {
+        const { uintCV, serializeCV } = await import('@stacks/transactions');
+        const arg = serializeCV(uintCV(Math.floor(Number(amountMicroSTX))));
+        const data = await callReadOnly(FN_GET_FEE_FOR_AMOUNT, [
+            Buffer.from(arg).toString('hex'),
+        ]);
+        const result = parseClarityValue(data.result);
+        return typeof result === 'number' ? result : 0;
+    } catch (err) {
+        throw new Error(`Failed to fetch fee for amount: ${err.message}`);
+    }
+}
+
+/**
+ * Fetch the full fee summary for a given tip amount.
+ * Returns fee-basis-points, basis-points-divisor, min-fee-ustx,
+ * fee-percent, fee-for-amount, amount, and net-amount in one call.
+ *
+ * @param {number} amountMicroSTX - Tip amount in micro-STX
+ * @returns {Promise<{
+ *   feeBasisPoints: number,
+ *   basisPointsDivisor: number,
+ *   minFeeUstx: number,
+ *   feePercent: number,
+ *   feeForAmount: number,
+ *   amount: number,
+ *   netAmount: number,
+ * }>}
+ */
+export async function fetchFeeSummary(amountMicroSTX) {
+    try {
+        const { uintCV, serializeCV } = await import('@stacks/transactions');
+        const arg = serializeCV(uintCV(Math.floor(Number(amountMicroSTX))));
+        const data = await callReadOnly(FN_GET_FEE_SUMMARY, [
+            Buffer.from(arg).toString('hex'),
+        ]);
+        const result = parseClarityValue(data.result);
+        if (!result || typeof result !== 'object') {
+            throw new Error('Unexpected response shape from get-fee-summary');
+        }
+        return {
+            feeBasisPoints: result['fee-basis-points'] ?? 0,
+            basisPointsDivisor: result['basis-points-divisor'] ?? 10000,
+            minFeeUstx: result['min-fee-ustx'] ?? 1,
+            feePercent: result['fee-percent'] ?? 0,
+            feeForAmount: result['fee-for-amount'] ?? 0,
+            amount: result['amount'] ?? 0,
+            netAmount: result['net-amount'] ?? 0,
+        };
+    } catch (err) {
+        throw new Error(`Failed to fetch fee summary: ${err.message}`);
     }
 }
 
