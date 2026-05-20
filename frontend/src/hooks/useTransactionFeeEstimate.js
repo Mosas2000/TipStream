@@ -179,6 +179,6 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         feeLevel,
         setFeeLevel,
         speedEstimates,
-        refresh: async () => {},
+        refresh: estimate,
     };
 }
