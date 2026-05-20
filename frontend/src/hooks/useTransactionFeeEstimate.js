@@ -76,6 +76,25 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         };
     }, []);
 
+    const updateUsdPrices = useCallback((estimatesObj) => {
+        const updated = {};
+        Object.keys(estimatesObj).forEach((level) => {
+            const est = estimatesObj[level];
+            const usdVal = toUsd ? toUsd(est.STX) : null;
+            updated[level] = {
+                ...est,
+                Usd: usdVal,
+            };
+        });
+        return updated;
+    }, [toUsd]);
+
+    useEffect(() => {
+        if (isMountedRef.current) {
+            setSpeedEstimates(prev => updateUsdPrices(prev));
+        }
+    }, [updateUsdPrices]);
+
     const activeEstimate = speedEstimates[feeLevel];
 
     return {
