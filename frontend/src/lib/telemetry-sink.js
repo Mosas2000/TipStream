@@ -166,5 +166,6 @@ export function clearQueue() {
 export function resetSink() {
   stopFlushTimer();
   eventQueue = [];
+  activeFlushPromise = null;
   sinkConfig = { ...DEFAULT_CONFIG };
 }
