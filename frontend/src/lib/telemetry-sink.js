@@ -14,6 +14,7 @@ const DEFAULT_CONFIG = {
 let sinkConfig = { ...DEFAULT_CONFIG };
 let eventQueue = [];
 let flushTimer = null;
+let activeFlushPromise = null;
 
 export function configureSink(config) {
   sinkConfig = {
