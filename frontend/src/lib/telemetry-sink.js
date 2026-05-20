@@ -14,6 +14,7 @@ const DEFAULT_CONFIG = {
 let sinkConfig = { ...DEFAULT_CONFIG };
 let eventQueue = [];
 let flushTimer = null;
+let activeFlushPromise = null;
 
 export function configureSink(config) {
   sinkConfig = {
@@ -111,12 +112,29 @@ async function sendBatch(events, attempt = 1) {
 }
 
 export async function flush() {
+  if (activeFlushPromise) {
+    return activeFlushPromise.then(() => flush()).catch(() => flush());
+  }
+
   if (!isSinkEnabled() || eventQueue.length === 0) {
     return { success: true, count: 0 };
   }
 
   const batch = eventQueue.splice(0, sinkConfig.batchSize);
-  return sendBatch(batch);
+  activeFlushPromise = sendBatch(batch).then((result) => {
+    activeFlushPromise = null;
+    if (!result.success && isSinkEnabled()) {
+      eventQueue.unshift(...batch);
+    }
+    return result;
+  }).catch((error) => {
+    activeFlushPromise = null;
+    if (isSinkEnabled()) {
+      eventQueue.unshift(...batch);
+    }
+    throw error;
+  });
+  return activeFlushPromise;
 }
 
 export async function sendSnapshot() {
@@ -165,5 +183,6 @@ export function clearQueue() {
 export function resetSink() {
   stopFlushTimer();
   eventQueue = [];
+  activeFlushPromise = null;
   sinkConfig = { ...DEFAULT_CONFIG };
 }
