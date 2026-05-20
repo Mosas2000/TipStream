@@ -123,6 +123,9 @@ export async function flush() {
   const batch = eventQueue.splice(0, sinkConfig.batchSize);
   activeFlushPromise = sendBatch(batch).then((result) => {
     activeFlushPromise = null;
+    if (!result.success && isSinkEnabled()) {
+      eventQueue.unshift(...batch);
+    }
     return result;
   });
   return activeFlushPromise;
