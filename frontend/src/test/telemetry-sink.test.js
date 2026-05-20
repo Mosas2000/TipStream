@@ -195,10 +195,39 @@ describe('telemetry-sink', () => {
       // Advance timers to allow all retries (10ms * 1 + 10ms * 2 = 30ms total)
       await vi.advanceTimersByTimeAsync(30);
       
-      const result = await flushPromise;
-
       expect(result.success).toBe(false);
       expect(result.error).toBe('Network error');
+    });
+
+    it('serializes overlapping flush operations', async () => {
+      let resolveFirstFetch;
+      const firstFetchPromise = new Promise((resolve) => {
+        resolveFirstFetch = () => resolve({ ok: true, status: 200 });
+      });
+
+      global.fetch
+        .mockReturnValueOnce(firstFetchPromise)
+        .mockResolvedValueOnce({ ok: true, status: 200 });
+
+      configureSink({
+        enabled: true,
+        endpoint: 'https://test.com',
+        batchSize: 1,
+      });
+
+      queueEvent('event1', {});
+      queueEvent('event2', {});
+
+      const promise1 = flush();
+      const promise2 = flush();
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      resolveFirstFetch();
+      await promise1;
+      await promise2;
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });
 
