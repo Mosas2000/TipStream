@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { STACKS_API_BASE } from '../config/contracts';
 import { useStxPrice } from './useStxPrice';
 import { useDemoMode } from '../context/DemoContext';
@@ -61,9 +61,9 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
     const [error, setError] = useState(null);
 
     const [speedEstimates, setSpeedEstimates] = useState({
-        low: { microSTX: DEFAULT_LOW_FEE_MICROSTX, STX: DEFAULT_LOW_FEE_MICROSTX / 1_000_000, Usd: null },
-        medium: { microSTX: DEFAULT_FEE_MICROSTX, STX: DEFAULT_FEE_MICROSTX / 1_000_000, Usd: null },
-        high: { microSTX: DEFAULT_HIGH_FEE_MICROSTX, STX: DEFAULT_HIGH_FEE_MICROSTX / 1_000_000, Usd: null },
+        low: { microSTX: DEFAULT_LOW_FEE_MICROSTX, STX: DEFAULT_LOW_FEE_MICROSTX / 1_000_000 },
+        medium: { microSTX: DEFAULT_FEE_MICROSTX, STX: DEFAULT_FEE_MICROSTX / 1_000_000 },
+        high: { microSTX: DEFAULT_HIGH_FEE_MICROSTX, STX: DEFAULT_HIGH_FEE_MICROSTX / 1_000_000 },
     });
 
     const isMountedRef = useRef(true);
@@ -76,10 +76,10 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         };
     }, []);
 
-    const updateUsdPrices = useCallback((estimatesObj) => {
+    const speedEstimatesWithUsd = useMemo(() => {
         const updated = {};
-        Object.keys(estimatesObj).forEach((level) => {
-            const est = estimatesObj[level];
+        Object.keys(speedEstimates).forEach((level) => {
+            const est = speedEstimates[level];
             const usdVal = toUsd ? toUsd(est.STX) : null;
             updated[level] = {
                 ...est,
@@ -87,13 +87,7 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
             };
         });
         return updated;
-    }, [toUsd]);
-
-    useEffect(() => {
-        if (isMountedRef.current) {
-            setSpeedEstimates(prev => updateUsdPrices(prev));
-        }
-    }, [updateUsdPrices]);
+    }, [speedEstimates, toUsd]);
 
     const estimate = useCallback(async () => {
         if (!isMountedRef.current) return;
@@ -161,11 +155,11 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         }
 
         if (isMountedRef.current) {
-            setSpeedEstimates(updateUsdPrices(baseEstimates));
+            setSpeedEstimates(baseEstimates);
             setLoading(false);
             setError(null);
         }
-    }, [demoEnabled, updateUsdPrices]);
+    }, [demoEnabled]);
 
     useEffect(() => {
         estimate();
@@ -181,7 +175,7 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         };
     }, [estimate, pollInterval]);
 
-    const activeEstimate = speedEstimates[feeLevel];
+    const activeEstimate = speedEstimatesWithUsd[feeLevel];
 
     return {
         feeEstimateMicroSTX: activeEstimate.microSTX,

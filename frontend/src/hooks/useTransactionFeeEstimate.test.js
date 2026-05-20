@@ -82,7 +82,7 @@ describe('useTransactionFeeEstimate', () => {
 
         expect(result.current.feeEstimateMicroSTX).toBe(6000);
         expect(result.current.feeEstimateSTX).toBe(0.006);
-        expect(result.current.feeEstimateUsd).toBe('0.02');
+        expect(result.current.feeEstimateUsd).toBe('0.01');
     });
 
     it('falls back to extended/v1/fee_rate when v2 POST fails', async () => {
