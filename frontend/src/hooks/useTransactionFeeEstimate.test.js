@@ -111,4 +111,56 @@ describe('useTransactionFeeEstimate', () => {
         expect(result.current.feeEstimateMicroSTX).toBe(5000);
         expect(result.current.error).toBeNull();
     });
+
+    it('supports selecting different fee levels (low, medium, high)', async () => {
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                estimations: [
+                    { fee: 3000, fee_rate: 1 },
+                    { fee: 6000, fee_rate: 2 },
+                    { fee: 12000, fee_rate: 3 }
+                ]
+            })
+        });
+
+        const { result } = renderHook(() => useTransactionFeeEstimate({ pollInterval: 0 }));
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        expect(result.current.feeLevel).toBe('medium');
+        expect(result.current.feeEstimateMicroSTX).toBe(6000);
+
+        act(() => {
+            result.current.setFeeLevel('low');
+        });
+        expect(result.current.feeEstimateMicroSTX).toBe(3000);
+
+        act(() => {
+            result.current.setFeeLevel('high');
+        });
+        expect(result.current.feeEstimateMicroSTX).toBe(12000);
+    });
+
+    it('raises high fee warning when active level estimate meets or exceeds 50000 microSTX', async () => {
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                estimations: [
+                    { fee: 10000, fee_rate: 1 },
+                    { fee: 20000, fee_rate: 2 },
+                    { fee: 55000, fee_rate: 3 }
+                ]
+            })
+        });
+
+        const { result } = renderHook(() => useTransactionFeeEstimate({ pollInterval: 0 }));
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        expect(result.current.highFeeWarning).toBe(false);
+
+        act(() => {
+            result.current.setFeeLevel('high');
+        });
+        expect(result.current.highFeeWarning).toBe(true);
+    });
 });
