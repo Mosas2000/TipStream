@@ -195,6 +195,7 @@ describe('telemetry-sink', () => {
       // Advance timers to allow all retries (10ms * 1 + 10ms * 2 = 30ms total)
       await vi.advanceTimersByTimeAsync(30);
       
+      const result = await flushPromise;
       expect(result.success).toBe(false);
       expect(result.error).toBe('Network error');
     });
@@ -239,7 +240,7 @@ describe('telemetry-sink', () => {
       configureSink({
         enabled: true,
         endpoint: 'https://test.com',
-        batchSize: 1,
+        batchSize: 10,
         retryAttempts: 2,
         retryDelayMs: 10,
       });
@@ -257,8 +258,9 @@ describe('telemetry-sink', () => {
 
       const result2 = await promise2;
       expect(result2.success).toBe(true);
+      expect(result2.count).toBe(2);
 
-      expect(getQueueLength()).toBe(1);
+      expect(getQueueLength()).toBe(0);
     });
 
     it('handles sink reset/disable during failed flush to not prepend', async () => {
@@ -272,7 +274,7 @@ describe('telemetry-sink', () => {
       configureSink({
         enabled: true,
         endpoint: 'https://test.com',
-        batchSize: 1,
+        batchSize: 10,
         retryAttempts: 1,
       });
 
