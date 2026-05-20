@@ -121,7 +121,11 @@ export async function flush() {
   }
 
   const batch = eventQueue.splice(0, sinkConfig.batchSize);
-  return sendBatch(batch);
+  activeFlushPromise = sendBatch(batch).then((result) => {
+    activeFlushPromise = null;
+    return result;
+  });
+  return activeFlushPromise;
 }
 
 export async function sendSnapshot() {
