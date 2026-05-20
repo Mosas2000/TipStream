@@ -64,4 +64,51 @@ describe('useTransactionFeeEstimate', () => {
         expect(result.current.feeEstimateMicroSTX).toBe(5000);
         expect(result.current.feeEstimateSTX).toBe(0.005);
     });
+
+    it('updates USD conversion based on STX price hook', async () => {
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                estimations: [
+                    { fee: 3000, fee_rate: 1 },
+                    { fee: 6000, fee_rate: 2 },
+                    { fee: 12000, fee_rate: 3 }
+                ]
+            })
+        });
+
+        const { result } = renderHook(() => useTransactionFeeEstimate({ pollInterval: 0 }));
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        expect(result.current.feeEstimateMicroSTX).toBe(6000);
+        expect(result.current.feeEstimateSTX).toBe(0.006);
+        expect(result.current.feeEstimateUsd).toBe('0.02');
+    });
+
+    it('falls back to extended/v1/fee_rate when v2 POST fails', async () => {
+        global.fetch
+            .mockRejectedValueOnce(new Error('Cost estimation disabled'))
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ fee_rate: 40 }),
+            });
+
+        const { result } = renderHook(() => useTransactionFeeEstimate({ pollInterval: 0 }));
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        expect(result.current.feeEstimateMicroSTX).toBe(10000);
+        expect(result.current.feeEstimateSTX).toBe(0.01);
+    });
+
+    it('falls back to default parameters when both network calls fail', async () => {
+        global.fetch
+            .mockRejectedValueOnce(new Error('V2 Failed'))
+            .mockRejectedValueOnce(new Error('Extended Failed'));
+
+        const { result } = renderHook(() => useTransactionFeeEstimate({ pollInterval: 0 }));
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        expect(result.current.feeEstimateMicroSTX).toBe(5000);
+        expect(result.current.error).toBeNull();
+    });
 });
