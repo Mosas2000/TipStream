@@ -134,6 +134,25 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         }
 
         if (!baseEstimates) {
+            try {
+                const response = await fetch(`${STACKS_API_BASE}/extended/v1/fee_rate`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && typeof data.fee_rate === 'number') {
+                        const standardFee = Math.max(DEFAULT_FEE_MICROSTX, data.fee_rate * 250);
+                        baseEstimates = {
+                            low: { microSTX: Math.floor(standardFee * 0.6), STX: (standardFee * 0.6) / 1_000_000 },
+                            medium: { microSTX: standardFee, STX: standardFee / 1_000_000 },
+                            high: { microSTX: Math.floor(standardFee * 2), STX: (standardFee * 2) / 1_000_000 },
+                        };
+                    }
+                }
+            } catch (e) {
+                // Silence secondary fallback error
+            }
+        }
+
+        if (!baseEstimates) {
             baseEstimates = {
                 low: { microSTX: DEFAULT_LOW_FEE_MICROSTX, STX: DEFAULT_LOW_FEE_MICROSTX / 1_000_000 },
                 medium: { microSTX: DEFAULT_FEE_MICROSTX, STX: DEFAULT_FEE_MICROSTX / 1_000_000 },
