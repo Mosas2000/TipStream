@@ -384,6 +384,26 @@ export default function SendTip({ addToast }) {
                     {amount && parseFloat(amount) > 0 && (
                         <div data-testid="fee-preview" className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm">
                             <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Fee Preview</p>
+                            <div className="flex items-center gap-1.5 mb-3.5 bg-gray-100 dark:bg-gray-700/50 p-1 rounded-lg">
+                                {['low', 'medium', 'high'].map((level) => {
+                                    const isActive = feeLevel === level;
+                                    return (
+                                        <button
+                                            key={level}
+                                            type="button"
+                                            onClick={() => setFeeLevel(level)}
+                                            data-testid={`fee-level-${level}`}
+                                            className={`flex-1 text-center py-1 rounded-md text-xs font-semibold capitalize transition-all ${
+                                                isActive
+                                                    ? 'bg-amber-500 text-black shadow-sm'
+                                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                            }`}
+                                        >
+                                            {level}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                             <div className="space-y-1 text-gray-600 dark:text-gray-400">
                                 <div className="flex justify-between">
                                     <span>Tip amount</span>
