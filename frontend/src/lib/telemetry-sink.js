@@ -127,6 +127,12 @@ export async function flush() {
       eventQueue.unshift(...batch);
     }
     return result;
+  }).catch((error) => {
+    activeFlushPromise = null;
+    if (isSinkEnabled()) {
+      eventQueue.unshift(...batch);
+    }
+    throw error;
   });
   return activeFlushPromise;
 }
