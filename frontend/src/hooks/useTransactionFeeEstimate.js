@@ -52,17 +52,42 @@ async function generateDummyTransactionPayloadHex() {
     }
 }
 
-export function useTransactionFeeEstimate() {
+export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS } = {}) {
+    const { demoEnabled } = useDemoMode();
+    const { toUsd } = useStxPrice();
+
+    const [feeLevel, setFeeLevel] = useState('medium');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const [speedEstimates, setSpeedEstimates] = useState({
+        low: { microSTX: DEFAULT_LOW_FEE_MICROSTX, STX: DEFAULT_LOW_FEE_MICROSTX / 1_000_000, Usd: null },
+        medium: { microSTX: DEFAULT_FEE_MICROSTX, STX: DEFAULT_FEE_MICROSTX / 1_000_000, Usd: null },
+        high: { microSTX: DEFAULT_HIGH_FEE_MICROSTX, STX: DEFAULT_HIGH_FEE_MICROSTX / 1_000_000, Usd: null },
+    });
+
+    const isMountedRef = useRef(true);
+    const intervalRef = useRef(null);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
+    const activeEstimate = speedEstimates[feeLevel];
+
     return {
-        feeEstimateMicroSTX: 5000,
-        feeEstimateSTX: 0.005,
-        feeEstimateUsd: '0.01',
-        loading: false,
-        error: null,
-        highFeeWarning: false,
-        feeLevel: 'medium',
-        setFeeLevel: () => {},
-        speedEstimates: {},
+        feeEstimateMicroSTX: activeEstimate.microSTX,
+        feeEstimateSTX: activeEstimate.STX,
+        feeEstimateUsd: activeEstimate.Usd,
+        loading,
+        error,
+        highFeeWarning: activeEstimate.microSTX >= HIGH_FEE_THRESHOLD_MICROSTX,
+        feeLevel,
+        setFeeLevel,
+        speedEstimates,
         refresh: async () => {},
     };
 }
