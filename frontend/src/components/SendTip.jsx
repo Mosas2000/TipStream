@@ -396,10 +396,17 @@ export default function SendTip({ addToast }) {
                                     <span>Platform fee ({feePercent.toFixed(2)}%)</span>
                                     <span>{formatSTX(feeForTip(toMicroSTX(amount), feeBasisPoints), 6)} STX</span>
                                 </div>
+                                <div className="flex justify-between" data-testid="gas-fee-preview">
+                                    <span>Estimated gas fee ({feeLevel})</span>
+                                    <span>
+                                        {feeEstimateSTX.toFixed(6)} STX
+                                        {feeEstimateUsd && <span className="text-gray-400 ml-1">(~${feeEstimateUsd})</span>}
+                                    </span>
+                                </div>
                                 <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-1 flex justify-between font-semibold text-gray-900 dark:text-white">
                                     <span>Total from wallet</span>
                                     <span>
-                                        {formatSTX(totalDeduction(toMicroSTX(amount), feeBasisPoints), 6)} STX
+                                        {formatSTX(Number(totalDeduction(toMicroSTX(amount), feeBasisPoints)) + feeEstimateMicroSTX, 6)} STX
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-gray-500 dark:text-gray-500">
