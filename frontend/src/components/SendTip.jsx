@@ -20,6 +20,7 @@ import { useBlockCheck } from '../hooks/useBlockCheck';
 import { useStxPrice } from '../hooks/useStxPrice';
 import { useSenderAddress } from '../hooks/useSenderAddress';
 import { useContractFee } from '../hooks/useContractFee';
+import { useTransactionFeeEstimate } from '../hooks/useTransactionFeeEstimate';
 import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
@@ -80,6 +81,16 @@ export default function SendTip({ addToast }) {
   }, [balance]);
 
   const { feeBasisPoints, feePercent } = useContractFee();
+  const {
+      feeEstimateMicroSTX,
+      feeEstimateSTX,
+      feeEstimateUsd,
+      highFeeWarning,
+      feeLevel,
+      setFeeLevel,
+      speedEstimates,
+      refresh: refreshTransactionFee,
+  } = useTransactionFeeEstimate();
 
     const isRecipientHighRisk = !canProceedWithRecipient(recipient, blockedWarning);
 
