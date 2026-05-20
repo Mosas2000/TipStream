@@ -112,6 +112,10 @@ async function sendBatch(events, attempt = 1) {
 }
 
 export async function flush() {
+  if (activeFlushPromise) {
+    return activeFlushPromise.then(() => flush()).catch(() => flush());
+  }
+
   if (!isSinkEnabled() || eventQueue.length === 0) {
     return { success: true, count: 0 };
   }
