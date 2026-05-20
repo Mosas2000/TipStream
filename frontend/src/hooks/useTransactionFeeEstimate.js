@@ -95,6 +95,59 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         }
     }, [updateUsdPrices]);
 
+    const estimate = useCallback(async () => {
+        if (!isMountedRef.current) return;
+        setLoading(true);
+        if (demoEnabled) {
+            if (isMountedRef.current) {
+                setLoading(false);
+                setError(null);
+            }
+            return;
+        }
+
+        let baseEstimates = null;
+        const payloadHex = await generateDummyTransactionPayloadHex();
+
+        try {
+            const response = await fetch(`${STACKS_API_BASE}/v2/fees/transaction`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transaction_payload: payloadHex,
+                    estimated_len: 200,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data && Array.isArray(data.estimations) && data.estimations.length >= 3) {
+                    baseEstimates = {
+                        low: { microSTX: data.estimations[0].fee, STX: data.estimations[0].fee / 1_000_000 },
+                        medium: { microSTX: data.estimations[1].fee, STX: data.estimations[1].fee / 1_000_000 },
+                        high: { microSTX: data.estimations[2].fee, STX: data.estimations[2].fee / 1_000_000 },
+                    };
+                }
+            }
+        } catch (e) {
+            // Silence Stacks Node API error
+        }
+
+        if (!baseEstimates) {
+            baseEstimates = {
+                low: { microSTX: DEFAULT_LOW_FEE_MICROSTX, STX: DEFAULT_LOW_FEE_MICROSTX / 1_000_000 },
+                medium: { microSTX: DEFAULT_FEE_MICROSTX, STX: DEFAULT_FEE_MICROSTX / 1_000_000 },
+                high: { microSTX: DEFAULT_HIGH_FEE_MICROSTX, STX: DEFAULT_HIGH_FEE_MICROSTX / 1_000_000 },
+            };
+        }
+
+        if (isMountedRef.current) {
+            setSpeedEstimates(updateUsdPrices(baseEstimates));
+            setLoading(false);
+            setError(null);
+        }
+    }, [demoEnabled, updateUsdPrices]);
+
     const activeEstimate = speedEstimates[feeLevel];
 
     return {
