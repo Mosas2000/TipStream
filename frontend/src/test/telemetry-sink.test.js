@@ -229,6 +229,37 @@ describe('telemetry-sink', () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
+
+    it('preserves queue integrity and order when flush fails', async () => {
+      global.fetch
+        .mockRejectedValueOnce(new Error('Network error 1'))
+        .mockRejectedValueOnce(new Error('Network error 2'))
+        .mockResolvedValueOnce({ ok: true, status: 200 });
+
+      configureSink({
+        enabled: true,
+        endpoint: 'https://test.com',
+        batchSize: 1,
+        retryAttempts: 2,
+        retryDelayMs: 10,
+      });
+
+      queueEvent('event1', {});
+
+      const promise1 = flush();
+      queueEvent('event2', {});
+      const promise2 = flush();
+
+      await vi.advanceTimersByTimeAsync(30);
+
+      const result1 = await promise1;
+      expect(result1.success).toBe(false);
+
+      const result2 = await promise2;
+      expect(result2.success).toBe(true);
+
+      expect(getQueueLength()).toBe(1);
+    });
   });
 
   describe('clearQueue', () => {
