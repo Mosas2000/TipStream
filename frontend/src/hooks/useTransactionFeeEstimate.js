@@ -167,6 +167,20 @@ export function useTransactionFeeEstimate({ pollInterval = REFRESH_INTERVAL_MS }
         }
     }, [demoEnabled, updateUsdPrices]);
 
+    useEffect(() => {
+        estimate();
+
+        if (pollInterval > 0) {
+            intervalRef.current = setInterval(estimate, pollInterval);
+        }
+
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, [estimate, pollInterval]);
+
     const activeEstimate = speedEstimates[feeLevel];
 
     return {
