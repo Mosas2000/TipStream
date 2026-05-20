@@ -260,6 +260,41 @@ describe('telemetry-sink', () => {
 
       expect(getQueueLength()).toBe(1);
     });
+
+    it('handles sink reset/disable during failed flush to not prepend', async () => {
+      let rejectFirstFetch;
+      const firstFetchPromise = new Promise((_, reject) => {
+        rejectFirstFetch = () => reject(new Error('Fetch failed'));
+      });
+
+      global.fetch.mockReturnValueOnce(firstFetchPromise);
+
+      configureSink({
+        enabled: true,
+        endpoint: 'https://test.com',
+        batchSize: 1,
+        retryAttempts: 1,
+      });
+
+      queueEvent('event1', {});
+      queueEvent('event2', {});
+
+      const promise1 = flush();
+      const promise2 = flush();
+
+      resetSink();
+
+      rejectFirstFetch();
+
+      const result1 = await promise1;
+      expect(result1.success).toBe(false);
+
+      const result2 = await promise2;
+      expect(result2.success).toBe(true);
+      expect(result2.count).toBe(0);
+
+      expect(getQueueLength()).toBe(0);
+    });
   });
 
   describe('clearQueue', () => {
