@@ -21,10 +21,12 @@ import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_SCHEDULE, ROUTE_SCHEDULED_TIPS, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_ADDRESS_BOOK,
   ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY, ROUTE_REFUNDS,
+  ROUTE_NOTIFICATION_PREFERENCES,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw, BellCog } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
+import { useNotificationPreferences } from './context/NotificationPreferencesContext';
 
 const AnimatedHero = lazy(() => import('./components/ui/animated-hero').then(m => ({ default: m.AnimatedHero })));
 const MaintenancePage = lazy(() => import('./components/MaintenancePage'));
@@ -44,6 +46,7 @@ const NotFound = lazy(() => import('./components/NotFound'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const TelemetryDashboard = lazy(() => import('./components/TelemetryDashboard'));
 const RefundManager = lazy(() => import('./components/RefundManager'));
+const NotificationPreferencesPage = lazy(() => import('./components/NotificationPreferences'));
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -56,8 +59,9 @@ function App() {
   const { demoEnabled, toggleDemo } = useDemoMode();
 
   const userAddress = getMainnetAddress(userData);
-  const { notifications, unreadCount, lastSeenTimestamp, markAllRead, loading: notificationsLoading } = useNotifications(userAddress);
   const { isOwner } = useAdmin(userAddress);
+  const { preferences: notifPreferences } = useNotificationPreferences();
+  const { notifications, unreadCount, lastSeenTimestamp, markAllRead, loading: notificationsLoading } = useNotifications(userAddress, notifPreferences);
 
   usePageTitle();
 
@@ -170,6 +174,7 @@ function App() {
       { path: ROUTE_ADDRESS_BOOK, label: 'Address Book', icon: BookUser },
       { path: ROUTE_BLOCK, label: 'Block', icon: ShieldBan },
       { path: ROUTE_REFUNDS, label: 'Refunds', icon: RotateCcw },
+      { path: ROUTE_NOTIFICATION_PREFERENCES, label: 'Notifications', icon: BellCog },
       { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
     ];
     
@@ -398,6 +403,20 @@ function App() {
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_REFUNDS}>
                           <RefundManager userAddress={userAddress} addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    }
+                  />
+
+                  {/* Notification preferences */}
+                  <Route
+                    path={ROUTE_NOTIFICATION_PREFERENCES}
+                    element={
+                      userData || demoEnabled ? (
+                        <NotificationPreferencesPage addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_NOTIFICATION_PREFERENCES}>
+                          <NotificationPreferencesPage addToast={addToast} />
                         </RequireAuth>
                       )
                     }

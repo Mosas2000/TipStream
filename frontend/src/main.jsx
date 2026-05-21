@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { TipProvider } from './context/TipContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { DemoProvider } from './context/DemoContext.jsx'
+import { NotificationPreferencesProvider } from './context/NotificationPreferencesContext.jsx'
 import { validateConfigAtStartup, reportValidationErrors } from './config/startup.js'
 import { initializeTelemetrySink } from './config/telemetry.js'
 
@@ -32,9 +33,11 @@ createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <ThemeProvider>
           <DemoProvider>
-            <TipProvider>
-              <App />
-            </TipProvider>
+            <NotificationPreferencesProvider>
+              <TipProvider>
+                <App />
+              </TipProvider>
+            </NotificationPreferencesProvider>
           </DemoProvider>
         </ThemeProvider>
       </BrowserRouter>

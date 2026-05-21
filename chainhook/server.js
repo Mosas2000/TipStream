@@ -15,6 +15,14 @@ import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedErro
 import { ScheduledTip, validateScheduledTipParams, SCHEDULED_TIP_STATUSES } from "./scheduler.js";
 import { wsManager } from "./websocket.js";
 import { REFUND_STATUSES, REFUND_WINDOW_MS } from "./storage.js";
+import {
+  MemoryNotificationPreferencesStore,
+  PostgresNotificationPreferencesStore,
+  validatePreferencesPayload,
+  DEFAULT_PREFERENCES,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_EVENT_TYPES,
+} from "./notification-preferences.js";
 
 const PORT = process.env.PORT || 3100;
 const AUTH_TOKEN = process.env.CHAINHOOK_AUTH_TOKEN || "";
@@ -40,6 +48,7 @@ const addressRateLimiter = new AddressRateLimiter(
 let eventStore = null;
 let scheduledTipStore = null;
 let refundStore = null;
+let notificationPreferencesStore = null;
 
 /**
  * Get the rate limiter instance for runtime configuration.
@@ -96,6 +105,21 @@ async function getRefundStore() {
     await refundStore.init();
   }
   return refundStore;
+}
+
+async function getNotificationPreferencesStore() {
+  if (!notificationPreferencesStore) {
+    if (STORAGE_MODE === "memory" || !DATABASE_URL) {
+      notificationPreferencesStore = new MemoryNotificationPreferencesStore();
+      await notificationPreferencesStore.init();
+    } else {
+      const { Pool } = await import("pg");
+      const pool = new Pool({ connectionString: DATABASE_URL });
+      notificationPreferencesStore = new PostgresNotificationPreferencesStore(pool);
+      await notificationPreferencesStore.init();
+    }
+  }
+  return notificationPreferencesStore;
 }
 
 /**
@@ -303,7 +327,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, getAddressRateLimiter, wsManager, getRefundStore };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, getAddressRateLimiter, wsManager, getRefundStore, getNotificationPreferencesStore };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -1219,6 +1243,97 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // GET /api/notifications/preferences/:address -- get preferences for an address
+  if (req.method === "GET" && path.match(/^\/api\/notifications\/preferences\/[^/]+$/)) {
+    try {
+      const address = path.split("/api/notifications/preferences/")[1];
+
+      if (!address || address.trim() === "") {
+        return sendError(res, new BadRequestError("address parameter is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path, address });
+      }
+
+      const store = await getNotificationPreferencesStore();
+      const preferences = await store.getPreferences(address);
+      return sendJson(res, 200, { preferences });
+    } catch (err) {
+      return sendError(res, err, requestId, { path });
+    }
+  }
+
+  // PUT /api/notifications/preferences/:address -- create or update preferences
+  if (req.method === "PUT" && path.match(/^\/api\/notifications\/preferences\/[^/]+$/)) {
+    const startTime = Date.now();
+    try {
+      const address = path.split("/api/notifications/preferences/")[1];
+
+      if (!address || address.trim() === "") {
+        return sendError(res, new BadRequestError("address parameter is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path, address });
+      }
+
+      const body = await parseBody(req);
+      const validation = validatePreferencesPayload(body);
+      if (!validation.valid) {
+        return sendError(res, new BadRequestError(validation.error), requestId, { path });
+      }
+
+      const store = await getNotificationPreferencesStore();
+      const preferences = await store.upsertPreferences(address, body);
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Notification preferences updated", {
+        address,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, { ok: true, preferences });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // DELETE /api/notifications/preferences/:address -- reset preferences to defaults
+  if (req.method === "DELETE" && path.match(/^\/api\/notifications\/preferences\/[^/]+$/)) {
+    const startTime = Date.now();
+    try {
+      const address = path.split("/api/notifications/preferences/")[1];
+
+      if (!address || address.trim() === "") {
+        return sendError(res, new BadRequestError("address parameter is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path, address });
+      }
+
+      const store = await getNotificationPreferencesStore();
+      const result = await store.deletePreferences(address);
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Notification preferences reset", {
+        address,
+        deleted: result.deleted,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, { ok: true, deleted: result.deleted });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
   sendJson(res, 404, { error: "not found", path: path });
 });
 
@@ -1247,6 +1362,9 @@ if (isMain) {
       clearInterval(cleanupInterval);
       wsManager.close();
       await store.close();
+      if (notificationPreferencesStore) {
+        await notificationPreferencesStore.close();
+      }
       logger.info("Shutdown initiated");
     });
 

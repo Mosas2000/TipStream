@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatSTX, formatAddress } from '../lib/utils';
-import { Bell } from 'lucide-react';
+import { Bell, Settings } from 'lucide-react';
+import { ROUTE_NOTIFICATION_PREFERENCES } from '../config/routes';
 
 export default function NotificationBell({ notifications, unreadCount, onMarkRead, loading, lastSeenTimestamp }) {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef(null);
     const panelId = 'notifications-panel';
+    const navigate = useNavigate();
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -72,14 +75,26 @@ export default function NotificationBell({ notifications, unreadCount, onMarkRea
                 >
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                         <h3 className="font-bold text-sm text-gray-800 dark:text-gray-200">Notifications</h3>
-                        {notifications.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            {notifications.length > 0 && (
+                                <button
+                                    onClick={onMarkRead}
+                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                >
+                                    Mark all read
+                                </button>
+                            )}
                             <button
-                                onClick={onMarkRead}
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                onClick={() => {
+                                    setOpen(false);
+                                    navigate(ROUTE_NOTIFICATION_PREFERENCES);
+                                }}
+                                className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                aria-label="Notification settings"
                             >
-                                Mark all read
+                                <Settings className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
-                        )}
+                        </div>
                     </div>
 
                     <div className="max-h-80 overflow-y-auto">

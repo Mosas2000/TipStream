@@ -7,14 +7,19 @@ import {
   setLastSeenTimestamp as saveLastSeenTimestamp,
   migrateLegacyNotificationState
 } from '../lib/notificationStorage';
+import { EVENT_TYPES, isEventEnabled, isChannelEnabled, CHANNELS } from '../lib/notificationPreferences';
 
 /**
  * useNotifications -- derives incoming-tip notifications from the shared
  * event cache in TipContext instead of polling the Stacks API independently.
  *
+ * Respects notification preferences: events and channels that are disabled
+ * are excluded from the returned list and unread count.
+ *
  * @param {string|null} userAddress - The current user's STX address.
+ * @param {object|null} preferences - Notification preferences from NotificationPreferencesContext.
  */
-export function useNotifications(userAddress) {
+export function useNotifications(userAddress, preferences = null) {
     const { events, eventsLoading } = useTipContext();
     const { demoEnabled, demoNotifications, markNotificationRead } = useDemoMode();
     const network = NETWORK_NAME;
@@ -38,6 +43,11 @@ export function useNotifications(userAddress) {
 
     /** Derive received tips from the shared event cache or demo context. */
     const notifications = useMemo(() => {
+        const inAppEnabled = isChannelEnabled(preferences, CHANNELS.IN_APP);
+        const tipReceivedEnabled = isEventEnabled(preferences, EVENT_TYPES.TIP_RECEIVED);
+
+        if (!inAppEnabled || !tipReceivedEnabled) return [];
+
         if (demoEnabled) {
             return demoNotifications.map(n => ({
                 id: n.id,
@@ -58,7 +68,7 @@ export function useNotifications(userAddress) {
                 ...t,
                 timestamp: t.timestamp || now - idx,
             }));
-    }, [events, userAddress, now, demoEnabled, demoNotifications]);
+    }, [events, userAddress, now, demoEnabled, demoNotifications, preferences]);
 
     // Derive unread count from notifications and last seen timestamp.
     const unreadCount = useMemo(() => {
