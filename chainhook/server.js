@@ -109,13 +109,10 @@ async function getRefundStore() {
 
 async function getNotificationPreferencesStore() {
   if (!notificationPreferencesStore) {
-    if (STORAGE_MODE === "memory" || process.env.NODE_ENV === "test") {
+    if (STORAGE_MODE === "memory" || !DATABASE_URL) {
       notificationPreferencesStore = new MemoryNotificationPreferencesStore();
       await notificationPreferencesStore.init();
     } else {
-      if (!DATABASE_URL) {
-        throw new Error("DATABASE_URL is required when CHAINHOOK_STORAGE=postgres");
-      }
       const { Pool } = await import("pg");
       const pool = new Pool({ connectionString: DATABASE_URL });
       notificationPreferencesStore = new PostgresNotificationPreferencesStore(pool);
