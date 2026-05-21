@@ -110,6 +110,12 @@ export const ROUTE_TELEMETRY = '/telemetry';
 export const ROUTE_REFUNDS = '/refunds';
 
 /**
+ * Notification preferences settings.
+ * @type {string}
+ */
+export const ROUTE_NOTIFICATION_PREFERENCES = '/notification-preferences';
+
+/**
  * The route that "/" redirects to when the user is authenticated.
  * Change this single value to alter the default landing page site-wide.
  * @type {string}
@@ -137,6 +143,7 @@ export const ROUTE_LABELS = {
   [ROUTE_ADMIN]: 'Admin',
   [ROUTE_TELEMETRY]: 'Telemetry',
   [ROUTE_REFUNDS]: 'Refunds',
+  [ROUTE_NOTIFICATION_PREFERENCES]: 'Notifications',
 };
 
 /**
@@ -163,6 +170,7 @@ export const ROUTE_TITLES = {
   [ROUTE_ADMIN]: 'Admin Dashboard -- TipStream',
   [ROUTE_TELEMETRY]: 'Telemetry -- TipStream',
   [ROUTE_REFUNDS]: 'Refunds -- TipStream',
+  [ROUTE_NOTIFICATION_PREFERENCES]: 'Notification Preferences -- TipStream',
 };
 
 /**
@@ -254,6 +262,11 @@ export const ROUTE_META = {
   },
   [ROUTE_REFUNDS]: {
     description: 'View and manage refund requests for sent and received tips.',
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  [ROUTE_NOTIFICATION_PREFERENCES]: {
+    description: 'Configure which events trigger notifications and through which channels.',
     requiresAuth: true,
     adminOnly: false,
   },
