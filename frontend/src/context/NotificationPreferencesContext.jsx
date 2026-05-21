@@ -11,7 +11,7 @@ import {
 const NotificationPreferencesContext = createContext(null);
 NotificationPreferencesContext.displayName = 'NotificationPreferencesContext';
 
-export function NotificationPreferencesProvider({ children, userAddress }) {
+export function NotificationPreferencesProvider({ children, userAddress = null }) {
   const [preferences, setPreferences] = useState(() => {
     return loadPreferences(userAddress);
   });
