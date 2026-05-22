@@ -4,6 +4,9 @@ name: TipStream Utility Contracts Mainnet Deployment
 network: mainnet
 stacks-node: "https://api.mainnet.hiro.so"
 contracts:
+  tipstream-traits-v2:
+    path: contracts/tipstream-traits-v2.clar
+    clarity-version: 2
   tipstream-analytics:
     path: contracts/tipstream-analytics.clar
     clarity-version: 2
