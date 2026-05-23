@@ -477,8 +477,8 @@ const server = http.createServer(async (req, res) => {
   // GET /api/tips -- paginated list of parsed tips
   if (req.method === "GET" && path === "/api/tips") {
     const store = await getEventStore();
-    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "20", 1, 100);
-    const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
+    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
+    const cursor = url.searchParams.get("cursor") || null;
 
     if (isNaN(limit)) {
       return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {
@@ -486,20 +486,15 @@ const server = http.createServer(async (req, res) => {
         query: "limit",
       });
     }
-    if (isNaN(offset)) {
-      return sendError(res, new BadRequestError("offset must be a non-negative integer"), requestId, {
-        path,
-        query: "offset",
-      });
-    }
 
-    const allEvents = await store.listEvents();
-    const tips = allEvents
-      .map(parseTipEvent)
-      .filter(Boolean)
-      .reverse();
-    const paged = tips.slice(offset, offset + limit);
-    return sendJson(res, 200, { tips: paged, total: tips.length });
+    const result = await store.listTips({ limit, cursor });
+    const tips = result.events.map(parseTipEvent).filter(Boolean);
+
+    return sendJson(res, 200, {
+      tips,
+      total: result.total,
+      nextCursor: result.nextCursor,
+    });
   }
 
   // GET /api/tips/user/:address -- tips sent or received by address
