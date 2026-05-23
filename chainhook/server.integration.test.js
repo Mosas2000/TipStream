@@ -446,6 +446,70 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.body.tips.length, 0);
     assert.strictEqual(response.body.total, 0);
+    assert.strictEqual(response.body.nextCursor, null);
+  });
+
+  it('user endpoint returns pagination metadata', async () => {
+    const sender = 'SPOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+    const recipient = 'SPPYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({ txId: '0xuser-page-1', tipId: 2001, sender, recipient, amount: 1000, fee: 50, netAmount: 950 }),
+        buildTipEvent({ txId: '0xuser-page-2', tipId: 2002, sender, recipient, amount: 2000, fee: 100, netAmount: 1900 }),
+        buildTipEvent({ txId: '0xuser-page-3', tipId: 2003, sender, recipient, amount: 3000, fee: 150, netAmount: 2850 }),
+      ], 2001, 1700000020000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: `/api/tips/user/${sender}?limit=2`,
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.tips.length, 2);
+    assert.strictEqual(response.body.total, 3);
+    assert.ok('nextCursor' in response.body);
+    assert.ok(response.body.nextCursor !== null);
+  });
+
+  it('user endpoint cursor advances to next page', async () => {
+    const sender = 'SPQZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ';
+    const recipient = 'SPRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({ txId: '0xuser-cursor-1', tipId: 2101, sender, recipient, amount: 1000, fee: 50, netAmount: 950 }),
+        buildTipEvent({ txId: '0xuser-cursor-2', tipId: 2102, sender, recipient, amount: 2000, fee: 100, netAmount: 1900 }),
+        buildTipEvent({ txId: '0xuser-cursor-3', tipId: 2103, sender, recipient, amount: 3000, fee: 150, netAmount: 2850 }),
+      ], 2101, 1700000021000),
+    });
+
+    const page1 = await request({
+      method: 'GET',
+      path: `/api/tips/user/${sender}?limit=2`,
+    });
+
+    assert.strictEqual(page1.status, 200);
+    assert.ok(page1.body.nextCursor);
+
+    const page2 = await request({
+      method: 'GET',
+      path: `/api/tips/user/${sender}?limit=2&cursor=${page1.body.nextCursor}`,
+    });
+
+    assert.strictEqual(page2.status, 200);
+    assert.strictEqual(page2.body.tips.length, 1);
+    assert.strictEqual(page2.body.nextCursor, null);
+
+    const page1Ids = new Set(page1.body.tips.map((t) => t.tipId));
+    for (const tip of page2.body.tips) {
+      assert.ok(!page1Ids.has(tip.tipId));
+    }
   });
 
   it('returns aggregate statistics', async () => {
