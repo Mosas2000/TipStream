@@ -72,9 +72,9 @@ npm test
 ## API Endpoints
 
 - `POST /api/chainhook/events` - Ingest events from chainhook
-- `GET /api/tips` - List recent tips
+- `GET /api/tips` - List recent tips (paginated, default 50 per page)
 - `GET /api/tips/:id` - Get tip by ID
-- `GET /api/tips/user/:address` - Get tips for user (optimized with JSONB indexes)
+- `GET /api/tips/user/:address` - Get tips for user (paginated, optimized with JSONB indexes)
 - `GET /api/stats` - Platform statistics
 - `GET /api/admin/events` - Admin event log
 - `GET /api/admin/bypasses` - Detected timelock bypasses
@@ -82,6 +82,37 @@ npm test
 - `POST /api/admin/rate-limit` - Update rate limit configuration
 - `GET /health` - Health check
 - `GET /metrics` - Prometheus metrics
+
+### Pagination
+
+The `/api/tips` and `/api/tips/user/:address` endpoints support cursor-based pagination for efficient data retrieval:
+
+**Query Parameters:**
+- `limit` - Number of results per page (1-100, default 50)
+- `cursor` - Opaque cursor token from previous response
+
+**Response Format:**
+```json
+{
+  "tips": [...],
+  "total": 1234,
+  "nextCursor": "0xabc123::100::SP123.tipstream::tip-sent"
+}
+```
+
+**Example Usage:**
+```bash
+# First page
+curl "http://localhost:3100/api/tips?limit=50"
+
+# Next page
+curl "http://localhost:3100/api/tips?limit=50&cursor=0xabc123::100::SP123.tipstream::tip-sent"
+```
+
+**Benefits:**
+- Database-level pagination (no in-memory sorting)
+- Consistent performance regardless of dataset size
+- Stable ordering across pages
 
 ### Performance Optimizations
 
