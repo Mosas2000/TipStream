@@ -155,4 +155,43 @@ describe("sanitizeCursor", () => {
   it("returns null for non-string input", () => {
     assert.strictEqual(sanitizeCursor(12345), null);
   });
+
+  it("accepts cursor with special characters", () => {
+    const cursor = "0xabc::100::SP123.contract::event-name";
+    assert.strictEqual(sanitizeCursor(cursor), cursor);
+  });
+
+  it("accepts cursor with URL-encoded characters", () => {
+    const cursor = "0xabc%3A%3A100%3A%3ASP123";
+    assert.strictEqual(sanitizeCursor(cursor), cursor);
+  });
+
+  it("accepts cursor with hyphens and underscores", () => {
+    const cursor = "tx-hash_123::block-height_456::contract_name";
+    assert.strictEqual(sanitizeCursor(cursor), cursor);
+  });
+
+  it("accepts cursor with dots in contract names", () => {
+    const cursor = "0xabc::100::SP123.my-contract.v2::event";
+    assert.strictEqual(sanitizeCursor(cursor), cursor);
+  });
+
+  it("trims and validates cursor with leading/trailing whitespace", () => {
+    const cursor = "\t0xabc::100::SP123\n";
+    assert.strictEqual(sanitizeCursor(cursor), "0xabc::100::SP123");
+  });
+
+  it("returns null for cursor with only special characters", () => {
+    assert.strictEqual(sanitizeCursor("::::::::"), "::::::::");
+  });
+
+  it("accepts cursor with mixed case", () => {
+    const cursor = "0xAbC123::100::SP123ABC.TipStream::Tip-Sent";
+    assert.strictEqual(sanitizeCursor(cursor), cursor);
+  });
+
+  it("accepts cursor at boundary with whitespace trimmed", () => {
+    const cursor = " " + "x".repeat(510) + " ";
+    assert.strictEqual(sanitizeCursor(cursor), "x".repeat(510));
+  });
 });
