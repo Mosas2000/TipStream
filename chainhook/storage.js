@@ -126,6 +126,15 @@ class MemoryEventStore {
       .map((record) => record.rawEvent);
   }
 
+  /**
+   * List tip events with cursor-based pagination.
+   * Returns tips in reverse chronological order (newest first).
+   * 
+   * @param {Object} options - Pagination options
+   * @param {number} [options.limit=50] - Maximum number of tips to return
+   * @param {string|null} [options.cursor=null] - Cursor from previous page for continuation
+   * @returns {Promise<{events: Array, total: number, nextCursor: string|null}>}
+   */
   async listTips({ limit = 50, cursor = null } = {}) {
     const allTips = this.records
       .slice()
@@ -207,6 +216,14 @@ class MemoryEventStore {
    * @param {string} address - Stacks address to lookup
    * @returns {Promise<Array>} Array of raw events
    */
+  /**
+   * List all tip events for a specific user address.
+   * Returns events where the address is either sender or recipient.
+   * Results are sorted chronologically by event timestamp.
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @returns {Promise<Array>} Array of raw events
+   */
   async listEventsByUser(address) {
     if (!address || typeof address !== 'string') {
       throw new Error('address must be a non-empty string');
@@ -222,6 +239,17 @@ class MemoryEventStore {
       .map((record) => record.rawEvent);
   }
 
+  /**
+   * List tip events for a specific user with cursor-based pagination.
+   * Returns tips where the address is either sender or recipient.
+   * Results are in reverse chronological order (newest first).
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @param {Object} options - Pagination options
+   * @param {number} [options.limit=50] - Maximum number of tips to return
+   * @param {string|null} [options.cursor=null] - Cursor from previous page
+   * @returns {Promise<{events: Array, total: number, nextCursor: string|null}>}
+   */
   async listTipsByUser(address, { limit = 50, cursor = null } = {}) {
     if (!address || typeof address !== 'string') {
       throw new Error('address must be a non-empty string');
@@ -383,6 +411,16 @@ class PostgresEventStore {
     return result.rows.map(toRawEvent);
   }
 
+  /**
+   * List tip events with cursor-based pagination.
+   * Uses database-level LIMIT and cursor filtering for efficient queries.
+   * Returns tips in reverse chronological order (newest first).
+   * 
+   * @param {Object} options - Pagination options
+   * @param {number} [options.limit=50] - Maximum number of tips to return
+   * @param {string|null} [options.cursor=null] - Cursor from previous page for continuation
+   * @returns {Promise<{events: Array, total: number, nextCursor: string|null}>}
+   */
   async listTips({ limit = 50, cursor = null } = {}) {
     await this.init();
 
@@ -540,6 +578,14 @@ class PostgresEventStore {
     }
   }
 
+  /**
+   * List all tip events for a specific user address.
+   * Uses optimized database query with JSONB indexes for fast lookups.
+   * Returns events where the address is either sender or recipient.
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @returns {Promise<Array>} Array of raw events
+   */
   async listEventsByUser(address) {
     if (!address || typeof address !== 'string') {
       throw new Error('address must be a non-empty string');
@@ -565,6 +611,18 @@ class PostgresEventStore {
     return result.rows.map(toRawEvent);
   }
 
+  /**
+   * List tip events for a specific user with cursor-based pagination.
+   * Uses database-level LIMIT and cursor filtering for efficient queries.
+   * Returns tips where the address is either sender or recipient.
+   * Results are in reverse chronological order (newest first).
+   * 
+   * @param {string} address - Stacks address to lookup
+   * @param {Object} options - Pagination options
+   * @param {number} [options.limit=50] - Maximum number of tips to return
+   * @param {string|null} [options.cursor=null] - Cursor from previous page
+   * @returns {Promise<{events: Array, total: number, nextCursor: string|null}>}
+   */
   async listTipsByUser(address, { limit = 50, cursor = null } = {}) {
     if (!address || typeof address !== 'string') {
       throw new Error('address must be a non-empty string');
