@@ -1,7 +1,7 @@
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
-import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
+import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt, sanitizeCursor } from "./validation.js";
 import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
@@ -501,8 +501,8 @@ const server = http.createServer(async (req, res) => {
   // GET /api/tips -- paginated list of parsed tips
   if (req.method === "GET" && path === "/api/tips") {
     const store = await getEventStore();
-    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "20", 1, 100);
-    const offset = sanitizeQueryInt(url.searchParams.get("offset") || "0", 0, Number.MAX_SAFE_INTEGER);
+    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
+    const cursor = sanitizeCursor(url.searchParams.get("cursor"));
 
     if (isNaN(limit)) {
       return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {
@@ -510,20 +510,15 @@ const server = http.createServer(async (req, res) => {
         query: "limit",
       });
     }
-    if (isNaN(offset)) {
-      return sendError(res, new BadRequestError("offset must be a non-negative integer"), requestId, {
-        path,
-        query: "offset",
-      });
-    }
 
-    const allEvents = await store.listEvents();
-    const tips = allEvents
-      .map(parseTipEvent)
-      .filter(Boolean)
-      .reverse();
-    const paged = tips.slice(offset, offset + limit);
-    return sendJson(res, 200, { tips: paged, total: tips.length });
+    const result = await store.listTips({ limit, cursor });
+    const tips = result.events.map(parseTipEvent).filter(Boolean);
+
+    return sendJson(res, 200, {
+      tips,
+      total: result.total,
+      nextCursor: result.nextCursor,
+    });
   }
 
   // GET /api/tips/user/:address -- tips sent or received by address
@@ -544,13 +539,25 @@ const server = http.createServer(async (req, res) => {
         address,
       });
     }
-    
-    const userEvents = await store.listEventsByUser(address);
-    const tips = userEvents
-      .map(parseTipEvent)
-      .filter(Boolean)
-      .reverse();
-    return sendJson(res, 200, { tips, total: tips.length });
+
+    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
+    const cursor = sanitizeCursor(url.searchParams.get("cursor"));
+
+    if (isNaN(limit)) {
+      return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {
+        path,
+        query: "limit",
+      });
+    }
+
+    const result = await store.listTipsByUser(address, { limit, cursor });
+    const tips = result.events.map(parseTipEvent).filter(Boolean);
+
+    return sendJson(res, 200, {
+      tips,
+      total: result.total,
+      nextCursor: result.nextCursor,
+    });
   }
 
   // GET /api/tips/:id -- single tip by numeric ID

@@ -446,6 +446,70 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.body.tips.length, 0);
     assert.strictEqual(response.body.total, 0);
+    assert.strictEqual(response.body.nextCursor, null);
+  });
+
+  it('user endpoint returns pagination metadata', async () => {
+    const sender = 'SPOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+    const recipient = 'SPPYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({ txId: '0xuser-page-1', tipId: 2001, sender, recipient, amount: 1000, fee: 50, netAmount: 950 }),
+        buildTipEvent({ txId: '0xuser-page-2', tipId: 2002, sender, recipient, amount: 2000, fee: 100, netAmount: 1900 }),
+        buildTipEvent({ txId: '0xuser-page-3', tipId: 2003, sender, recipient, amount: 3000, fee: 150, netAmount: 2850 }),
+      ], 2001, 1700000020000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: `/api/tips/user/${sender}?limit=2`,
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.tips.length, 2);
+    assert.strictEqual(response.body.total, 3);
+    assert.ok('nextCursor' in response.body);
+    assert.ok(response.body.nextCursor !== null);
+  });
+
+  it('user endpoint cursor advances to next page', async () => {
+    const sender = 'SPQZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ';
+    const recipient = 'SPRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({ txId: '0xuser-cursor-1', tipId: 2101, sender, recipient, amount: 1000, fee: 50, netAmount: 950 }),
+        buildTipEvent({ txId: '0xuser-cursor-2', tipId: 2102, sender, recipient, amount: 2000, fee: 100, netAmount: 1900 }),
+        buildTipEvent({ txId: '0xuser-cursor-3', tipId: 2103, sender, recipient, amount: 3000, fee: 150, netAmount: 2850 }),
+      ], 2101, 1700000021000),
+    });
+
+    const page1 = await request({
+      method: 'GET',
+      path: `/api/tips/user/${sender}?limit=2`,
+    });
+
+    assert.strictEqual(page1.status, 200);
+    assert.ok(page1.body.nextCursor);
+
+    const page2 = await request({
+      method: 'GET',
+      path: `/api/tips/user/${sender}?limit=2&cursor=${page1.body.nextCursor}`,
+    });
+
+    assert.strictEqual(page2.status, 200);
+    assert.strictEqual(page2.body.tips.length, 1);
+    assert.strictEqual(page2.body.nextCursor, null);
+
+    const page1Ids = new Set(page1.body.tips.map((t) => t.tipId));
+    for (const tip of page2.body.tips) {
+      assert.ok(!page1Ids.has(tip.tipId));
+    }
   });
 
   it('returns aggregate statistics', async () => {
@@ -641,19 +705,23 @@ describe('chainhook server integration', () => {
 
     const page1 = await request({
       method: 'GET',
-      path: '/api/tips?limit=2&offset=0',
+      path: '/api/tips?limit=2',
     });
 
     assert.strictEqual(page1.status, 200);
-    assert.ok(page1.body.tips.length <= 2);
+    assert.strictEqual(page1.body.tips.length, 2);
+    assert.ok(typeof page1.body.total === 'number');
+    assert.ok(page1.body.nextCursor !== undefined);
 
     const page2 = await request({
       method: 'GET',
-      path: '/api/tips?limit=2&offset=2',
+      path: `/api/tips?limit=2&cursor=${page1.body.nextCursor}`,
     });
 
     assert.strictEqual(page2.status, 200);
     assert.ok(Array.isArray(page2.body.tips));
+    assert.ok(typeof page2.body.total === 'number');
+    assert.ok(page2.body.nextCursor !== undefined);
   });
 
   it('rejects invalid pagination limit', async () => {
@@ -666,14 +734,183 @@ describe('chainhook server integration', () => {
     assert.strictEqual(response.body.error, 'bad_request');
   });
 
-  it('rejects negative pagination offset', async () => {
+  it('returns default limit of 50 when no limit param is given', async () => {
     const response = await request({
       method: 'GET',
-      path: '/api/tips?offset=-1',
+      path: '/api/tips',
     });
 
-    assert.strictEqual(response.status, 400);
-    assert.strictEqual(response.body.error, 'bad_request');
+    assert.strictEqual(response.status, 200);
+    assert.ok(Array.isArray(response.body.tips));
+    assert.ok(response.body.tips.length <= 50);
+    assert.ok(typeof response.body.total === 'number');
+    assert.ok('nextCursor' in response.body);
+  });
+
+  it('returns nextCursor as null when all results fit in one page', async () => {
+    const sender = 'SPGPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP';
+    const recipient = 'SPHQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({
+          txId: '0xcursor-null-1',
+          tipId: 1001,
+          sender,
+          recipient,
+          amount: 5000,
+          fee: 250,
+          netAmount: 4750,
+        }),
+      ], 1001, 1700000009000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips?limit=100',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.nextCursor, null);
+  });
+
+  it('cursor traversal covers all tips without duplicates', async () => {
+    const sender = 'SPIRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR';
+    const recipient = 'SPJSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({ txId: '0xtraverse-1', tipId: 1101, sender, recipient, amount: 1000, fee: 50, netAmount: 950 }),
+        buildTipEvent({ txId: '0xtraverse-2', tipId: 1102, sender, recipient, amount: 2000, fee: 100, netAmount: 1900 }),
+        buildTipEvent({ txId: '0xtraverse-3', tipId: 1103, sender, recipient, amount: 3000, fee: 150, netAmount: 2850 }),
+        buildTipEvent({ txId: '0xtraverse-4', tipId: 1104, sender, recipient, amount: 4000, fee: 200, netAmount: 3800 }),
+        buildTipEvent({ txId: '0xtraverse-5', tipId: 1105, sender, recipient, amount: 5000, fee: 250, netAmount: 4750 }),
+      ], 1101, 1700000010000),
+    });
+
+    const collected = [];
+    let cursor = null;
+
+    do {
+      const path = cursor
+        ? `/api/tips?limit=2&cursor=${cursor}`
+        : '/api/tips?limit=2';
+
+      const response = await request({ method: 'GET', path });
+      assert.strictEqual(response.status, 200);
+
+      for (const tip of response.body.tips) {
+        collected.push(tip.tipId);
+      }
+
+      cursor = response.body.nextCursor;
+    } while (cursor !== null);
+
+    const traverseTipIds = collected.filter((id) =>
+      ['1101', '1102', '1103', '1104', '1105'].includes(String(id))
+    );
+
+    assert.strictEqual(traverseTipIds.length, new Set(traverseTipIds).size);
+    assert.strictEqual(traverseTipIds.length, 5);
+  });
+
+  it('returns pagination metadata in every response', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips?limit=10',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok('tips' in response.body);
+    assert.ok('total' in response.body);
+    assert.ok('nextCursor' in response.body);
+    assert.ok(Array.isArray(response.body.tips));
+    assert.ok(typeof response.body.total === 'number');
+  });
+
+  it('returns empty tips array with null nextCursor when no tips exist for cursor', async () => {
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips?limit=10&cursor=nonexistent-cursor-key',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.ok(Array.isArray(response.body.tips));
+    assert.strictEqual(response.body.nextCursor, null);
+  });
+
+  it('respects limit=1 and returns a single tip per page', async () => {
+    const sender = 'SPKTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT';
+    const recipient = 'SPLUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({ txId: '0xlimit1-1', tipId: 1201, sender, recipient, amount: 1000, fee: 50, netAmount: 950 }),
+        buildTipEvent({ txId: '0xlimit1-2', tipId: 1202, sender, recipient, amount: 2000, fee: 100, netAmount: 1900 }),
+      ], 1201, 1700000011000),
+    });
+
+    const response = await request({
+      method: 'GET',
+      path: '/api/tips?limit=1',
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body.tips.length, 1);
+    assert.ok(response.body.nextCursor !== null);
+  });
+
+  it('second page via cursor does not overlap with first page', async () => {
+    const sender = 'SPMVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+    const recipient = 'SPNWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW';
+
+    await request({
+      method: 'POST',
+      path: '/api/chainhook/events',
+      body: buildEventPayload([
+        buildTipEvent({ txId: '0xoverlap-1', tipId: 1301, sender, recipient, amount: 1000, fee: 50, netAmount: 950 }),
+        buildTipEvent({ txId: '0xoverlap-2', tipId: 1302, sender, recipient, amount: 2000, fee: 100, netAmount: 1900 }),
+        buildTipEvent({ txId: '0xoverlap-3', tipId: 1303, sender, recipient, amount: 3000, fee: 150, netAmount: 2850 }),
+      ], 1301, 1700000012000),
+    });
+
+    const page1 = await request({ method: 'GET', path: '/api/tips?limit=2' });
+    assert.strictEqual(page1.status, 200);
+    assert.ok(page1.body.nextCursor);
+
+    const page2 = await request({
+      method: 'GET',
+      path: `/api/tips?limit=2&cursor=${page1.body.nextCursor}`,
+    });
+    assert.strictEqual(page2.status, 200);
+
+    const page1Ids = new Set(page1.body.tips.map((t) => t.tipId));
+    const page2Ids = page2.body.tips.map((t) => t.tipId);
+    for (const id of page2Ids) {
+      assert.ok(!page1Ids.has(id), `tip ${id} appeared on both pages`);
+    }
+  });
+
+  it('total count is consistent across pages', async () => {
+    const page1 = await request({ method: 'GET', path: '/api/tips?limit=1' });
+    assert.strictEqual(page1.status, 200);
+
+    const totalFromPage1 = page1.body.total;
+
+    if (page1.body.nextCursor) {
+      const page2 = await request({
+        method: 'GET',
+        path: `/api/tips?limit=1&cursor=${page1.body.nextCursor}`,
+      });
+      assert.strictEqual(page2.status, 200);
+      assert.strictEqual(page2.body.total, totalFromPage1);
+    }
   });
 
   it('rejects payload without apply field', async () => {

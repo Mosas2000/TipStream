@@ -74,6 +74,138 @@ describe('MemoryEventStore', () => {
     assert.strictEqual(result.deletedCount, 1);
     assert.strictEqual(await store.countEvents(), 0);
   });
+
+  it('listTips returns empty result when store is empty', async () => {
+    const result = await store.listTips({ limit: 10 });
+    assert.strictEqual(result.events.length, 0);
+    assert.strictEqual(result.total, 0);
+    assert.strictEqual(result.nextCursor, null);
+  });
+
+  it('listTips returns all tips when count is below limit', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xaaa', event: { event: 'tip-sent', 'tip-id': 1, sender: 'SP1', recipient: 'SP2', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xbbb', event: { event: 'tip-sent', 'tip-id': 2, sender: 'SP1', recipient: 'SP2', amount: 200, fee: 10, 'net-amount': 190 } }),
+    ]);
+
+    const result = await store.listTips({ limit: 50 });
+    assert.strictEqual(result.events.length, 2);
+    assert.strictEqual(result.total, 2);
+    assert.strictEqual(result.nextCursor, null);
+  });
+
+  it('listTips returns nextCursor when more results exist', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xc1', event: { event: 'tip-sent', 'tip-id': 10, sender: 'SP1', recipient: 'SP2', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xc2', event: { event: 'tip-sent', 'tip-id': 11, sender: 'SP1', recipient: 'SP2', amount: 200, fee: 10, 'net-amount': 190 } }),
+      makeEvent({ txId: '0xc3', event: { event: 'tip-sent', 'tip-id': 12, sender: 'SP1', recipient: 'SP2', amount: 300, fee: 15, 'net-amount': 285 } }),
+    ]);
+
+    const result = await store.listTips({ limit: 2 });
+    assert.strictEqual(result.events.length, 2);
+    assert.strictEqual(result.total, 3);
+    assert.ok(result.nextCursor !== null);
+  });
+
+  it('listTips cursor advances to next page without overlap', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xd1', event: { event: 'tip-sent', 'tip-id': 20, sender: 'SP1', recipient: 'SP2', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xd2', event: { event: 'tip-sent', 'tip-id': 21, sender: 'SP1', recipient: 'SP2', amount: 200, fee: 10, 'net-amount': 190 } }),
+      makeEvent({ txId: '0xd3', event: { event: 'tip-sent', 'tip-id': 22, sender: 'SP1', recipient: 'SP2', amount: 300, fee: 15, 'net-amount': 285 } }),
+    ]);
+
+    const page1 = await store.listTips({ limit: 2 });
+    assert.ok(page1.nextCursor);
+
+    const page2 = await store.listTips({ limit: 2, cursor: page1.nextCursor });
+    assert.strictEqual(page2.events.length, 1);
+    assert.strictEqual(page2.nextCursor, null);
+
+    const page1Keys = new Set(page1.events.map((e) => e.txId));
+    for (const e of page2.events) {
+      assert.ok(!page1Keys.has(e.txId), `txId ${e.txId} appeared on both pages`);
+    }
+  });
+
+  it('listTips excludes non-tip events', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xe1', event: { event: 'tip-sent', 'tip-id': 30, sender: 'SP1', recipient: 'SP2', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xe2', event: { event: 'fee-change-proposed', 'new-fee': 300 } }),
+    ]);
+
+    const result = await store.listTips({ limit: 50 });
+    assert.strictEqual(result.events.length, 1);
+    assert.strictEqual(result.total, 1);
+  });
+
+  it('listTips with unknown cursor returns empty page', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xf1', event: { event: 'tip-sent', 'tip-id': 40, sender: 'SP1', recipient: 'SP2', amount: 100, fee: 5, 'net-amount': 95 } }),
+    ]);
+
+    const result = await store.listTips({ limit: 10, cursor: 'does-not-exist' });
+    assert.strictEqual(result.events.length, 0);
+    assert.strictEqual(result.nextCursor, null);
+  });
+});
+
+describe('MemoryEventStore listTipsByUser', () => {
+  let store;
+
+  beforeEach(() => {
+    store = new MemoryEventStore({ retentionDays: 30 });
+  });
+
+  it('returns empty result when user has no tips', async () => {
+    const result = await store.listTipsByUser('SP1SENDER', { limit: 10 });
+    assert.strictEqual(result.events.length, 0);
+    assert.strictEqual(result.total, 0);
+    assert.strictEqual(result.nextCursor, null);
+  });
+
+  it('returns only tips involving the given address', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xg1', event: { event: 'tip-sent', 'tip-id': 50, sender: 'SP1SENDER', recipient: 'SP2RECIPIENT', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xg2', event: { event: 'tip-sent', 'tip-id': 51, sender: 'SP3OTHER', recipient: 'SP4OTHER', amount: 200, fee: 10, 'net-amount': 190 } }),
+    ]);
+
+    const result = await store.listTipsByUser('SP1SENDER', { limit: 50 });
+    assert.strictEqual(result.events.length, 1);
+    assert.strictEqual(result.total, 1);
+    assert.strictEqual(result.events[0].event['tip-id'], 50);
+  });
+
+  it('includes tips where address is recipient', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xh1', event: { event: 'tip-sent', 'tip-id': 60, sender: 'SP3OTHER', recipient: 'SP1SENDER', amount: 100, fee: 5, 'net-amount': 95 } }),
+    ]);
+
+    const result = await store.listTipsByUser('SP1SENDER', { limit: 50 });
+    assert.strictEqual(result.events.length, 1);
+    assert.strictEqual(result.total, 1);
+  });
+
+  it('paginates with cursor and returns nextCursor when more exist', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xi1', event: { event: 'tip-sent', 'tip-id': 70, sender: 'SP1SENDER', recipient: 'SP2', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xi2', event: { event: 'tip-sent', 'tip-id': 71, sender: 'SP1SENDER', recipient: 'SP2', amount: 200, fee: 10, 'net-amount': 190 } }),
+      makeEvent({ txId: '0xi3', event: { event: 'tip-sent', 'tip-id': 72, sender: 'SP1SENDER', recipient: 'SP2', amount: 300, fee: 15, 'net-amount': 285 } }),
+    ]);
+
+    const page1 = await store.listTipsByUser('SP1SENDER', { limit: 2 });
+    assert.strictEqual(page1.events.length, 2);
+    assert.strictEqual(page1.total, 3);
+    assert.ok(page1.nextCursor !== null);
+
+    const page2 = await store.listTipsByUser('SP1SENDER', { limit: 2, cursor: page1.nextCursor });
+    assert.strictEqual(page2.events.length, 1);
+    assert.strictEqual(page2.nextCursor, null);
+
+    const page1Keys = new Set(page1.events.map((e) => e.txId));
+    for (const e of page2.events) {
+      assert.ok(!page1Keys.has(e.txId));
+    }
+  });
 });
 
 describe('createEventStore', () => {

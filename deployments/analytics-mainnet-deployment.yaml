@@ -1,0 +1,33 @@
+---
+id: 0
+name: TipStream Utility Contracts Mainnet Deployment
+network: mainnet
+stacks-node: "https://api.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: tipstream-traits-v2
+            expected-sender: SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60
+            cost: 560000
+            path: contracts/tipstream-traits-v2.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: tipstream-analytics
+            expected-sender: SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60
+            cost: 225000
+            path: contracts/tipstream-analytics.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: tipstream-auctions
+            expected-sender: SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60
+            cost: 230000
+            path: contracts/tipstream-auctions.clar
+            anchor-block-only: true
+            clarity-version: 2
+      epoch: "3.0"
+

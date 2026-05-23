@@ -305,3 +305,48 @@ Monitor these metrics:
 - Consider implementing additional authorization layers
 
 See [RATE_LIMIT_RUNTIME_CONFIG.md](./RATE_LIMIT_RUNTIME_CONFIG.md) for complete documentation.
+
+
+## Pagination Performance
+
+The tip history endpoints use cursor-based pagination to maintain consistent performance as the dataset grows.
+
+### Database Indexes
+
+The following composite indexes support efficient cursor queries:
+
+- `chainhook_events_tips_cursor_idx` on `(event_timestamp DESC, event_key DESC)`
+- `chainhook_events_sender_cursor_idx` on `(sender, event_timestamp DESC, event_key DESC)`
+- `chainhook_events_recipient_cursor_idx` on `(recipient, event_timestamp DESC, event_key DESC)`
+
+These indexes are created automatically on service startup if they do not exist.
+
+### Configuration
+
+```bash
+TIPS_DEFAULT_PAGE_SIZE=50    # Default items per page (1-100)
+```
+
+### Performance Characteristics
+
+- **Query Time**: O(log n) indexed lookup regardless of dataset size
+- **Memory Usage**: Only requested page loaded into memory
+- **Consistency**: Cursor-based approach provides stable ordering across pages
+
+### Monitoring
+
+Monitor these metrics for pagination performance:
+
+- Average query execution time for `/api/tips` and `/api/tips/user/:address`
+- Index usage statistics in PostgreSQL
+- Memory consumption per request
+- Client pagination patterns
+
+### Optimization Tips
+
+1. **Index Maintenance**: Run `ANALYZE` periodically to update query planner statistics
+2. **Page Size**: Default of 50 balances response size and query efficiency
+3. **Client Behavior**: Encourage clients to use cursors rather than fetching all pages
+4. **Database Tuning**: Ensure `work_mem` is sufficient for index scans
+
+See [PAGINATION_CHANGELOG.md](./PAGINATION_CHANGELOG.md) for implementation details.
