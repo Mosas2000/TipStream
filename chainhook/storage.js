@@ -126,6 +126,40 @@ class MemoryEventStore {
       .map((record) => record.rawEvent);
   }
 
+  async listTips({ limit = 50, cursor = null } = {}) {
+    const allTips = this.records
+      .slice()
+      .sort((a, b) => {
+        const tsDiff = b.eventTimestamp - a.eventTimestamp;
+        if (tsDiff !== 0) return tsDiff;
+        return b.eventKey < a.eventKey ? -1 : 1;
+      })
+      .filter((record) => {
+        const eventType = record.rawEvent?.event?.event;
+        return eventType === 'tip-sent';
+      });
+
+    const total = allTips.length;
+
+    let startIndex = 0;
+    if (cursor !== null) {
+      const idx = allTips.findIndex((r) => r.eventKey === cursor);
+      startIndex = idx === -1 ? total : idx + 1;
+    }
+
+    const page = allTips.slice(startIndex, startIndex + limit);
+    const lastRecord = page[page.length - 1];
+    const nextCursor = page.length === limit && startIndex + limit < total
+      ? lastRecord.eventKey
+      : null;
+
+    return {
+      events: page.map((r) => r.rawEvent),
+      total,
+      nextCursor,
+    };
+  }
+
   async countEvents() {
     return this.records.length;
   }
