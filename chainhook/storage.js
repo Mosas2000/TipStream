@@ -342,6 +342,80 @@ class PostgresEventStore {
     return result.rows.map(toRawEvent);
   }
 
+  async listTips({ limit = 50, cursor = null } = {}) {
+    await this.init();
+
+    const countResult = await withRetry(
+      () => this.pool.query(
+        "SELECT COUNT(*)::int AS count FROM chainhook_events WHERE event_type = 'tip-sent'",
+      ),
+      { ...this.retryOptions, operationName: 'postgres_count_tips' },
+    );
+    const total = Number(countResult.rows[0]?.count || 0);
+
+    let cursorTimestamp = null;
+    let cursorKey = null;
+
+    if (cursor !== null) {
+      const cursorResult = await withRetry(
+        () => this.pool.query(
+          "SELECT event_timestamp, event_key FROM chainhook_events WHERE event_key = $1 AND event_type = 'tip-sent'",
+          [cursor],
+        ),
+        { ...this.retryOptions, operationName: 'postgres_cursor_lookup' },
+      );
+
+      if (cursorResult.rows.length > 0) {
+        cursorTimestamp = cursorResult.rows[0].event_timestamp;
+        cursorKey = cursorResult.rows[0].event_key;
+      }
+    }
+
+    let query;
+    let values;
+
+    if (cursorTimestamp !== null) {
+      query = `
+        SELECT raw_event, event_key
+        FROM chainhook_events
+        WHERE event_type = 'tip-sent'
+          AND (
+            event_timestamp < $1
+            OR (event_timestamp = $1 AND event_key < $2)
+          )
+        ORDER BY event_timestamp DESC, event_key DESC
+        LIMIT $3
+      `;
+      values = [cursorTimestamp, cursorKey, limit];
+    } else {
+      query = `
+        SELECT raw_event, event_key
+        FROM chainhook_events
+        WHERE event_type = 'tip-sent'
+        ORDER BY event_timestamp DESC, event_key DESC
+        LIMIT $1
+      `;
+      values = [limit];
+    }
+
+    const result = await withRetry(
+      () => this.pool.query(query, values),
+      { ...this.retryOptions, operationName: 'postgres_list_tips_paginated' },
+    );
+
+    const rows = result.rows;
+    const lastRow = rows[rows.length - 1];
+    const nextCursor = rows.length === limit && lastRow
+      ? lastRow.event_key
+      : null;
+
+    return {
+      events: rows.map(toRawEvent),
+      total,
+      nextCursor,
+    };
+  }
+
   async countEvents() {
     await this.init();
     const result = await withRetry(
