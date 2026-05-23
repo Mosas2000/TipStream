@@ -515,13 +515,25 @@ const server = http.createServer(async (req, res) => {
         address,
       });
     }
-    
-    const userEvents = await store.listEventsByUser(address);
-    const tips = userEvents
-      .map(parseTipEvent)
-      .filter(Boolean)
-      .reverse();
-    return sendJson(res, 200, { tips, total: tips.length });
+
+    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
+    const cursor = url.searchParams.get("cursor") || null;
+
+    if (isNaN(limit)) {
+      return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {
+        path,
+        query: "limit",
+      });
+    }
+
+    const result = await store.listTipsByUser(address, { limit, cursor });
+    const tips = result.events.map(parseTipEvent).filter(Boolean);
+
+    return sendJson(res, 200, {
+      tips,
+      total: result.total,
+      nextCursor: result.nextCursor,
+    });
   }
 
   // GET /api/tips/:id -- single tip by numeric ID
