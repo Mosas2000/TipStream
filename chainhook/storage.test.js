@@ -149,6 +149,65 @@ describe('MemoryEventStore', () => {
   });
 });
 
+describe('MemoryEventStore listTipsByUser', () => {
+  let store;
+
+  beforeEach(() => {
+    store = new MemoryEventStore({ retentionDays: 30 });
+  });
+
+  it('returns empty result when user has no tips', async () => {
+    const result = await store.listTipsByUser('SP1SENDER', { limit: 10 });
+    assert.strictEqual(result.events.length, 0);
+    assert.strictEqual(result.total, 0);
+    assert.strictEqual(result.nextCursor, null);
+  });
+
+  it('returns only tips involving the given address', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xg1', event: { event: 'tip-sent', 'tip-id': 50, sender: 'SP1SENDER', recipient: 'SP2RECIPIENT', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xg2', event: { event: 'tip-sent', 'tip-id': 51, sender: 'SP3OTHER', recipient: 'SP4OTHER', amount: 200, fee: 10, 'net-amount': 190 } }),
+    ]);
+
+    const result = await store.listTipsByUser('SP1SENDER', { limit: 50 });
+    assert.strictEqual(result.events.length, 1);
+    assert.strictEqual(result.total, 1);
+    assert.strictEqual(result.events[0].event['tip-id'], 50);
+  });
+
+  it('includes tips where address is recipient', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xh1', event: { event: 'tip-sent', 'tip-id': 60, sender: 'SP3OTHER', recipient: 'SP1SENDER', amount: 100, fee: 5, 'net-amount': 95 } }),
+    ]);
+
+    const result = await store.listTipsByUser('SP1SENDER', { limit: 50 });
+    assert.strictEqual(result.events.length, 1);
+    assert.strictEqual(result.total, 1);
+  });
+
+  it('paginates with cursor and returns nextCursor when more exist', async () => {
+    await store.insertEvents([
+      makeEvent({ txId: '0xi1', event: { event: 'tip-sent', 'tip-id': 70, sender: 'SP1SENDER', recipient: 'SP2', amount: 100, fee: 5, 'net-amount': 95 } }),
+      makeEvent({ txId: '0xi2', event: { event: 'tip-sent', 'tip-id': 71, sender: 'SP1SENDER', recipient: 'SP2', amount: 200, fee: 10, 'net-amount': 190 } }),
+      makeEvent({ txId: '0xi3', event: { event: 'tip-sent', 'tip-id': 72, sender: 'SP1SENDER', recipient: 'SP2', amount: 300, fee: 15, 'net-amount': 285 } }),
+    ]);
+
+    const page1 = await store.listTipsByUser('SP1SENDER', { limit: 2 });
+    assert.strictEqual(page1.events.length, 2);
+    assert.strictEqual(page1.total, 3);
+    assert.ok(page1.nextCursor !== null);
+
+    const page2 = await store.listTipsByUser('SP1SENDER', { limit: 2, cursor: page1.nextCursor });
+    assert.strictEqual(page2.events.length, 1);
+    assert.strictEqual(page2.nextCursor, null);
+
+    const page1Keys = new Set(page1.events.map((e) => e.txId));
+    for (const e of page2.events) {
+      assert.ok(!page1Keys.has(e.txId));
+    }
+  });
+});
+
 describe('createEventStore', () => {
   it('creates a memory store when requested', async () => {
     const store = await createEventStore({ mode: 'memory', retentionDays: 7 });
