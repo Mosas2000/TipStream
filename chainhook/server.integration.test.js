@@ -641,35 +641,29 @@ describe('chainhook server integration', () => {
 
     const page1 = await request({
       method: 'GET',
-      path: '/api/tips?limit=2&offset=0',
+      path: '/api/tips?limit=2',
     });
 
     assert.strictEqual(page1.status, 200);
-    assert.ok(page1.body.tips.length <= 2);
+    assert.strictEqual(page1.body.tips.length, 2);
+    assert.ok(typeof page1.body.total === 'number');
+    assert.ok(page1.body.nextCursor !== undefined);
 
     const page2 = await request({
       method: 'GET',
-      path: '/api/tips?limit=2&offset=2',
+      path: `/api/tips?limit=2&cursor=${page1.body.nextCursor}`,
     });
 
     assert.strictEqual(page2.status, 200);
     assert.ok(Array.isArray(page2.body.tips));
+    assert.ok(typeof page2.body.total === 'number');
+    assert.ok(page2.body.nextCursor !== undefined);
   });
 
   it('rejects invalid pagination limit', async () => {
     const response = await request({
       method: 'GET',
       path: '/api/tips?limit=200',
-    });
-
-    assert.strictEqual(response.status, 400);
-    assert.strictEqual(response.body.error, 'bad_request');
-  });
-
-  it('rejects negative pagination offset', async () => {
-    const response = await request({
-      method: 'GET',
-      path: '/api/tips?offset=-1',
     });
 
     assert.strictEqual(response.status, 400);
