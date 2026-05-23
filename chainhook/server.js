@@ -1,7 +1,7 @@
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { detectBypass, parseAdminEvent, formatBypassAlert } from "./bypass-detection.js";
-import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt } from "./validation.js";
+import { MAX_BODY_SIZE, isValidStacksAddress, sanitizeQueryInt, sanitizeCursor } from "./validation.js";
 import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
@@ -478,7 +478,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && path === "/api/tips") {
     const store = await getEventStore();
     const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
-    const cursor = url.searchParams.get("cursor") || null;
+    const cursor = sanitizeCursor(url.searchParams.get("cursor"));
 
     if (isNaN(limit)) {
       return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {
@@ -517,7 +517,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
-    const cursor = url.searchParams.get("cursor") || null;
+    const cursor = sanitizeCursor(url.searchParams.get("cursor"));
 
     if (isNaN(limit)) {
       return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {

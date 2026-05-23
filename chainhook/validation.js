@@ -34,3 +34,17 @@ export function sanitizeQueryInt(value, min, max) {
   if (isNaN(num) || num < min || num > max) return NaN;
   return num;
 }
+
+/**
+ * Sanitize a cursor token from a query parameter.
+ * Cursors are opaque event keys — allow printable ASCII up to 512 chars.
+ * Returns null if the value is absent, empty, or exceeds the length limit.
+ * @param {string|null} value - Raw query parameter value.
+ * @returns {string|null}
+ */
+export function sanitizeCursor(value) {
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > 512) return null;
+  return trimmed;
+}
