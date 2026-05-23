@@ -222,6 +222,44 @@ class MemoryEventStore {
       .map((record) => record.rawEvent);
   }
 
+  async listTipsByUser(address, { limit = 50, cursor = null } = {}) {
+    if (!address || typeof address !== 'string') {
+      throw new Error('address must be a non-empty string');
+    }
+
+    const allTips = this.records
+      .filter((record) => {
+        const event = record.rawEvent?.event;
+        if (!event || event.event !== 'tip-sent') return false;
+        return event.sender === address || event.recipient === address;
+      })
+      .sort((a, b) => {
+        const tsDiff = b.eventTimestamp - a.eventTimestamp;
+        if (tsDiff !== 0) return tsDiff;
+        return b.eventKey < a.eventKey ? -1 : 1;
+      });
+
+    const total = allTips.length;
+
+    let startIndex = 0;
+    if (cursor !== null) {
+      const idx = allTips.findIndex((r) => r.eventKey === cursor);
+      startIndex = idx === -1 ? total : idx + 1;
+    }
+
+    const page = allTips.slice(startIndex, startIndex + limit);
+    const lastRecord = page[page.length - 1];
+    const nextCursor = page.length === limit && startIndex + limit < total
+      ? lastRecord.eventKey
+      : null;
+
+    return {
+      events: page.map((r) => r.rawEvent),
+      total,
+      nextCursor,
+    };
+  }
+
   async close() {}
 }
 
@@ -523,6 +561,92 @@ class PostgresEventStore {
       { ...this.retryOptions, operationName: 'postgres_list_events_by_user' },
     );
     return result.rows.map(toRawEvent);
+  }
+
+  async listTipsByUser(address, { limit = 50, cursor = null } = {}) {
+    if (!address || typeof address !== 'string') {
+      throw new Error('address must be a non-empty string');
+    }
+
+    await this.init();
+
+    const countResult = await withRetry(
+      () => this.pool.query(
+        `SELECT COUNT(*)::int AS count
+         FROM chainhook_events
+         WHERE event_type = 'tip-sent'
+           AND (raw_event->'event'->>'sender' = $1 OR raw_event->'event'->>'recipient' = $1)`,
+        [address],
+      ),
+      { ...this.retryOptions, operationName: 'postgres_count_tips_by_user' },
+    );
+    const total = Number(countResult.rows[0]?.count || 0);
+
+    let cursorTimestamp = null;
+    let cursorKey = null;
+
+    if (cursor !== null) {
+      const cursorResult = await withRetry(
+        () => this.pool.query(
+          `SELECT event_timestamp, event_key
+           FROM chainhook_events
+           WHERE event_key = $1 AND event_type = 'tip-sent'`,
+          [cursor],
+        ),
+        { ...this.retryOptions, operationName: 'postgres_cursor_lookup_by_user' },
+      );
+
+      if (cursorResult.rows.length > 0) {
+        cursorTimestamp = cursorResult.rows[0].event_timestamp;
+        cursorKey = cursorResult.rows[0].event_key;
+      }
+    }
+
+    let query;
+    let values;
+
+    if (cursorTimestamp !== null) {
+      query = `
+        SELECT raw_event, event_key
+        FROM chainhook_events
+        WHERE event_type = 'tip-sent'
+          AND (raw_event->'event'->>'sender' = $1 OR raw_event->'event'->>'recipient' = $1)
+          AND (
+            event_timestamp < $2
+            OR (event_timestamp = $2 AND event_key < $3)
+          )
+        ORDER BY event_timestamp DESC, event_key DESC
+        LIMIT $4
+      `;
+      values = [address, cursorTimestamp, cursorKey, limit];
+    } else {
+      query = `
+        SELECT raw_event, event_key
+        FROM chainhook_events
+        WHERE event_type = 'tip-sent'
+          AND (raw_event->'event'->>'sender' = $1 OR raw_event->'event'->>'recipient' = $1)
+        ORDER BY event_timestamp DESC, event_key DESC
+        LIMIT $2
+      `;
+      values = [address, limit];
+    }
+
+    const result = await withRetry(
+      () => this.pool.query(query, values),
+      { ...this.retryOptions, operationName: 'postgres_list_tips_by_user_paginated' },
+    );
+
+    const rows = result.rows;
+    const lastRow = rows[rows.length - 1];
+    const nextCursor = rows.length === limit && lastRow
+      ? lastRow.event_key
+      : null;
+
+    return {
+      events: rows.map(toRawEvent),
+      total,
+      nextCursor,
+    };
   }
 
   async close() {
