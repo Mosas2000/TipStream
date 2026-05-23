@@ -5,6 +5,7 @@ import {
   STACKS_ADDRESS_RE,
   isValidStacksAddress,
   sanitizeQueryInt,
+  sanitizeCursor,
 } from "./validation.js";
 
 describe("MAX_BODY_SIZE", () => {
@@ -112,5 +113,46 @@ describe("sanitizeQueryInt", () => {
 
   it("returns NaN for a negative value when min is zero", () => {
     assert.ok(isNaN(sanitizeQueryInt("-1", 0, 100)));
+  });
+});
+
+describe("sanitizeCursor", () => {
+  it("returns a valid cursor string unchanged", () => {
+    const cursor = "0xabc123::100::SP123.tipstream::tip-sent";
+    assert.strictEqual(sanitizeCursor(cursor), cursor);
+  });
+
+  it("trims whitespace from cursor value", () => {
+    assert.strictEqual(sanitizeCursor("  cursor-value  "), "cursor-value");
+  });
+
+  it("returns null for null input", () => {
+    assert.strictEqual(sanitizeCursor(null), null);
+  });
+
+  it("returns null for undefined input", () => {
+    assert.strictEqual(sanitizeCursor(undefined), null);
+  });
+
+  it("returns null for empty string", () => {
+    assert.strictEqual(sanitizeCursor(""), null);
+  });
+
+  it("returns null for whitespace-only string", () => {
+    assert.strictEqual(sanitizeCursor("   "), null);
+  });
+
+  it("returns null for cursor exceeding 512 characters", () => {
+    const longCursor = "x".repeat(513);
+    assert.strictEqual(sanitizeCursor(longCursor), null);
+  });
+
+  it("accepts cursor exactly at 512 character limit", () => {
+    const cursor = "x".repeat(512);
+    assert.strictEqual(sanitizeCursor(cursor), cursor);
+  });
+
+  it("returns null for non-string input", () => {
+    assert.strictEqual(sanitizeCursor(12345), null);
   });
 });
