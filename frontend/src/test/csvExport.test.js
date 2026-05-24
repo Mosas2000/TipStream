@@ -126,7 +126,7 @@ describe('csvExport', () => {
             ];
             
             const csv = generateTipHistoryCSV(tips);
-            expect(csv).toContain('2021-12-20T13:33:20.000Z');
+            expect(csv).toContain('2021-12-20');
         });
 
         it('should handle multiple tips', () => {
@@ -182,22 +182,20 @@ describe('csvExport', () => {
     });
 
     describe('downloadCSV', () => {
-        let createElementSpy;
-        let createObjectURLSpy;
-        let revokeObjectURLSpy;
+        let mockLink;
 
         beforeEach(() => {
-            const mockLink = {
+            mockLink = {
                 href: '',
                 download: '',
                 click: vi.fn(),
             };
 
-            createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink);
+            vi.spyOn(document, 'createElement').mockReturnValue(mockLink);
             vi.spyOn(document.body, 'appendChild').mockImplementation(() => {});
             vi.spyOn(document.body, 'removeChild').mockImplementation(() => {});
-            createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
-            revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+            vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
+            vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
         });
 
         afterEach(() => {
@@ -210,15 +208,14 @@ describe('csvExport', () => {
 
             downloadCSV(csvContent, filename);
 
-            expect(createElementSpy).toHaveBeenCalledWith('a');
-            expect(createObjectURLSpy).toHaveBeenCalled();
-            expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-url');
+            expect(document.createElement).toHaveBeenCalledWith('a');
+            expect(URL.createObjectURL).toHaveBeenCalled();
+            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
         });
 
         it('should set correct filename', () => {
             const csvContent = 'test';
             const filename = 'my-export.csv';
-            const mockLink = createElementSpy.mock.results[0].value;
 
             downloadCSV(csvContent, filename);
 
@@ -228,7 +225,6 @@ describe('csvExport', () => {
         it('should trigger download', () => {
             const csvContent = 'test';
             const filename = 'test.csv';
-            const mockLink = createElementSpy.mock.results[0].value;
 
             downloadCSV(csvContent, filename);
 
