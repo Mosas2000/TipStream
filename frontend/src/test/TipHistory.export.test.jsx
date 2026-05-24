@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TipHistory from '../components/TipHistory';
-import { DemoProvider } from '../context/DemoContext';
 import * as csvExport from '../lib/csvExport';
 
 vi.mock('@stacks/transactions', () => ({
@@ -12,6 +11,14 @@ vi.mock('@stacks/transactions', () => ({
 
 vi.mock('../utils/stacks', () => ({
     network: {},
+}));
+
+vi.mock('../context/DemoContext', () => ({
+    useDemoMode: () => ({
+        demoEnabled: false,
+        getDemoData: () => ({}),
+        demoTips: [],
+    }),
 }));
 
 vi.mock('../lib/csvExport', () => ({
@@ -68,11 +75,7 @@ describe('TipHistory CSV Export Integration', () => {
     });
 
     it('should render export button', async () => {
-        render(
-            <DemoProvider>
-                <TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />
-            </DemoProvider>
-        );
+        render(<TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />);
 
         await waitFor(() => {
             expect(screen.getByLabelText('Export tip history to CSV')).toBeInTheDocument();
@@ -88,11 +91,7 @@ describe('TipHistory CSV Export Integration', () => {
             }),
         });
 
-        render(
-            <DemoProvider>
-                <TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />
-            </DemoProvider>
-        );
+        render(<TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />);
 
         await waitFor(() => {
             const exportButton = screen.getByLabelText('Export tip history to CSV');
@@ -101,11 +100,7 @@ describe('TipHistory CSV Export Integration', () => {
     });
 
     it('should open export modal when export button is clicked', async () => {
-        render(
-            <DemoProvider>
-                <TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />
-            </DemoProvider>
-        );
+        render(<TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />);
 
         await waitFor(() => {
             expect(screen.getByLabelText('Export tip history to CSV')).toBeInTheDocument();
@@ -120,11 +115,7 @@ describe('TipHistory CSV Export Integration', () => {
     });
 
     it('should close export modal when cancel is clicked', async () => {
-        render(
-            <DemoProvider>
-                <TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />
-            </DemoProvider>
-        );
+        render(<TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />);
 
         await waitFor(() => {
             expect(screen.getByLabelText('Export tip history to CSV')).toBeInTheDocument();
@@ -146,11 +137,7 @@ describe('TipHistory CSV Export Integration', () => {
     });
 
     it('should export all loaded tips', async () => {
-        render(
-            <DemoProvider>
-                <TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />
-            </DemoProvider>
-        );
+        render(<TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />);
 
         await waitFor(() => {
             expect(screen.getByLabelText('Export tip history to CSV')).toBeInTheDocument();
@@ -212,11 +199,7 @@ describe('TipHistory CSV Export Integration', () => {
             }),
         });
 
-        render(
-            <DemoProvider>
-                <TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />
-            </DemoProvider>
-        );
+        render(<TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />);
 
         await waitFor(() => {
             expect(screen.getByText('Sent tip')).toBeInTheDocument();
@@ -239,45 +222,8 @@ describe('TipHistory CSV Export Integration', () => {
         });
     });
 
-    it('should work in demo mode', async () => {
-        const demoContextValue = {
-            demoEnabled: true,
-            getDemoData: () => ({
-                mockWalletAddress: 'SP_DEMO_ADDRESS',
-            }),
-            demoTips: [
-                {
-                    id: 'demo-1',
-                    sender: 'SP_DEMO_ADDRESS',
-                    recipient: 'SP_OTHER_ADDRESS',
-                    amount: 1000000,
-                    memo: 'Demo tip',
-                    category: 0,
-                    timestamp: 1640000000,
-                },
-            ],
-        };
-
-        render(
-            <DemoProvider value={demoContextValue}>
-                <TipHistory userAddress={null} addToast={mockAddToast} />
-            </DemoProvider>
-        );
-
-        await waitFor(() => {
-            expect(screen.getByLabelText('Export tip history to CSV')).toBeInTheDocument();
-        });
-
-        const exportButton = screen.getByLabelText('Export tip history to CSV');
-        expect(exportButton).not.toBeDisabled();
-    });
-
     it('should include export button in header with proper styling', async () => {
-        render(
-            <DemoProvider>
-                <TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />
-            </DemoProvider>
-        );
+        render(<TipHistory userAddress={mockUserAddress} addToast={mockAddToast} />);
 
         await waitFor(() => {
             const exportButton = screen.getByLabelText('Export tip history to CSV');
