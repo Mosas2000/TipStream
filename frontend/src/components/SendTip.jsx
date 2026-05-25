@@ -21,10 +21,12 @@ import { useStxPrice } from '../hooks/useStxPrice';
 import { useSenderAddress } from '../hooks/useSenderAddress';
 import { useContractFee } from '../hooks/useContractFee';
 import { useTransactionFeeEstimate } from '../hooks/useTransactionFeeEstimate';
+import { useEncryption } from '../hooks/useEncryption';
 import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
 import AddressBook from './AddressBook';
+import { Lock, Unlock } from 'lucide-react';
 
 const MIN_TIP_STX = 0.001; // minimum tip in STX
 const MAX_TIP_STX = 10000; // maximum tip in STX
@@ -67,10 +69,12 @@ export default function SendTip({ addToast }) {
     const [amountError, setAmountError] = useState('');
     const [cooldown, setCooldown] = useState(0);
     const [showAddressBook, setShowAddressBook] = useState(false);
+    const [encryptMessage, setEncryptMessage] = useState(false);
   const cooldownRef = useRef(null);
 
   const walletSenderAddress = useSenderAddress();
   const senderAddress = demoEnabled ? getDemoData().mockWalletAddress : walletSenderAddress;
+  const { encrypt, canEncryptFor } = useEncryption(senderAddress);
   const realBalanceState = useBalance(senderAddress);
   const { displayBalance: balance, sendTipInDemo, pendingTransaction } = useSendTipWithDemo(realBalanceState.balance);
   const balanceLoading = demoEnabled ? false : realBalanceState.loading;
@@ -93,6 +97,7 @@ export default function SendTip({ addToast }) {
   } = useTransactionFeeEstimate();
 
     const isRecipientHighRisk = !canProceedWithRecipient(recipient, blockedWarning);
+    const canEncrypt = recipient && canEncryptFor(recipient);
 
     useEffect(() => {
         return () => {
@@ -205,13 +210,25 @@ export default function SendTip({ addToast }) {
         setLoading(true);
 
         try {
+            let finalMessage = message || 'Thanks!';
+            
+            if (encryptMessage && message && canEncrypt) {
+                try {
+                    finalMessage = await encrypt(message, recipient.trim());
+                } catch (encryptError) {
+                    addToast('Failed to encrypt message. Sending unencrypted.', 'warning');
+                    finalMessage = message;
+                }
+            }
+
             if (demoEnabled) {
-                const result = await sendTipInDemo(recipient.trim(), amount, message, category);
+                const result = await sendTipInDemo(recipient.trim(), amount, finalMessage, category);
                 setPendingTx(result);
                 setRecipient('');
                 setAmount('');
                 setMessage('');
                 setCategory(0);
+                setEncryptMessage(false);
                 startCooldown();
                 addToast('Demo tip sent successfully.', 'success');
                 setLoading(false);
@@ -226,7 +243,7 @@ export default function SendTip({ addToast }) {
             const functionArgs = [
                 principalCV(recipient.trim()),
                 uintCV(microSTX),
-                stringUtf8CV(message || 'Thanks!'),
+                stringUtf8CV(finalMessage),
                 uintCV(category)
             ];
 
@@ -246,6 +263,7 @@ export default function SendTip({ addToast }) {
                     setAmount('');
                     setMessage('');
                     setCategory(0);
+                    setEncryptMessage(false);
                     notifyTipSent();
                     startCooldown();
                     analytics.trackTipConfirmed();
@@ -262,7 +280,6 @@ export default function SendTip({ addToast }) {
             console.error('Failed to send tip:', msg);
             analytics.trackTipFailed();
 
-            // Provide a more specific message for post-condition failures
             if (msg.toLowerCase().includes('post-condition') || msg.toLowerCase().includes('postcondition')) {
                 addToast('Transaction rejected by post-condition check. Your funds are safe.', 'error');
             } else {
@@ -360,13 +377,46 @@ export default function SendTip({ addToast }) {
 
                     {/* Message */}
                     <div>
-                        <label htmlFor="tip-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Message (optional)</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label htmlFor="tip-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message (optional)</label>
+                            {message && (
+                                <button
+                                    type="button"
+                                    onClick={() => setEncryptMessage(!encryptMessage)}
+                                    disabled={!canEncrypt}
+                                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                                        encryptMessage
+                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                    } ${!canEncrypt ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                                    title={!canEncrypt ? 'Recipient public key not available' : encryptMessage ? 'Message will be encrypted' : 'Click to encrypt message'}
+                                >
+                                    {encryptMessage ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                                    {encryptMessage ? 'Encrypted' : 'Encrypt'}
+                                </button>
+                            )}
+                        </div>
                         <textarea id="tip-message" value={message} onChange={(e) => setMessage(e.target.value)}
                             className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all resize-none"
                             placeholder="Great work!" maxLength={280} rows={2} />
-                        <p className={`text-xs mt-1 text-right ${message.length >= 280 ? 'text-red-500' : 'text-gray-400'}`}>
-                            {message.length}/280
-                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                            <div>
+                                {encryptMessage && canEncrypt && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                                        <Lock className="w-3 h-3" />
+                                        Only recipient can read this message
+                                    </p>
+                                )}
+                                {encryptMessage && !canEncrypt && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                        Recipient key unavailable, will send unencrypted
+                                    </p>
+                                )}
+                            </div>
+                            <p className={`text-xs ${message.length >= 280 ? 'text-red-500' : 'text-gray-400'}`}>
+                                {message.length}/280
+                            </p>
+                        </div>
                     </div>
 
                     {/* Category */}
@@ -489,7 +539,17 @@ export default function SendTip({ addToast }) {
                         <p>Send <strong>{amount} STX</strong> to:</p>
                         <p className="font-mono text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded-lg break-all">{recipient}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Category: <strong>{TIP_CATEGORIES.find(c => c.id === category)?.label}</strong></p>
-                        {message && <p className="italic text-gray-500">"{message}"</p>}
+                        {message && (
+                            <div>
+                                <p className="italic text-gray-500">"{message}"</p>
+                                {encryptMessage && canEncrypt && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                                        <Lock className="w-3 h-3" />
+                                        Message will be encrypted
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         {amount && parseFloat(amount) > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                 <div className="flex justify-between">
