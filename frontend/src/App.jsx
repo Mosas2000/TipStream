@@ -21,10 +21,10 @@ import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_SCHEDULE, ROUTE_SCHEDULED_TIPS, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_ADDRESS_BOOK,
   ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY, ROUTE_REFUNDS,
-  ROUTE_NOTIFICATION_PREFERENCES,
+  ROUTE_NOTIFICATION_PREFERENCES, ROUTE_ENCRYPTION,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw, BellCog } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw, BellCog, Lock } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
 import { useNotificationPreferences } from './context/NotificationPreferencesContext';
 
@@ -47,6 +47,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const TelemetryDashboard = lazy(() => import('./components/TelemetryDashboard'));
 const RefundManager = lazy(() => import('./components/RefundManager'));
 const NotificationPreferencesPage = lazy(() => import('./components/NotificationPreferences'));
+const EncryptionSettings = lazy(() => import('./components/EncryptionSettings'));
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -175,6 +176,7 @@ function App() {
       { path: ROUTE_BLOCK, label: 'Block', icon: ShieldBan },
       { path: ROUTE_REFUNDS, label: 'Refunds', icon: RotateCcw },
       { path: ROUTE_NOTIFICATION_PREFERENCES, label: 'Notifications', icon: BellCog },
+      { path: ROUTE_ENCRYPTION, label: 'Encryption', icon: Lock },
       { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
     ];
     
@@ -417,6 +419,20 @@ function App() {
                       ) : (
                         <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_NOTIFICATION_PREFERENCES}>
                           <NotificationPreferencesPage addToast={addToast} />
+                        </RequireAuth>
+                      )
+                    }
+                  />
+
+                  {/* Encryption settings */}
+                  <Route
+                    path={ROUTE_ENCRYPTION}
+                    element={
+                      userData || demoEnabled ? (
+                        <EncryptionSettings addToast={addToast} />
+                      ) : (
+                        <RequireAuth onAuth={handleAuth} authLoading={authLoading} route={ROUTE_ENCRYPTION}>
+                          <EncryptionSettings addToast={addToast} />
                         </RequireAuth>
                       )
                     }
