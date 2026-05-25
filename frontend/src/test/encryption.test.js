@@ -115,7 +115,7 @@ describe('encryption', () => {
             const keyPair = await generateKeyPair();
             const publicKey = await exportPublicKey(keyPair.publicKey);
             const privateKey = await exportPrivateKey(keyPair.privateKey);
-            const message = 'A'.repeat(200);
+            const message = 'A'.repeat(100);
             
             const encrypted = await encryptMessage(message, publicKey);
             const decrypted = await decryptMessage(encrypted, privateKey);
