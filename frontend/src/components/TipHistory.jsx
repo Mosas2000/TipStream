@@ -9,6 +9,8 @@ import ShareTip from './ShareTip';
 import { useDemoMode } from '../context/DemoContext';
 import RefundRequest from './RefundRequest';
 import RefundApproval from './RefundApproval';
+import { Lock, Eye, EyeOff } from 'lucide-react';
+import { useEncryption } from '../hooks/useEncryption';
 
 const CATEGORY_LABELS = {
     0: 'General', 1: 'Content Creation', 2: 'Open Source',
@@ -50,7 +52,10 @@ export default function TipHistory({ userAddress, addToast }) {
     const noop = () => {};
     const toast = addToast || noop;
     const { demoEnabled, getDemoData, demoTips: contextDemoTips } = useDemoMode();
+    const { decrypt, isEncrypted } = useEncryption(userAddress);
     const [tips, setTips] = useState([]);
+    const [decryptedMessages, setDecryptedMessages] = useState({});
+    const [revealedMessages, setRevealedMessages] = useState({});
     const [tipsLoading, setTipsLoading] = useState(true);
     const [tipsError, setTipsError] = useState(null);
     const [tipsMeta, setTipsMeta] = useState({ offset: 0, total: 0, hasMore: false });
@@ -60,6 +65,33 @@ export default function TipHistory({ userAddress, addToast }) {
     const [tab, setTab] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [loadingMore, setLoadingMore] = useState(false);
+
+    const handleDecryptMessage = useCallback(async (tipId, message) => {
+        if (!isEncrypted(message)) return;
+        
+        try {
+            const decrypted = await decrypt(message);
+            setDecryptedMessages(prev => ({ ...prev, [tipId]: decrypted }));
+        } catch (err) {
+            console.error('Failed to decrypt message:', err);
+            setDecryptedMessages(prev => ({ ...prev, [tipId]: '[Decryption failed]' }));
+        }
+    }, [decrypt, isEncrypted]);
+
+    const toggleRevealMessage = useCallback((tipId, message) => {
+        if (revealedMessages[tipId]) {
+            setRevealedMessages(prev => {
+                const next = { ...prev };
+                delete next[tipId];
+                return next;
+            });
+        } else {
+            setRevealedMessages(prev => ({ ...prev, [tipId]: true }));
+            if (isEncrypted(message) && !decryptedMessages[tipId]) {
+                handleDecryptMessage(tipId, message);
+            }
+        }
+    }, [revealedMessages, isEncrypted, decryptedMessages, handleDecryptMessage]);
 
     const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
     const demoWalletAddress = demoEnabled ? getDemoData().mockWalletAddress : null;
@@ -315,7 +347,35 @@ export default function TipHistory({ userAddress, addToast }) {
                                                 <CopyButton text={tip.direction === 'sent' ? tip.recipient : tip.sender} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                                             </div>
                                             {tip.message ? (
-                                                <span className="text-xs text-gray-400 italic">&ldquo;{tip.message}&rdquo;</span>
+                                                <div className="flex items-center gap-2">
+                                                    {isEncrypted(tip.message) && (
+                                                        <Lock className="w-3 h-3 text-gray-400" />
+                                                    )}
+                                                    {isEncrypted(tip.message) && !revealedMessages[tip.tipId] ? (
+                                                        <button
+                                                            onClick={() => toggleRevealMessage(tip.tipId, tip.message)}
+                                                            className="text-xs text-gray-400 italic hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1"
+                                                        >
+                                                            <Eye className="w-3 h-3" />
+                                                            Click to decrypt
+                                                        </button>
+                                                    ) : isEncrypted(tip.message) && revealedMessages[tip.tipId] ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-gray-400 italic">
+                                                                &ldquo;{decryptedMessages[tip.tipId] || 'Decrypting...'}&rdquo;
+                                                            </span>
+                                                            <button
+                                                                onClick={() => toggleRevealMessage(tip.tipId, tip.message)}
+                                                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                                title="Hide message"
+                                                            >
+                                                                <EyeOff className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 italic">&ldquo;{tip.message}&rdquo;</span>
+                                                    )}
+                                                </div>
                                             ) : null}
                                         </div>
                                     </div>
