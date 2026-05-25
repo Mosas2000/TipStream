@@ -9,6 +9,8 @@ import ShareTip from './ShareTip';
 import { useDemoMode } from '../context/DemoContext';
 import RefundRequest from './RefundRequest';
 import RefundApproval from './RefundApproval';
+import TipHistoryExport from './TipHistoryExport';
+import { Download } from 'lucide-react';
 
 const CATEGORY_LABELS = {
     0: 'General', 1: 'Content Creation', 2: 'Open Source',
@@ -60,6 +62,7 @@ export default function TipHistory({ userAddress, addToast }) {
     const [tab, setTab] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [loadingMore, setLoadingMore] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
 
     const contractId = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
     const demoWalletAddress = demoEnabled ? getDemoData().mockWalletAddress : null;
@@ -255,6 +258,15 @@ export default function TipHistory({ userAddress, addToast }) {
                 </div>
                 <div className="flex items-center gap-3">
                     {lastTipsRefresh && <span className="text-xs text-gray-400">{lastTipsRefresh.toLocaleTimeString()}</span>}
+                    <button 
+                        onClick={() => setShowExportModal(true)} 
+                        aria-label="Export tip history to CSV"
+                        disabled={tips.length === 0}
+                        className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        Export
+                    </button>
                     <button onClick={handleRefresh} aria-label="Refresh activity" className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">Refresh</button>
                 </div>
             </div>
@@ -362,6 +374,14 @@ export default function TipHistory({ userAddress, addToast }) {
                         <span className="text-xs text-gray-400">Showing {tips.length} of {tipsMeta.total} address transactions</span>
                     )}
                 </div>
+            )}
+
+            {showExportModal && (
+                <TipHistoryExport
+                    tips={tips}
+                    onClose={() => setShowExportModal(false)}
+                    userAddress={userAddress || demoWalletAddress}
+                />
             )}
         </div>
     );
