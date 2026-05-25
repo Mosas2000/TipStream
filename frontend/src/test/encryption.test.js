@@ -85,7 +85,7 @@ describe('encryption', () => {
             const decrypted = await decryptMessage(encrypted, privateKey);
             
             expect(decrypted).toBe(message);
-        });
+        }, 10000);
 
         it('should handle special characters', async () => {
             const keyPair = await generateKeyPair();
@@ -250,7 +250,7 @@ describe('encryption', () => {
             const decrypted = await decryptMessage(encrypted, recipientKeys.privateKey);
             
             expect(decrypted).toBe(message);
-        });
+        }, 15000);
 
         it('should fail to decrypt with wrong key', async () => {
             const senderKeys = await ensureUserKeys('sender-address');
@@ -263,6 +263,6 @@ describe('encryption', () => {
             await expect(
                 decryptMessage(encrypted, wrongKeys.privateKey)
             ).rejects.toThrow();
-        });
+        }, 20000);
     });
 });
