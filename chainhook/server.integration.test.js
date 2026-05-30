@@ -1033,7 +1033,7 @@ describe('Rate Limit Configuration', () => {
 
     assert.strictEqual(response.status, 400);
     assert.strictEqual(response.body.error, 'bad_request');
-    assert.ok(response.body.message.includes('maxRequests must be between 1 and 10000'));
+    assert.ok(response.body.message.includes('maxRequests must be at least 1'));
   });
 
   it('POST /api/admin/rate-limit validates maxRequests upper bound', async () => {
@@ -1048,7 +1048,7 @@ describe('Rate Limit Configuration', () => {
 
     assert.strictEqual(response.status, 400);
     assert.strictEqual(response.body.error, 'bad_request');
-    assert.ok(response.body.message.includes('maxRequests must be between 1 and 10000'));
+    assert.ok(response.body.message.includes('maxRequests must not exceed 10000'));
   });
 
   it('POST /api/admin/rate-limit validates windowMs range', async () => {
@@ -1063,7 +1063,7 @@ describe('Rate Limit Configuration', () => {
 
     assert.strictEqual(response.status, 400);
     assert.strictEqual(response.body.error, 'bad_request');
-    assert.ok(response.body.message.includes('windowMs must be between 1000 and 3600000'));
+    assert.ok(response.body.message.includes('windowMs must be at least 1000ms'));
   });
 
   it('POST /api/admin/rate-limit validates windowMs upper bound', async () => {
@@ -1078,7 +1078,7 @@ describe('Rate Limit Configuration', () => {
 
     assert.strictEqual(response.status, 400);
     assert.strictEqual(response.body.error, 'bad_request');
-    assert.ok(response.body.message.includes('windowMs must be between 1000 and 3600000'));
+    assert.ok(response.body.message.includes('windowMs must not exceed 3600000ms'));
   });
 
   it('POST /api/admin/rate-limit returns previous configuration', async () => {
