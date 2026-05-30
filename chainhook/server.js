@@ -6,7 +6,7 @@ import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
-import { RateLimiter, getClientIp, validateRateLimitConfig, AddressRateLimiter, parseAddressWhitelist, validateAddressRateLimitConfig } from "./rate-limit.js";
+import { RateLimiter, getClientIp, validateRateLimitConfig, AddressRateLimiter, parseAddressWhitelist, validateAddressRateLimitConfig, parseRateLimitEnv } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, createScheduledTipStore, createRefundStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
