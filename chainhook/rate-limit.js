@@ -94,6 +94,10 @@ export class RateLimiter {
    * @param {number} windowMs - New time window in milliseconds
    */
   updateConfig(maxRequests, windowMs) {
+    const validation = validateRateLimitConfig(maxRequests, windowMs);
+    if (!validation.valid) {
+      throw new Error(`Invalid rate limit configuration: ${validation.error}`);
+    }
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
   }
