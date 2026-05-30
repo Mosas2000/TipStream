@@ -39,13 +39,13 @@ describe('AddressRateLimiter — basic limiting', () => {
   });
 
   it('resets after the window expires', (t, done) => {
-    const fast = new AddressRateLimiter(1, 50);
+    const fast = new AddressRateLimiter(1, 1000);
     assert.strictEqual(fast.isAllowed(ADDR_A), true);
     assert.strictEqual(fast.isAllowed(ADDR_A), false);
     setTimeout(() => {
       assert.strictEqual(fast.isAllowed(ADDR_A), true);
       done();
-    }, 100);
+    }, 1100);
   });
 
   it('returns true for null or undefined address', () => {
@@ -198,7 +198,7 @@ describe('AddressRateLimiter — updateConfig and getConfig', () => {
 
 describe('AddressRateLimiter — cleanup', () => {
   it('removes expired entries', (t, done) => {
-    const limiter = new AddressRateLimiter(1, 50);
+    const limiter = new AddressRateLimiter(1, 1000);
     limiter.isAllowed(ADDR_A);
     assert.strictEqual(limiter.requests.size, 1);
 
@@ -206,7 +206,7 @@ describe('AddressRateLimiter — cleanup', () => {
       limiter.cleanup();
       assert.strictEqual(limiter.requests.size, 0);
       done();
-    }, 100);
+    }, 1100);
   });
 
   it('retains entries that are still within the window', () => {

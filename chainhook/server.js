@@ -6,7 +6,7 @@ import { deduplicateEvents } from "./deduplication.js";
 import { metrics } from "./metrics.js";
 import { validateBearerToken } from "./auth.js";
 import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
-import { RateLimiter, getClientIp, validateRateLimitConfig, AddressRateLimiter, parseAddressWhitelist, validateAddressRateLimitConfig } from "./rate-limit.js";
+import { RateLimiter, getClientIp, validateRateLimitConfig, AddressRateLimiter, parseAddressWhitelist, validateAddressRateLimitConfig, parseRateLimitEnv } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
 import { createEventStore, createScheduledTipStore, createRefundStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
@@ -33,18 +33,39 @@ const RETENTION_DAYS = parseRetentionDays(process.env.CHAINHOOK_RETENTION_DAYS, 
 const DATABASE_URL = process.env.DATABASE_URL || "";
 
 const CORS_ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
-const RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10);
-const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10);
-const rateLimiter = new RateLimiter(RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS);
 
-const ADDRESS_RATE_LIMIT_MAX_REQUESTS = parseInt(process.env.ADDRESS_RATE_LIMIT_MAX_REQUESTS || "50", 10);
-const ADDRESS_RATE_LIMIT_WINDOW_MS = parseInt(process.env.ADDRESS_RATE_LIMIT_WINDOW_MS || "60000", 10);
-const ADDRESS_RATE_LIMIT_WHITELIST = parseAddressWhitelist(process.env.ADDRESS_RATE_LIMIT_WHITELIST || "");
-const addressRateLimiter = new AddressRateLimiter(
-  ADDRESS_RATE_LIMIT_MAX_REQUESTS,
-  ADDRESS_RATE_LIMIT_WINDOW_MS,
-  ADDRESS_RATE_LIMIT_WHITELIST
-);
+let rateLimiter;
+let addressRateLimiter;
+
+try {
+  const ipRateLimitConfig = parseRateLimitEnv(
+    process.env.RATE_LIMIT_MAX_REQUESTS || "100",
+    process.env.RATE_LIMIT_WINDOW_MS || "60000",
+    "IP rate limit"
+  );
+  rateLimiter = new RateLimiter(ipRateLimitConfig.maxRequests, ipRateLimitConfig.windowMs);
+  
+  const addressRateLimitConfig = parseRateLimitEnv(
+    process.env.ADDRESS_RATE_LIMIT_MAX_REQUESTS || "50",
+    process.env.ADDRESS_RATE_LIMIT_WINDOW_MS || "60000",
+    "address rate limit"
+  );
+  const ADDRESS_RATE_LIMIT_WHITELIST = parseAddressWhitelist(process.env.ADDRESS_RATE_LIMIT_WHITELIST || "");
+  addressRateLimiter = new AddressRateLimiter(
+    addressRateLimitConfig.maxRequests,
+    addressRateLimitConfig.windowMs,
+    ADDRESS_RATE_LIMIT_WHITELIST
+  );
+  
+  logger.info('Rate limiters initialized', {
+    ip_rate_limit: ipRateLimitConfig,
+    address_rate_limit: addressRateLimitConfig,
+    whitelist_size: ADDRESS_RATE_LIMIT_WHITELIST.length,
+  });
+} catch (err) {
+  logger.error('Failed to initialize rate limiters', { error: err.message });
+  throw err;
+}
 let eventStore = null;
 let scheduledTipStore = null;
 let refundStore = null;

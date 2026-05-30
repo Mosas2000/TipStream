@@ -16,6 +16,10 @@ export class RateLimiter {
    * @param {number} windowMs - Time window in milliseconds
    */
   constructor(maxRequests, windowMs) {
+    const validation = validateRateLimitConfig(maxRequests, windowMs);
+    if (!validation.valid) {
+      throw new Error(`Invalid rate limit configuration: ${validation.error}`);
+    }
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
     this.requests = new Map();
@@ -90,6 +94,10 @@ export class RateLimiter {
    * @param {number} windowMs - New time window in milliseconds
    */
   updateConfig(maxRequests, windowMs) {
+    const validation = validateRateLimitConfig(maxRequests, windowMs);
+    if (!validation.valid) {
+      throw new Error(`Invalid rate limit configuration: ${validation.error}`);
+    }
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
   }
@@ -123,12 +131,82 @@ export function getClientIp(req) {
 }
 
 /**
- * Validate rate limit configuration parameters.
- * Ensures values are within acceptable ranges for production use.
+ * Check if rate limit configuration is valid without throwing.
+ * Useful for pre-validation checks before applying configuration.
  * 
  * @param {number} maxRequests - Maximum requests per window
  * @param {number} windowMs - Time window in milliseconds
- * @returns {object} Validation result with valid flag and error message if invalid
+ * @returns {boolean} True if configuration is valid
+ */
+export function isValidRateLimitConfig(maxRequests, windowMs) {
+  const validation = validateRateLimitConfig(maxRequests, windowMs);
+  return validation.valid;
+}
+
+/**
+ * Format validation error for logging and debugging.
+ * Provides structured error information for monitoring.
+ * 
+ * @param {object} validation - Validation result from validateRateLimitConfig
+ * @param {number} maxRequests - The maxRequests value that was validated
+ * @param {number} windowMs - The windowMs value that was validated
+ * @returns {object} Formatted error details
+ */
+export function formatValidationError(validation, maxRequests, windowMs) {
+  return {
+    valid: false,
+    error: validation.error,
+    provided: {
+      maxRequests,
+      windowMs,
+    },
+    bounds: RATE_LIMIT_BOUNDS,
+  };
+}
+
+/**
+ * VALIDATION SECTION
+ * 
+ * This section contains all validation logic for rate limit configuration.
+ * Validation is performed at multiple points:
+ * 1. Startup - via parseRateLimitEnv()
+ * 2. Construction - via RateLimiter/AddressRateLimiter constructors
+ * 3. Runtime updates - via updateConfig() methods
+ * 
+ * All validation uses the same core validateRateLimitConfig() function
+ * to ensure consistent behavior across all entry points.
+ */
+
+/**
+ * Configuration bounds for rate limiting.
+ * These values define acceptable ranges for production use.
+ */
+export const RATE_LIMIT_BOUNDS = {
+  MAX_REQUESTS_MIN: 1,
+  MAX_REQUESTS_MAX: 10000,
+  WINDOW_MS_MIN: 1000,
+  WINDOW_MS_MAX: 3600000,
+};
+
+/**
+ * Validate rate limit configuration parameters.
+ * Ensures values are within acceptable ranges for production use.
+ * 
+ * Performs the following validations:
+ * - Type checking (must be numbers)
+ * - Finite number validation (no Infinity/-Infinity)
+ * - Integer validation (no decimal values)
+ * - Range validation (within min/max bounds)
+ * 
+ * @param {number} maxRequests - Maximum requests per window (1-10000)
+ * @param {number} windowMs - Time window in milliseconds (1000-3600000)
+ * @returns {{valid: boolean, error?: string}} Validation result with error message if invalid
+ * 
+ * @example
+ * const result = validateRateLimitConfig(100, 60000);
+ * if (!result.valid) {
+ *   console.error(result.error);
+ * }
  */
 export function validateRateLimitConfig(maxRequests, windowMs) {
   if (typeof maxRequests !== 'number' || isNaN(maxRequests)) {
@@ -139,12 +217,48 @@ export function validateRateLimitConfig(maxRequests, windowMs) {
     return { valid: false, error: 'windowMs must be a number' };
   }
 
-  if (maxRequests < 1 || maxRequests > 10000) {
-    return { valid: false, error: 'maxRequests must be between 1 and 10000' };
+  if (!Number.isFinite(maxRequests)) {
+    return { valid: false, error: 'maxRequests must be a finite number' };
   }
 
-  if (windowMs < 1000 || windowMs > 3600000) {
-    return { valid: false, error: 'windowMs must be between 1000 and 3600000' };
+  if (!Number.isFinite(windowMs)) {
+    return { valid: false, error: 'windowMs must be a finite number' };
+  }
+
+  if (!Number.isInteger(maxRequests)) {
+    return { valid: false, error: 'maxRequests must be an integer' };
+  }
+
+  if (!Number.isInteger(windowMs)) {
+    return { valid: false, error: 'windowMs must be an integer' };
+  }
+
+  if (maxRequests < RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN) {
+    return { 
+      valid: false, 
+      error: `maxRequests must be at least ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN}` 
+    };
+  }
+
+  if (maxRequests > RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX) {
+    return { 
+      valid: false, 
+      error: `maxRequests must not exceed ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX}` 
+    };
+  }
+
+  if (windowMs < RATE_LIMIT_BOUNDS.WINDOW_MS_MIN) {
+    return { 
+      valid: false, 
+      error: `windowMs must be at least ${RATE_LIMIT_BOUNDS.WINDOW_MS_MIN}ms (1 second)` 
+    };
+  }
+
+  if (windowMs > RATE_LIMIT_BOUNDS.WINDOW_MS_MAX) {
+    return { 
+      valid: false, 
+      error: `windowMs must not exceed ${RATE_LIMIT_BOUNDS.WINDOW_MS_MAX}ms (1 hour)` 
+    };
   }
 
   return { valid: true };
@@ -165,6 +279,10 @@ export class AddressRateLimiter {
    * @param {string[]} [whitelist] - Addresses that are never rate limited
    */
   constructor(maxRequests, windowMs, whitelist = []) {
+    const validation = validateAddressRateLimitConfig(maxRequests, windowMs);
+    if (!validation.valid) {
+      throw new Error(`Invalid address rate limit configuration: ${validation.error}`);
+    }
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
     this.requests = new Map();
@@ -267,6 +385,10 @@ export class AddressRateLimiter {
    * @param {number} windowMs
    */
   updateConfig(maxRequests, windowMs) {
+    const validation = validateAddressRateLimitConfig(maxRequests, windowMs);
+    if (!validation.valid) {
+      throw new Error(`Invalid address rate limit configuration: ${validation.error}`);
+    }
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
   }
@@ -298,6 +420,35 @@ export class AddressRateLimiter {
       }
     }
   }
+}
+
+/**
+ * Parse and validate rate limit configuration from environment variables.
+ * Returns validated configuration or throws an error with clear message.
+ * 
+ * @param {string} maxRequestsStr - Raw environment variable value for maxRequests
+ * @param {string} windowMsStr - Raw environment variable value for windowMs
+ * @param {string} configName - Name of the configuration (for error messages)
+ * @returns {{ maxRequests: number, windowMs: number }}
+ */
+export function parseRateLimitEnv(maxRequestsStr, windowMsStr, configName = 'rate limit') {
+  const maxRequests = parseInt(maxRequestsStr, 10);
+  const windowMs = parseInt(windowMsStr, 10);
+
+  if (isNaN(maxRequests)) {
+    throw new Error(`Invalid ${configName} configuration: maxRequests must be a valid number, got "${maxRequestsStr}"`);
+  }
+
+  if (isNaN(windowMs)) {
+    throw new Error(`Invalid ${configName} configuration: windowMs must be a valid number, got "${windowMsStr}"`);
+  }
+
+  const validation = validateRateLimitConfig(maxRequests, windowMs);
+  if (!validation.valid) {
+    throw new Error(`Invalid ${configName} configuration: ${validation.error}`);
+  }
+
+  return { maxRequests, windowMs };
 }
 
 /**
