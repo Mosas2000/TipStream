@@ -364,6 +364,35 @@ export class AddressRateLimiter {
 }
 
 /**
+ * Parse and validate rate limit configuration from environment variables.
+ * Returns validated configuration or throws an error with clear message.
+ * 
+ * @param {string} maxRequestsStr - Raw environment variable value for maxRequests
+ * @param {string} windowMsStr - Raw environment variable value for windowMs
+ * @param {string} configName - Name of the configuration (for error messages)
+ * @returns {{ maxRequests: number, windowMs: number }}
+ */
+export function parseRateLimitEnv(maxRequestsStr, windowMsStr, configName = 'rate limit') {
+  const maxRequests = parseInt(maxRequestsStr, 10);
+  const windowMs = parseInt(windowMsStr, 10);
+
+  if (isNaN(maxRequests)) {
+    throw new Error(`Invalid ${configName} configuration: maxRequests must be a valid number, got "${maxRequestsStr}"`);
+  }
+
+  if (isNaN(windowMs)) {
+    throw new Error(`Invalid ${configName} configuration: windowMs must be a valid number, got "${windowMsStr}"`);
+  }
+
+  const validation = validateRateLimitConfig(maxRequests, windowMs);
+  if (!validation.valid) {
+    throw new Error(`Invalid ${configName} configuration: ${validation.error}`);
+  }
+
+  return { maxRequests, windowMs };
+}
+
+/**
  * Parse a comma-separated whitelist string from an environment variable.
  * Returns an array of trimmed, non-empty address strings.
  *
