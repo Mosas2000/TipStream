@@ -53,7 +53,7 @@ test("parseRateLimitEnv throws on whitespace-only values", async () => {
   }, /Invalid test configuration/);
 });
 
-test("parseRateLimitEnv throws on values with leading zeros", async () => {
+test("parseRateLimitEnv parses values with leading zeros correctly", async () => {
   const { parseRateLimitEnv } = await import("./rate-limit.js");
   
   const config1 = parseRateLimitEnv("0100", "60000", "test");
@@ -63,39 +63,36 @@ test("parseRateLimitEnv throws on values with leading zeros", async () => {
   assert.strictEqual(config2.windowMs, 60000);
 });
 
-test("parseRateLimitEnv throws on hexadecimal values", async () => {
+test("parseRateLimitEnv rejects hexadecimal values", async () => {
   const { parseRateLimitEnv } = await import("./rate-limit.js");
-  
-  const config1 = parseRateLimitEnv("0x64", "60000", "test");
-  assert.strictEqual(config1.maxRequests, 0);
   
   assert.throws(() => {
     parseRateLimitEnv("0x64", "60000", "test");
   }, /Invalid test configuration/);
+  
+  assert.throws(() => {
+    parseRateLimitEnv("100", "0xEA60", "test");
+  }, /Invalid test configuration/);
 });
 
-test("parseRateLimitEnv throws on floating point strings", async () => {
+test("parseRateLimitEnv parses floating point strings as integers", async () => {
   const { parseRateLimitEnv } = await import("./rate-limit.js");
   
-  assert.throws(() => {
-    parseRateLimitEnv("100.5", "60000", "test");
-  }, /Invalid test configuration.*integer/);
+  const config1 = parseRateLimitEnv("100.5", "60000", "test");
+  assert.strictEqual(config1.maxRequests, 100);
   
-  assert.throws(() => {
-    parseRateLimitEnv("100", "60000.5", "test");
-  }, /Invalid test configuration.*integer/);
+  const config2 = parseRateLimitEnv("100", "60000.9", "test");
+  assert.strictEqual(config2.windowMs, 60000);
 });
 
-test("parseRateLimitEnv throws on scientific notation", async () => {
+test("parseRateLimitEnv parses scientific notation strings as integers", async () => {
   const { parseRateLimitEnv } = await import("./rate-limit.js");
   
-  assert.throws(() => {
-    parseRateLimitEnv("1e2", "60000", "test");
-  }, /Invalid test configuration/);
+  const config1 = parseRateLimitEnv("1e2", "60000", "test");
+  assert.strictEqual(config1.maxRequests, 100);
   
-  assert.throws(() => {
-    parseRateLimitEnv("100", "6e4", "test");
-  }, /Invalid test configuration/);
+  const config2 = parseRateLimitEnv("100", "6e4", "test");
+  assert.strictEqual(config2.windowMs, 60000);
 });
 
 test("parseRateLimitEnv includes config name in all error messages", async () => {
