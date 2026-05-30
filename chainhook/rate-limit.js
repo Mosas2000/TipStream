@@ -165,6 +165,19 @@ export function formatValidationError(validation, maxRequests, windowMs) {
 }
 
 /**
+ * VALIDATION SECTION
+ * 
+ * This section contains all validation logic for rate limit configuration.
+ * Validation is performed at multiple points:
+ * 1. Startup - via parseRateLimitEnv()
+ * 2. Construction - via RateLimiter/AddressRateLimiter constructors
+ * 3. Runtime updates - via updateConfig() methods
+ * 
+ * All validation uses the same core validateRateLimitConfig() function
+ * to ensure consistent behavior across all entry points.
+ */
+
+/**
  * Configuration bounds for rate limiting.
  * These values define acceptable ranges for production use.
  */
