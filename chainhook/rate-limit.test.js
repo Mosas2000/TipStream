@@ -442,3 +442,81 @@ test("validateRateLimitConfig accepts exact boundary values", async () => {
   );
   assert.strictEqual(maxResult.valid, true);
 });
+
+test("validateRateLimitConfig rejects string maxRequests", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig("100", 60000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('maxRequests must be a number'));
+});
+
+test("validateRateLimitConfig rejects string windowMs", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(100, "60000");
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('windowMs must be a number'));
+});
+
+test("validateRateLimitConfig rejects null values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  
+  const result1 = validateRateLimitConfig(null, 60000);
+  assert.strictEqual(result1.valid, false);
+  
+  const result2 = validateRateLimitConfig(100, null);
+  assert.strictEqual(result2.valid, false);
+});
+
+test("validateRateLimitConfig rejects undefined values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  
+  const result1 = validateRateLimitConfig(undefined, 60000);
+  assert.strictEqual(result1.valid, false);
+  
+  const result2 = validateRateLimitConfig(100, undefined);
+  assert.strictEqual(result2.valid, false);
+});
+
+test("validateRateLimitConfig rejects object values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  
+  const result1 = validateRateLimitConfig({}, 60000);
+  assert.strictEqual(result1.valid, false);
+  
+  const result2 = validateRateLimitConfig(100, {});
+  assert.strictEqual(result2.valid, false);
+});
+
+test("validateRateLimitConfig rejects array values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  
+  const result1 = validateRateLimitConfig([100], 60000);
+  assert.strictEqual(result1.valid, false);
+  
+  const result2 = validateRateLimitConfig(100, [60000]);
+  assert.strictEqual(result2.valid, false);
+});
+
+test("RateLimiter constructor throws on string values", async () => {
+  const { RateLimiter } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    new RateLimiter("100", 60000);
+  }, /Invalid rate limit configuration/);
+  
+  assert.throws(() => {
+    new RateLimiter(100, "60000");
+  }, /Invalid rate limit configuration/);
+});
+
+test("AddressRateLimiter constructor throws on string values", async () => {
+  const { AddressRateLimiter } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    new AddressRateLimiter("100", 60000);
+  }, /Invalid address rate limit configuration/);
+  
+  assert.throws(() => {
+    new AddressRateLimiter(100, "60000");
+  }, /Invalid address rate limit configuration/);
+});
