@@ -166,17 +166,31 @@ export function validateRateLimitConfig(maxRequests, windowMs) {
     return { valid: false, error: 'windowMs must be an integer' };
   }
 
-  if (maxRequests < RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN || maxRequests > RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX) {
+  if (maxRequests < RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN) {
     return { 
       valid: false, 
-      error: `maxRequests must be between ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN} and ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX}` 
+      error: `maxRequests must be at least ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN}` 
     };
   }
 
-  if (windowMs < RATE_LIMIT_BOUNDS.WINDOW_MS_MIN || windowMs > RATE_LIMIT_BOUNDS.WINDOW_MS_MAX) {
+  if (maxRequests > RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX) {
     return { 
       valid: false, 
-      error: `windowMs must be between ${RATE_LIMIT_BOUNDS.WINDOW_MS_MIN} and ${RATE_LIMIT_BOUNDS.WINDOW_MS_MAX}` 
+      error: `maxRequests must not exceed ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX}` 
+    };
+  }
+
+  if (windowMs < RATE_LIMIT_BOUNDS.WINDOW_MS_MIN) {
+    return { 
+      valid: false, 
+      error: `windowMs must be at least ${RATE_LIMIT_BOUNDS.WINDOW_MS_MIN}ms (1 second)` 
+    };
+  }
+
+  if (windowMs > RATE_LIMIT_BOUNDS.WINDOW_MS_MAX) {
+    return { 
+      valid: false, 
+      error: `windowMs must not exceed ${RATE_LIMIT_BOUNDS.WINDOW_MS_MAX}ms (1 hour)` 
     };
   }
 
