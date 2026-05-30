@@ -40,6 +40,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.1",
+    "recharts": "^2.15.0",
     "tailwind-merge": "^3.4.0",
     "tipstreak-sdk": "^0.1.1",
     "web-vitals": "^5.1.0"
