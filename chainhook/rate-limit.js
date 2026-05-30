@@ -158,14 +158,6 @@ export function validateRateLimitConfig(maxRequests, windowMs) {
     return { valid: false, error: 'windowMs must be a finite number' };
   }
 
-  if (!Number.isInteger(maxRequests)) {
-    return { valid: false, error: 'maxRequests must be an integer' };
-  }
-
-  if (!Number.isInteger(windowMs)) {
-    return { valid: false, error: 'windowMs must be an integer' };
-  }
-
   if (maxRequests < RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN || maxRequests > RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX) {
     return { 
       valid: false, 
