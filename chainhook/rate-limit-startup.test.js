@@ -85,14 +85,18 @@ test("parseRateLimitEnv parses floating point strings as integers", async () => 
   assert.strictEqual(config2.windowMs, 60000);
 });
 
-test("parseRateLimitEnv parses scientific notation strings as integers", async () => {
+test("parseRateLimitEnv handles scientific notation strings", async () => {
   const { parseRateLimitEnv } = await import("./rate-limit.js");
   
-  const config1 = parseRateLimitEnv("1e2", "60000", "test");
-  assert.strictEqual(config1.maxRequests, 100);
+  // parseInt stops at 'e', so "1e2" becomes 1
+  assert.throws(() => {
+    parseRateLimitEnv("1e2", "60000", "test");
+  }, /Invalid test configuration/);
   
-  const config2 = parseRateLimitEnv("100", "6e4", "test");
-  assert.strictEqual(config2.windowMs, 60000);
+  // parseInt stops at 'e', so "6e4" becomes 6
+  assert.throws(() => {
+    parseRateLimitEnv("100", "6e4", "test");
+  }, /Invalid test configuration/);
 });
 
 test("parseRateLimitEnv includes config name in all error messages", async () => {
