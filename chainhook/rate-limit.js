@@ -326,6 +326,10 @@ export class AddressRateLimiter {
    * @param {number} windowMs
    */
   updateConfig(maxRequests, windowMs) {
+    const validation = validateAddressRateLimitConfig(maxRequests, windowMs);
+    if (!validation.valid) {
+      throw new Error(`Invalid address rate limit configuration: ${validation.error}`);
+    }
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
   }
