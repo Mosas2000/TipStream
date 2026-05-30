@@ -123,6 +123,17 @@ export function getClientIp(req) {
 }
 
 /**
+ * Configuration bounds for rate limiting.
+ * These values define acceptable ranges for production use.
+ */
+export const RATE_LIMIT_BOUNDS = {
+  MAX_REQUESTS_MIN: 1,
+  MAX_REQUESTS_MAX: 10000,
+  WINDOW_MS_MIN: 1000,
+  WINDOW_MS_MAX: 3600000,
+};
+
+/**
  * Validate rate limit configuration parameters.
  * Ensures values are within acceptable ranges for production use.
  * 
@@ -139,12 +150,34 @@ export function validateRateLimitConfig(maxRequests, windowMs) {
     return { valid: false, error: 'windowMs must be a number' };
   }
 
-  if (maxRequests < 1 || maxRequests > 10000) {
-    return { valid: false, error: 'maxRequests must be between 1 and 10000' };
+  if (!Number.isFinite(maxRequests)) {
+    return { valid: false, error: 'maxRequests must be a finite number' };
   }
 
-  if (windowMs < 1000 || windowMs > 3600000) {
-    return { valid: false, error: 'windowMs must be between 1000 and 3600000' };
+  if (!Number.isFinite(windowMs)) {
+    return { valid: false, error: 'windowMs must be a finite number' };
+  }
+
+  if (!Number.isInteger(maxRequests)) {
+    return { valid: false, error: 'maxRequests must be an integer' };
+  }
+
+  if (!Number.isInteger(windowMs)) {
+    return { valid: false, error: 'windowMs must be an integer' };
+  }
+
+  if (maxRequests < RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN || maxRequests > RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX) {
+    return { 
+      valid: false, 
+      error: `maxRequests must be between ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN} and ${RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX}` 
+    };
+  }
+
+  if (windowMs < RATE_LIMIT_BOUNDS.WINDOW_MS_MIN || windowMs > RATE_LIMIT_BOUNDS.WINDOW_MS_MAX) {
+    return { 
+      valid: false, 
+      error: `windowMs must be between ${RATE_LIMIT_BOUNDS.WINDOW_MS_MIN} and ${RATE_LIMIT_BOUNDS.WINDOW_MS_MAX}` 
+    };
   }
 
   return { valid: true };
