@@ -131,6 +131,19 @@ export function getClientIp(req) {
 }
 
 /**
+ * Check if rate limit configuration is valid without throwing.
+ * Useful for pre-validation checks before applying configuration.
+ * 
+ * @param {number} maxRequests - Maximum requests per window
+ * @param {number} windowMs - Time window in milliseconds
+ * @returns {boolean} True if configuration is valid
+ */
+export function isValidRateLimitConfig(maxRequests, windowMs) {
+  const validation = validateRateLimitConfig(maxRequests, windowMs);
+  return validation.valid;
+}
+
+/**
  * Format validation error for logging and debugging.
  * Provides structured error information for monitoring.
  * 
