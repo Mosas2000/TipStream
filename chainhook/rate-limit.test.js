@@ -362,3 +362,83 @@ test("parseRateLimitEnv includes config name in error messages", async () => {
     assert.ok(err.message.includes("custom rate limit"));
   }
 });
+
+test("validateRateLimitConfig rejects negative maxRequests", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(-1, 60000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('maxRequests must be at least 1'));
+});
+
+test("validateRateLimitConfig rejects negative windowMs", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(100, -1000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('windowMs must be at least 1000ms'));
+});
+
+test("validateRateLimitConfig rejects zero maxRequests", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(0, 60000);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('maxRequests must be at least 1'));
+});
+
+test("validateRateLimitConfig rejects zero windowMs", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result = validateRateLimitConfig(100, 0);
+  assert.strictEqual(result.valid, false);
+  assert.ok(result.error.includes('windowMs must be at least 1000ms'));
+});
+
+test("RateLimiter constructor throws on negative values", async () => {
+  const { RateLimiter } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    new RateLimiter(-1, 60000);
+  }, /Invalid rate limit configuration/);
+  
+  assert.throws(() => {
+    new RateLimiter(100, -1000);
+  }, /Invalid rate limit configuration/);
+});
+
+test("AddressRateLimiter constructor throws on negative values", async () => {
+  const { AddressRateLimiter } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    new AddressRateLimiter(-1, 60000);
+  }, /Invalid address rate limit configuration/);
+  
+  assert.throws(() => {
+    new AddressRateLimiter(100, -1000);
+  }, /Invalid address rate limit configuration/);
+});
+
+test("parseRateLimitEnv handles negative values in strings", async () => {
+  const { parseRateLimitEnv } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    parseRateLimitEnv("-1", "60000", "test");
+  }, /Invalid test configuration/);
+  
+  assert.throws(() => {
+    parseRateLimitEnv("100", "-1000", "test");
+  }, /Invalid test configuration/);
+});
+
+test("validateRateLimitConfig accepts exact boundary values", async () => {
+  const { validateRateLimitConfig, RATE_LIMIT_BOUNDS } = await import("./rate-limit.js");
+  
+  const minResult = validateRateLimitConfig(
+    RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN,
+    RATE_LIMIT_BOUNDS.WINDOW_MS_MIN
+  );
+  assert.strictEqual(minResult.valid, true);
+  
+  const maxResult = validateRateLimitConfig(
+    RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX,
+    RATE_LIMIT_BOUNDS.WINDOW_MS_MAX
+  );
+  assert.strictEqual(maxResult.valid, true);
+});
