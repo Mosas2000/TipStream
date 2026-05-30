@@ -131,6 +131,27 @@ export function getClientIp(req) {
 }
 
 /**
+ * Format validation error for logging and debugging.
+ * Provides structured error information for monitoring.
+ * 
+ * @param {object} validation - Validation result from validateRateLimitConfig
+ * @param {number} maxRequests - The maxRequests value that was validated
+ * @param {number} windowMs - The windowMs value that was validated
+ * @returns {object} Formatted error details
+ */
+export function formatValidationError(validation, maxRequests, windowMs) {
+  return {
+    valid: false,
+    error: validation.error,
+    provided: {
+      maxRequests,
+      windowMs,
+    },
+    bounds: RATE_LIMIT_BOUNDS,
+  };
+}
+
+/**
  * Configuration bounds for rate limiting.
  * These values define acceptable ranges for production use.
  */
