@@ -179,9 +179,21 @@ export const RATE_LIMIT_BOUNDS = {
  * Validate rate limit configuration parameters.
  * Ensures values are within acceptable ranges for production use.
  * 
- * @param {number} maxRequests - Maximum requests per window
- * @param {number} windowMs - Time window in milliseconds
- * @returns {object} Validation result with valid flag and error message if invalid
+ * Performs the following validations:
+ * - Type checking (must be numbers)
+ * - Finite number validation (no Infinity/-Infinity)
+ * - Integer validation (no decimal values)
+ * - Range validation (within min/max bounds)
+ * 
+ * @param {number} maxRequests - Maximum requests per window (1-10000)
+ * @param {number} windowMs - Time window in milliseconds (1000-3600000)
+ * @returns {{valid: boolean, error?: string}} Validation result with error message if invalid
+ * 
+ * @example
+ * const result = validateRateLimitConfig(100, 60000);
+ * if (!result.valid) {
+ *   console.error(result.error);
+ * }
  */
 export function validateRateLimitConfig(maxRequests, windowMs) {
   if (typeof maxRequests !== 'number' || isNaN(maxRequests)) {
