@@ -178,3 +178,62 @@ test("validateRateLimitConfig rejects NaN values", async () => {
   const result2 = validateRateLimitConfig(100, NaN);
   assert.strictEqual(result2.valid, false);
 });
+
+test("validateRateLimitConfig rejects Infinity values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result1 = validateRateLimitConfig(Infinity, 60000);
+  assert.strictEqual(result1.valid, false);
+  assert.ok(result1.error.includes('finite'));
+  
+  const result2 = validateRateLimitConfig(100, Infinity);
+  assert.strictEqual(result2.valid, false);
+  assert.ok(result2.error.includes('finite'));
+});
+
+test("validateRateLimitConfig rejects negative Infinity values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result1 = validateRateLimitConfig(-Infinity, 60000);
+  assert.strictEqual(result1.valid, false);
+  assert.ok(result1.error.includes('finite'));
+  
+  const result2 = validateRateLimitConfig(100, -Infinity);
+  assert.strictEqual(result2.valid, false);
+  assert.ok(result2.error.includes('finite'));
+});
+
+test("validateRateLimitConfig rejects decimal values", async () => {
+  const { validateRateLimitConfig } = await import("./rate-limit.js");
+  const result1 = validateRateLimitConfig(100.5, 60000);
+  assert.strictEqual(result1.valid, false);
+  assert.ok(result1.error.includes('integer'));
+  
+  const result2 = validateRateLimitConfig(100, 60000.7);
+  assert.strictEqual(result2.valid, false);
+  assert.ok(result2.error.includes('integer'));
+});
+
+test("validateRateLimitConfig accepts boundary values", async () => {
+  const { validateRateLimitConfig, RATE_LIMIT_BOUNDS } = await import("./rate-limit.js");
+  
+  const result1 = validateRateLimitConfig(RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN, RATE_LIMIT_BOUNDS.WINDOW_MS_MIN);
+  assert.strictEqual(result1.valid, true);
+  
+  const result2 = validateRateLimitConfig(RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX, RATE_LIMIT_BOUNDS.WINDOW_MS_MAX);
+  assert.strictEqual(result2.valid, true);
+});
+
+test("validateRateLimitConfig rejects values just outside boundaries", async () => {
+  const { validateRateLimitConfig, RATE_LIMIT_BOUNDS } = await import("./rate-limit.js");
+  
+  const result1 = validateRateLimitConfig(RATE_LIMIT_BOUNDS.MAX_REQUESTS_MIN - 1, 60000);
+  assert.strictEqual(result1.valid, false);
+  
+  const result2 = validateRateLimitConfig(RATE_LIMIT_BOUNDS.MAX_REQUESTS_MAX + 1, 60000);
+  assert.strictEqual(result2.valid, false);
+  
+  const result3 = validateRateLimitConfig(100, RATE_LIMIT_BOUNDS.WINDOW_MS_MIN - 1);
+  assert.strictEqual(result3.valid, false);
+  
+  const result4 = validateRateLimitConfig(100, RATE_LIMIT_BOUNDS.WINDOW_MS_MAX + 1);
+  assert.strictEqual(result4.valid, false);
+});
