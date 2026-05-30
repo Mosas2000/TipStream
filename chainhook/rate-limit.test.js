@@ -237,3 +237,128 @@ test("validateRateLimitConfig rejects values just outside boundaries", async () 
   const result4 = validateRateLimitConfig(100, RATE_LIMIT_BOUNDS.WINDOW_MS_MAX + 1);
   assert.strictEqual(result4.valid, false);
 });
+
+test("RateLimiter constructor throws on invalid config", async () => {
+  const { RateLimiter } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    new RateLimiter(0, 60000);
+  }, /Invalid rate limit configuration/);
+  
+  assert.throws(() => {
+    new RateLimiter(100, 500);
+  }, /Invalid rate limit configuration/);
+  
+  assert.throws(() => {
+    new RateLimiter(NaN, 60000);
+  }, /Invalid rate limit configuration/);
+});
+
+test("RateLimiter.updateConfig throws on invalid config", async () => {
+  const { RateLimiter } = await import("./rate-limit.js");
+  const limiter = new RateLimiter(100, 60000);
+  
+  assert.throws(() => {
+    limiter.updateConfig(0, 60000);
+  }, /Invalid rate limit configuration/);
+  
+  assert.throws(() => {
+    limiter.updateConfig(100, 500);
+  }, /Invalid rate limit configuration/);
+  
+  assert.throws(() => {
+    limiter.updateConfig(Infinity, 60000);
+  }, /Invalid rate limit configuration/);
+});
+
+test("AddressRateLimiter constructor throws on invalid config", async () => {
+  const { AddressRateLimiter } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    new AddressRateLimiter(0, 60000);
+  }, /Invalid address rate limit configuration/);
+  
+  assert.throws(() => {
+    new AddressRateLimiter(100, 500);
+  }, /Invalid address rate limit configuration/);
+  
+  assert.throws(() => {
+    new AddressRateLimiter(NaN, 60000);
+  }, /Invalid address rate limit configuration/);
+});
+
+test("AddressRateLimiter.updateConfig throws on invalid config", async () => {
+  const { AddressRateLimiter } = await import("./rate-limit.js");
+  const limiter = new AddressRateLimiter(100, 60000);
+  
+  assert.throws(() => {
+    limiter.updateConfig(0, 60000);
+  }, /Invalid address rate limit configuration/);
+  
+  assert.throws(() => {
+    limiter.updateConfig(100, 500);
+  }, /Invalid address rate limit configuration/);
+  
+  assert.throws(() => {
+    limiter.updateConfig(-Infinity, 60000);
+  }, /Invalid address rate limit configuration/);
+});
+
+test("parseRateLimitEnv parses valid configuration", async () => {
+  const { parseRateLimitEnv } = await import("./rate-limit.js");
+  
+  const config = parseRateLimitEnv("100", "60000", "test");
+  assert.strictEqual(config.maxRequests, 100);
+  assert.strictEqual(config.windowMs, 60000);
+});
+
+test("parseRateLimitEnv throws on invalid maxRequests", async () => {
+  const { parseRateLimitEnv } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    parseRateLimitEnv("invalid", "60000", "test");
+  }, /Invalid test configuration.*maxRequests/);
+  
+  assert.throws(() => {
+    parseRateLimitEnv("", "60000", "test");
+  }, /Invalid test configuration.*maxRequests/);
+});
+
+test("parseRateLimitEnv throws on invalid windowMs", async () => {
+  const { parseRateLimitEnv } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    parseRateLimitEnv("100", "invalid", "test");
+  }, /Invalid test configuration.*windowMs/);
+  
+  assert.throws(() => {
+    parseRateLimitEnv("100", "", "test");
+  }, /Invalid test configuration.*windowMs/);
+});
+
+test("parseRateLimitEnv throws on out of range values", async () => {
+  const { parseRateLimitEnv } = await import("./rate-limit.js");
+  
+  assert.throws(() => {
+    parseRateLimitEnv("0", "60000", "test");
+  }, /Invalid test configuration/);
+  
+  assert.throws(() => {
+    parseRateLimitEnv("100", "500", "test");
+  }, /Invalid test configuration/);
+  
+  assert.throws(() => {
+    parseRateLimitEnv("20000", "60000", "test");
+  }, /Invalid test configuration/);
+});
+
+test("parseRateLimitEnv includes config name in error messages", async () => {
+  const { parseRateLimitEnv } = await import("./rate-limit.js");
+  
+  try {
+    parseRateLimitEnv("invalid", "60000", "custom rate limit");
+    assert.fail("Should have thrown");
+  } catch (err) {
+    assert.ok(err.message.includes("custom rate limit"));
+  }
+});
