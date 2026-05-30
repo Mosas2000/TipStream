@@ -26,14 +26,14 @@ test("RateLimiter tracks separate IPs independently", () => {
 });
 
 test("RateLimiter resets after window expires", (t, done) => {
-  const limiter = new RateLimiter(1, 50);
+  const limiter = new RateLimiter(1, 1000);
   assert(limiter.isAllowed("192.168.1.1"));
   assert(!limiter.isAllowed("192.168.1.1"));
 
   setTimeout(() => {
     assert(limiter.isAllowed("192.168.1.1"));
     done();
-  }, 100);
+  }, 1100);
 });
 
 test("RateLimiter.getRemaining returns correct count", () => {
@@ -46,7 +46,7 @@ test("RateLimiter.getRemaining returns correct count", () => {
 });
 
 test("RateLimiter.cleanup removes expired entries", (t, done) => {
-  const limiter = new RateLimiter(1, 50);
+  const limiter = new RateLimiter(1, 1000);
   limiter.isAllowed("192.168.1.1");
   assert.strictEqual(limiter.requests.size, 1);
 
@@ -54,7 +54,7 @@ test("RateLimiter.cleanup removes expired entries", (t, done) => {
     limiter.cleanup();
     assert.strictEqual(limiter.requests.size, 0);
     done();
-  }, 100);
+  }, 1100);
 });
 
 test("getClientIp extracts IP from socket", () => {
@@ -95,13 +95,13 @@ test("RateLimiter.updateConfig changes rate limit settings", () => {
 });
 
 test("RateLimiter.updateConfig changes window duration", () => {
-  const limiter = new RateLimiter(1, 100);
+  const limiter = new RateLimiter(1, 1000);
   assert(limiter.isAllowed("192.168.1.1"));
   assert(!limiter.isAllowed("192.168.1.1"));
 
-  limiter.updateConfig(1, 50);
+  limiter.updateConfig(1, 2000);
   const config = limiter.getConfig();
-  assert.strictEqual(config.windowMs, 50);
+  assert.strictEqual(config.windowMs, 2000);
 });
 
 test("RateLimiter.getConfig returns current settings", () => {
