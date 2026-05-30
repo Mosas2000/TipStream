@@ -520,3 +520,45 @@ test("AddressRateLimiter constructor throws on string values", async () => {
     new AddressRateLimiter(100, "60000");
   }, /Invalid address rate limit configuration/);
 });
+
+test("isValidRateLimitConfig returns true for valid configuration", async () => {
+  const { isValidRateLimitConfig } = await import("./rate-limit.js");
+  
+  assert.strictEqual(isValidRateLimitConfig(100, 60000), true);
+  assert.strictEqual(isValidRateLimitConfig(1, 1000), true);
+  assert.strictEqual(isValidRateLimitConfig(10000, 3600000), true);
+});
+
+test("isValidRateLimitConfig returns false for invalid configuration", async () => {
+  const { isValidRateLimitConfig } = await import("./rate-limit.js");
+  
+  assert.strictEqual(isValidRateLimitConfig(0, 60000), false);
+  assert.strictEqual(isValidRateLimitConfig(100, 500), false);
+  assert.strictEqual(isValidRateLimitConfig(NaN, 60000), false);
+  assert.strictEqual(isValidRateLimitConfig(100, Infinity), false);
+});
+
+test("formatValidationError returns structured error details", async () => {
+  const { formatValidationError, validateRateLimitConfig, RATE_LIMIT_BOUNDS } = await import("./rate-limit.js");
+  
+  const validation = validateRateLimitConfig(0, 60000);
+  const formatted = formatValidationError(validation, 0, 60000);
+  
+  assert.strictEqual(formatted.valid, false);
+  assert.ok(formatted.error);
+  assert.strictEqual(formatted.provided.maxRequests, 0);
+  assert.strictEqual(formatted.provided.windowMs, 60000);
+  assert.deepStrictEqual(formatted.bounds, RATE_LIMIT_BOUNDS);
+});
+
+test("formatValidationError includes all validation bounds", async () => {
+  const { formatValidationError, validateRateLimitConfig } = await import("./rate-limit.js");
+  
+  const validation = validateRateLimitConfig(100, 500);
+  const formatted = formatValidationError(validation, 100, 500);
+  
+  assert.ok(formatted.bounds.MAX_REQUESTS_MIN);
+  assert.ok(formatted.bounds.MAX_REQUESTS_MAX);
+  assert.ok(formatted.bounds.WINDOW_MS_MIN);
+  assert.ok(formatted.bounds.WINDOW_MS_MAX);
+});
