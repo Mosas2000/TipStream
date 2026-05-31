@@ -7,6 +7,7 @@ import TopRecipientsChart from './TopRecipientsChart';
 import DateRangeFilter from './DateRangeFilter';
 import ExportData from './ExportData';
 import AnalyticsErrorBoundary from './AnalyticsErrorBoundary';
+import AnalyticsLoadingSkeleton from './AnalyticsLoadingSkeleton';
 import '../styles/analytics.css';
 
 export default function Analytics() {
@@ -40,14 +41,7 @@ export default function Analytics() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
-    );
+    return <AnalyticsLoadingSkeleton />;
   }
 
   if (error) {
