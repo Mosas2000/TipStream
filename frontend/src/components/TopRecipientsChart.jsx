@@ -1,7 +1,19 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatAmount, formatAddress } from '../services/analytics';
+import { useState, useEffect } from 'react';
 
 export default function TopRecipientsChart({ data }) {
+  const [isMobile, setIsMobile] = useState(false);
+  const [selectedRecipient, setSelectedRecipient] = useState(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   if (!data || data.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -37,15 +49,41 @@ export default function TopRecipientsChart({ data }) {
     return null;
   };
 
+  const handleBarClick = (data) => {
+    if (data && data.fullAddress) {
+      setSelectedRecipient(data);
+    }
+  };
+
+  const chartHeight = isMobile ? 250 : 400;
+  const displayData = isMobile ? chartData.slice(0, 5) : chartData;
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">Top Recipients</h2>
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 analytics-chart-container">
+      <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-6">Top Recipients</h2>
       
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={chartData} layout="vertical">
+      {selectedRecipient && (
+        <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+          <p className="text-xs font-mono text-gray-900 break-all mb-1">{selectedRecipient.fullAddress}</p>
+          <p className="text-sm text-gray-600">
+            Volume: <span className="font-semibold text-green-600">{selectedRecipient.volume} STX</span>
+            {' | '}
+            Tips: <span className="font-semibold text-purple-600">{selectedRecipient.count}</span>
+          </p>
+        </div>
+      )}
+
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart data={displayData} layout="vertical" onClick={handleBarClick}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis type="number" stroke="#6b7280" />
-          <YAxis dataKey="address" type="category" stroke="#6b7280" width={80} />
+          <XAxis type="number" stroke="#6b7280" tick={{ fontSize: isMobile ? 10 : 12 }} />
+          <YAxis 
+            dataKey="address" 
+            type="category" 
+            stroke="#6b7280" 
+            width={isMobile ? 60 : 80}
+            tick={{ fontSize: isMobile ? 9 : 11 }}
+          />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="volume" fill="#a855f7" name="Volume (STX)" />
         </BarChart>
@@ -55,15 +93,23 @@ export default function TopRecipientsChart({ data }) {
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Detailed Rankings</h3>
         <div className="space-y-2">
           {data.slice(0, 5).map((recipient, index) => (
-            <div key={recipient.address} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div 
+              key={recipient.address} 
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              onClick={() => setSelectedRecipient({
+                fullAddress: recipient.address,
+                volume: formatAmount(recipient.volume),
+                count: recipient.count
+              })}
+            >
               <div className="flex items-center gap-3">
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold">
                   {index + 1}
                 </span>
-                <span className="text-sm font-mono text-gray-700">{formatAddress(recipient.address)}</span>
+                <span className="text-xs sm:text-sm font-mono text-gray-700">{formatAddress(recipient.address)}</span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{formatAmount(recipient.volume)} STX</p>
+                <p className="text-xs sm:text-sm font-semibold text-gray-900">{formatAmount(recipient.volume)} STX</p>
                 <p className="text-xs text-gray-500">{recipient.count} tips</p>
               </div>
             </div>
