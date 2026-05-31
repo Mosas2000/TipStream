@@ -39,21 +39,21 @@ export default function AnalyticsSummary({ summary }) {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 analytics-summary-grid">
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
           <div
             key={stat.label}
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+            className="bg-white rounded-lg shadow p-4 sm:p-6 hover:shadow-lg transition-shadow analytics-card"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-lg ${colorClasses[stat.color]}`}>
-                <Icon className="w-6 h-6" />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className={`p-2 sm:p-3 rounded-lg ${colorClasses[stat.color]}`}>
+                <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">{stat.label}</h3>
-            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">{stat.label}</h3>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</p>
           </div>
         );
       })}
