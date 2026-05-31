@@ -20,11 +20,11 @@ import { useDemoMode } from './context/DemoContext';
 import {
   ROUTE_SEND, ROUTE_BATCH, ROUTE_TOKEN_TIP, ROUTE_SCHEDULE, ROUTE_SCHEDULED_TIPS, ROUTE_FEED,
   ROUTE_LEADERBOARD, ROUTE_ACTIVITY, ROUTE_PROFILE, ROUTE_ADDRESS_BOOK,
-  ROUTE_BLOCK, ROUTE_STATS, ROUTE_ADMIN, ROUTE_TELEMETRY, ROUTE_REFUNDS,
+  ROUTE_BLOCK, ROUTE_STATS, ROUTE_ANALYTICS, ROUTE_ADMIN, ROUTE_TELEMETRY, ROUTE_REFUNDS,
   ROUTE_NOTIFICATION_PREFERENCES, ROUTE_ENCRYPTION,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw, BellCog, Lock } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw, BellCog, Lock, TrendingUp } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
 import { useNotificationPreferences } from './context/NotificationPreferencesContext';
 
@@ -48,6 +48,7 @@ const TelemetryDashboard = lazy(() => import('./components/TelemetryDashboard'))
 const RefundManager = lazy(() => import('./components/RefundManager'));
 const NotificationPreferencesPage = lazy(() => import('./components/NotificationPreferences'));
 const EncryptionSettings = lazy(() => import('./components/EncryptionSettings'));
+const Analytics = lazy(() => import('./components/Analytics'));
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -178,6 +179,7 @@ function App() {
       { path: ROUTE_NOTIFICATION_PREFERENCES, label: 'Notifications', icon: BellCog },
       { path: ROUTE_ENCRYPTION, label: 'Encryption', icon: Lock },
       { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
+      { path: ROUTE_ANALYTICS, label: 'Analytics', icon: TrendingUp },
     ];
     
     // Filter items based on auth and admin status
@@ -341,6 +343,7 @@ function App() {
                   <Route path={ROUTE_FEED} element={<RecentTips addToast={addToast} />} />
                   <Route path={ROUTE_LEADERBOARD} element={<Leaderboard />} />
                   <Route path={ROUTE_STATS} element={<PlatformStats />} />
+                  <Route path={ROUTE_ANALYTICS} element={<Analytics />} />
                   
                   {/* User-specific routes */}
                   <Route 
