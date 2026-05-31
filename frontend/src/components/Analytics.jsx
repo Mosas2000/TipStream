@@ -32,6 +32,17 @@ export default function Analytics() {
     return () => clearInterval(interval);
   }, [dateRange]);
 
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+        e.preventDefault();
+        handleRefresh();
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
   async function loadAnalytics(isAutoRefresh = false) {
     try {
       if (!isAutoRefresh) {
