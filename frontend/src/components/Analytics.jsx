@@ -8,12 +8,14 @@ import DateRangeFilter from './DateRangeFilter';
 import ExportData from './ExportData';
 import AnalyticsErrorBoundary from './AnalyticsErrorBoundary';
 import AnalyticsLoadingSkeleton from './AnalyticsLoadingSkeleton';
+import { RefreshCw } from 'lucide-react';
 import '../styles/analytics.css';
 
 export default function Analytics() {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState({
     startDate: null,
     endDate: null,
@@ -23,9 +25,20 @@ export default function Analytics() {
     loadAnalytics();
   }, [dateRange]);
 
-  async function loadAnalytics() {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadAnalytics(true);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [dateRange]);
+
+  async function loadAnalytics(isAutoRefresh = false) {
     try {
-      setLoading(true);
+      if (!isAutoRefresh) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       setError(null);
       const data = await fetchAnalytics(dateRange.startDate, dateRange.endDate);
       setAnalyticsData(data);
@@ -33,7 +46,12 @@ export default function Analytics() {
       setError(err.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }
+
+  function handleRefresh() {
+    loadAnalytics();
   }
 
   function handleDateRangeChange(newRange) {
@@ -62,9 +80,20 @@ export default function Analytics() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-        <p className="text-gray-600">Track tip statistics, trends, and insights</p>
+      <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+          <p className="text-gray-600">Track tip statistics, trends, and insights</p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Refresh analytics data"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+        </button>
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
