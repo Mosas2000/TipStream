@@ -6,6 +6,8 @@ import TopSendersChart from './TopSendersChart';
 import TopRecipientsChart from './TopRecipientsChart';
 import DateRangeFilter from './DateRangeFilter';
 import ExportData from './ExportData';
+import AnalyticsErrorBoundary from './AnalyticsErrorBoundary';
+import '../styles/analytics.css';
 
 export default function Analytics() {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -80,15 +82,23 @@ export default function Analytics() {
         <ExportData data={analyticsData} />
       </div>
 
-      <AnalyticsSummary summary={analyticsData.summary} />
+      <AnalyticsErrorBoundary title="Summary Statistics">
+        <AnalyticsSummary summary={analyticsData.summary} />
+      </AnalyticsErrorBoundary>
 
       <div className="mt-8">
-        <TipVolumeChart data={analyticsData.timeSeriesData} />
+        <AnalyticsErrorBoundary title="Tip Volume Chart">
+          <TipVolumeChart data={analyticsData.timeSeriesData} />
+        </AnalyticsErrorBoundary>
       </div>
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <TopSendersChart data={analyticsData.topSenders} />
-        <TopRecipientsChart data={analyticsData.topRecipients} />
+        <AnalyticsErrorBoundary title="Top Senders">
+          <TopSendersChart data={analyticsData.topSenders} />
+        </AnalyticsErrorBoundary>
+        <AnalyticsErrorBoundary title="Top Recipients">
+          <TopRecipientsChart data={analyticsData.topRecipients} />
+        </AnalyticsErrorBoundary>
       </div>
     </div>
   );
