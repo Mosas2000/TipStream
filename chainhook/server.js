@@ -613,6 +613,87 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // GET /api/analytics -- detailed analytics with time-series data
+  if (req.method === "GET" && path === "/api/analytics") {
+    const store = await getEventStore();
+    const allEvents = await store.listEvents();
+    const tips = allEvents.map(parseTipEvent).filter(Boolean);
+    
+    const startDate = url.searchParams.get("startDate");
+    const endDate = url.searchParams.get("endDate");
+    
+    let filteredTips = tips;
+    if (startDate) {
+      const start = new Date(startDate).getTime();
+      filteredTips = filteredTips.filter(t => t.timestamp >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate).getTime();
+      filteredTips = filteredTips.filter(t => t.timestamp <= end);
+    }
+    
+    const senderStats = {};
+    const recipientStats = {};
+    const dailyVolume = {};
+    
+    filteredTips.forEach(tip => {
+      const sender = tip.sender;
+      const recipient = tip.recipient;
+      const amount = Number(tip.amount || 0);
+      const date = new Date(tip.timestamp).toISOString().split('T')[0];
+      
+      if (!senderStats[sender]) {
+        senderStats[sender] = { count: 0, volume: 0 };
+      }
+      senderStats[sender].count++;
+      senderStats[sender].volume += amount;
+      
+      if (!recipientStats[recipient]) {
+        recipientStats[recipient] = { count: 0, volume: 0 };
+      }
+      recipientStats[recipient].count++;
+      recipientStats[recipient].volume += amount;
+      
+      if (!dailyVolume[date]) {
+        dailyVolume[date] = { count: 0, volume: 0 };
+      }
+      dailyVolume[date].count++;
+      dailyVolume[date].volume += amount;
+    });
+    
+    const topSenders = Object.entries(senderStats)
+      .map(([address, stats]) => ({ address, ...stats }))
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 10);
+    
+    const topRecipients = Object.entries(recipientStats)
+      .map(([address, stats]) => ({ address, ...stats }))
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 10);
+    
+    const timeSeriesData = Object.entries(dailyVolume)
+      .map(([date, stats]) => ({ date, ...stats }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    
+    const totalVolume = filteredTips.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const totalFees = filteredTips.reduce((sum, t) => sum + Number(t.fee || 0), 0);
+    const avgTipAmount = filteredTips.length > 0 ? totalVolume / filteredTips.length : 0;
+    
+    return sendJson(res, 200, {
+      summary: {
+        totalTips: filteredTips.length,
+        totalVolume,
+        totalFees,
+        avgTipAmount,
+        uniqueSenders: Object.keys(senderStats).length,
+        uniqueRecipients: Object.keys(recipientStats).length,
+      },
+      topSenders,
+      topRecipients,
+      timeSeriesData,
+    });
+  }
+
   // POST /api/scheduled-tips -- create a scheduled tip
   if (req.method === "POST" && path === "/api/scheduled-tips") {
     const startTime = Date.now();

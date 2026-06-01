@@ -92,6 +92,12 @@ export const ROUTE_BLOCK = '/block';
 export const ROUTE_STATS = '/stats';
 
 /**
+ * Analytics dashboard with charts and trends.
+ * @type {string}
+ */
+export const ROUTE_ANALYTICS = '/analytics';
+
+/**
  * Admin dashboard (owner-only, guarded by RequireAdmin).
  * @type {string}
  */
@@ -146,6 +152,7 @@ export const ROUTE_LABELS = {
   [ROUTE_ADDRESS_BOOK]: 'Address Book',
   [ROUTE_BLOCK]: 'Block',
   [ROUTE_STATS]: 'Stats',
+  [ROUTE_ANALYTICS]: 'Analytics',
   [ROUTE_ADMIN]: 'Admin',
   [ROUTE_TELEMETRY]: 'Telemetry',
   [ROUTE_REFUNDS]: 'Refunds',
@@ -174,6 +181,7 @@ export const ROUTE_TITLES = {
   [ROUTE_ADDRESS_BOOK]: 'Address Book -- TipStream',
   [ROUTE_BLOCK]: 'Block Manager -- TipStream',
   [ROUTE_STATS]: 'Platform Stats -- TipStream',
+  [ROUTE_ANALYTICS]: 'Analytics Dashboard -- TipStream',
   [ROUTE_ADMIN]: 'Admin Dashboard -- TipStream',
   [ROUTE_TELEMETRY]: 'Telemetry -- TipStream',
   [ROUTE_REFUNDS]: 'Refunds -- TipStream',
@@ -255,6 +263,11 @@ export const ROUTE_META = {
   },
   [ROUTE_STATS]: {
     description: 'Platform-wide aggregate statistics.',
+    requiresAuth: false,
+    adminOnly: false,
+  },
+  [ROUTE_ANALYTICS]: {
+    description: 'Analytics dashboard with charts, trends, and insights.',
     requiresAuth: false,
     adminOnly: false,
   },

@@ -1,0 +1,78 @@
+@media (max-width: 640px) {
+  .recharts-wrapper {
+    font-size: 12px;
+  }
+  
+  .recharts-cartesian-axis-tick-value {
+    font-size: 10px;
+  }
+  
+  .recharts-legend-wrapper {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .analytics-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .analytics-chart-container {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .analytics-summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.analytics-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analytics-card:hover {
+  transform: translateY(-2px);
+}
+
+.analytics-loading {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.analytics-export-menu {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.analytics-tooltip {
+  animation: fadeIn 0.15s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
