@@ -24,7 +24,7 @@ import {
   ROUTE_NOTIFICATION_PREFERENCES, ROUTE_ENCRYPTION,
   DEFAULT_AUTHENTICATED_ROUTE, ROUTE_META,
 } from './config/routes';
-import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw, BellCog, Lock, TrendingUp } from 'lucide-react';
+import { Zap, Radio, Trophy, User, BarChart3, Users, ShieldBan, Coins, UserCircle, Shield, Gauge, Calendar, Clock, BookUser, RotateCcw, Bell, Lock, TrendingUp } from 'lucide-react';
 import { activateDemo, deactivateDemo } from './lib/demo-utils';
 import { useNotificationPreferences } from './context/NotificationPreferencesContext';
 
@@ -176,7 +176,7 @@ function App() {
       { path: ROUTE_ADDRESS_BOOK, label: 'Address Book', icon: BookUser },
       { path: ROUTE_BLOCK, label: 'Block', icon: ShieldBan },
       { path: ROUTE_REFUNDS, label: 'Refunds', icon: RotateCcw },
-      { path: ROUTE_NOTIFICATION_PREFERENCES, label: 'Notifications', icon: BellCog },
+      { path: ROUTE_NOTIFICATION_PREFERENCES, label: 'Notifications', icon: Bell },
       { path: ROUTE_ENCRYPTION, label: 'Encryption', icon: Lock },
       { path: ROUTE_STATS, label: 'Stats', icon: BarChart3 },
       { path: ROUTE_ANALYTICS, label: 'Analytics', icon: TrendingUp },
