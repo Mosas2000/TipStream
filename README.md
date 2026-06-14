@@ -53,7 +53,7 @@ Content creators and community contributors lack a simple, transparent way to re
 - **Privacy Controls** - Block/unblock specific addresses
 - **Leaderboards** - Top senders and receivers ranked by on-chain activity
 - **Platform Analytics** - Real-time stats: total tips, volume, and fees
-- **Activity History** - Per-user sent/received tip history with filtering
+- **Activity History** - Per-user sent/received tip history with search, filtering, and sort
 - **Admin Dashboard** - Pause/resume, fee configuration, ownership transfer
 - **Telemetry & Web Vitals** - Production-ready observability with conversion funnels, performance metrics, and error tracking
 - **Event Feed Pagination** - Cursor-based pagination with selective message enrichment (Issue #291)
@@ -142,7 +142,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | `/scheduled-tips` | Scheduled Tips | View and manage scheduled tips | Stable |
 | `/feed` | Live Feed | Real-time feed of recent tips with pagination | Stable |
 | `/leaderboard` | Leaderboard | Top senders and receivers | Stable |
-| `/activity` | My Activity | Personal tip history | Stable |
+| `/activity` | My Activity | Personal tip history with search and filtering | Stable |
 | `/profile` | Profile | Manage display name, bio, avatar | Stable |
 | `/block` | Block Manager | Block/unblock addresses | Stable |
 | `/stats` | Platform Stats | Aggregate platform metrics with cache fallback | Stable |
@@ -193,6 +193,14 @@ constants instead of hard-coding path strings.
 | `get-multisig` | Authorized multisig contract address |
 | `get-contract-version` | Contract version and name |
 
+### Backend API Endpoints
+
+**Tip Search:**
+
+| Endpoint | Description | Parameters |
+|---|---|---|
+| `GET /api/tips/search` | Search tips with multiple filter criteria | `q` (query), `sender`, `recipient`, `minAmount`, `maxAmount`, `category`, `startDate`, `endDate`, `sort` (newest/oldest/amount-high/amount-low), `limit` (1-100), `cursor` |
+
 ### Frontend Components
 
 | Component | Purpose |
@@ -200,7 +208,9 @@ constants instead of hard-coding path strings.
 | `SendTip` | Main tip form with validation and fee preview |
 | `BatchTip` | Multi-recipient batch tipping interface |
 | `RecentTips` | Live feed with tip-back functionality |
-| `TipHistory` | Per-user activity with sent/received filtering |
+| `TipHistory` | Per-user activity with search, filtering, and sort |
+| `TipSearchInput` | Search tips by address or message |
+| `TipFilterControls` | Category, amount range, and sort filter panel |
 | `PlatformStats` | Global stats from on-chain data |
 | `Leaderboard` | Top senders and receivers |
 | `ProfileManager` | Create/edit on-chain profile |
@@ -240,6 +250,7 @@ Comprehensive test suite with 99 contract tests and 40+ frontend unit tests cove
 - Admin controls (pause, fee updates)
 - Two-step ownership transfer
 - Multi-user stats queries
+- Tip search and filtering (address, message, amount range, category, sort)
 - Frontend hooks, components, and utilities
 - Event pagination and message enrichment
 - Cache invalidation and resilience
