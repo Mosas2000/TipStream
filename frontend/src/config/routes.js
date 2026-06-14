@@ -62,7 +62,7 @@ export const ROUTE_FEED = '/feed';
 export const ROUTE_LEADERBOARD = '/leaderboard';
 
 /**
- * Current user's tip history (sent and received).
+ * Current user's tip history (sent and received) with search and filtering.
  * @type {string}
  */
 export const ROUTE_ACTIVITY = '/activity';
