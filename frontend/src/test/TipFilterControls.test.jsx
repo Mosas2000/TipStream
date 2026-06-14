@@ -39,8 +39,8 @@ describe('TipFilterControls', () => {
   });
 
   it('hides filter panel when showFilters is false', () => {
-    render(<TipFilterControls {...defaultProps} showFilters={false} />);
-    expect(screen.queryById('tip-filter-panel')).not.toBeInTheDocument();
+    const { container } = render(<TipFilterControls {...defaultProps} showFilters={false} />);
+    expect(container.querySelector('#tip-filter-panel')).not.toBeInTheDocument();
   });
 
   it('shows filter panel when showFilters is true', () => {
