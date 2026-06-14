@@ -288,6 +288,63 @@ class MemoryEventStore {
     };
   }
 
+  async searchTips({ query = '', sender = '', recipient = '', minAmount = null, maxAmount = null, category = null, startDate = null, endDate = null, sortBy = 'newest', limit = 50, cursor = null } = {}) {
+    const filtered = this.records
+      .filter((record) => {
+        const event = record.rawEvent?.event;
+        if (!event || event.event !== 'tip-sent') return false;
+
+        if (query) {
+          const q = query.toLowerCase();
+          const matchSender = (event.sender || '').toLowerCase().includes(q);
+          const matchRecipient = (event.recipient || '').toLowerCase().includes(q);
+          const matchMessage = (event.message || '').toLowerCase().includes(q);
+          if (!matchSender && !matchRecipient && !matchMessage) return false;
+        }
+
+        if (sender && (event.sender || '').toLowerCase() !== sender.toLowerCase()) return false;
+        if (recipient && (event.recipient || '').toLowerCase() !== recipient.toLowerCase()) return false;
+
+        const amount = Number(event.amount || 0);
+        if (minAmount !== null && amount < minAmount) return false;
+        if (maxAmount !== null && amount > maxAmount) return false;
+
+        if (category !== null && Number(event.category || -1) !== category) return false;
+
+        const ts = Number(record.eventTimestamp || 0);
+        if (startDate !== null && ts < startDate) return false;
+        if (endDate !== null && ts > endDate) return false;
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'oldest') return a.eventTimestamp - b.eventTimestamp;
+        if (sortBy === 'amount-high') return Number(b.rawEvent?.event?.amount || 0) - Number(a.rawEvent?.event?.amount || 0);
+        if (sortBy === 'amount-low') return Number(a.rawEvent?.event?.amount || 0) - Number(b.rawEvent?.event?.amount || 0);
+        return b.eventTimestamp - a.eventTimestamp;
+      });
+
+    const total = filtered.length;
+
+    let startIndex = 0;
+    if (cursor !== null) {
+      const idx = filtered.findIndex((r) => r.eventKey === cursor);
+      startIndex = idx === -1 ? total : idx + 1;
+    }
+
+    const page = filtered.slice(startIndex, startIndex + limit);
+    const lastRecord = page[page.length - 1];
+    const nextCursor = page.length === limit && startIndex + limit < total
+      ? lastRecord.eventKey
+      : null;
+
+    return {
+      events: page.map((r) => r.rawEvent),
+      total,
+      nextCursor,
+    };
+  }
+
   async close() {}
 }
 
@@ -704,6 +761,108 @@ class PostgresEventStore {
 
     return {
       events: rows.map(toRawEvent),
+      total,
+      nextCursor,
+    };
+  }
+
+  async searchTips({ query = '', sender = '', recipient = '', minAmount = null, maxAmount = null, category = null, startDate = null, endDate = null, sortBy = 'newest', limit = 50, cursor = null } = {}) {
+    const conditions = [];
+    const params = [];
+    let paramIdx = 1;
+
+    conditions.push(`raw_event->'event'->>'event' = 'tip-sent'`);
+
+    if (query) {
+      const q = query.toLowerCase();
+      conditions.push(`(LOWER(raw_event->'event'->>'sender') LIKE $${paramIdx} OR LOWER(raw_event->'event'->>'recipient') LIKE $${paramIdx} OR LOWER(raw_event->'event'->>'message') LIKE $${paramIdx})`);
+      params.push(`%${q}%`);
+      paramIdx++;
+    }
+
+    if (sender) {
+      conditions.push(`LOWER(raw_event->'event'->>'sender') = $${paramIdx}`);
+      params.push(sender.toLowerCase());
+      paramIdx++;
+    }
+
+    if (recipient) {
+      conditions.push(`LOWER(raw_event->'event'->>'recipient') = $${paramIdx}`);
+      params.push(recipient.toLowerCase());
+      paramIdx++;
+    }
+
+    if (minAmount !== null) {
+      conditions.push(`(raw_event->'event'->>'amount')::numeric >= $${paramIdx}`);
+      params.push(minAmount);
+      paramIdx++;
+    }
+
+    if (maxAmount !== null) {
+      conditions.push(`(raw_event->'event'->>'amount')::numeric <= $${paramIdx}`);
+      params.push(maxAmount);
+      paramIdx++;
+    }
+
+    if (category !== null) {
+      conditions.push(`(raw_event->'event'->>'category')::numeric = $${paramIdx}`);
+      params.push(category);
+      paramIdx++;
+    }
+
+    if (startDate !== null) {
+      conditions.push(`event_timestamp >= $${paramIdx}`);
+      params.push(startDate);
+      paramIdx++;
+    }
+
+    if (endDate !== null) {
+      conditions.push(`event_timestamp <= $${paramIdx}`);
+      params.push(endDate);
+      paramIdx++;
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const totalResult = await withRetry(() => this.pool.query(`SELECT COUNT(*) AS total FROM chainhook_events ${whereClause}`, params), this.retryOptions);
+    const total = Number(totalResult.rows[0].total);
+
+    let orderClause = 'ORDER BY event_timestamp DESC, event_key DESC';
+    if (sortBy === 'oldest') orderClause = 'ORDER BY event_timestamp ASC, event_key ASC';
+    if (sortBy === 'amount-high') orderClause = 'ORDER BY (raw_event->\'event\'->>\'amount\')::numeric DESC, event_timestamp DESC';
+    if (sortBy === 'amount-low') orderClause = 'ORDER BY (raw_event->\'event\'->>\'amount\')::numeric ASC, event_timestamp DESC';
+
+    const sanitizedLimit = Math.max(1, Math.min(100, limit));
+
+    if (cursor) {
+      const cursorParams = [...params, sanitizedLimit];
+      const rows = await withRetry(() => this.pool.query(
+        `SELECT raw_event, event_key FROM chainhook_events ${whereClause} AND event_key > $${paramIdx} ${orderClause} LIMIT $${paramIdx + 1}`,
+        cursorParams
+      ), this.retryOptions);
+      const lastRow = rows.rows[rows.rows.length - 1];
+      const nextCursor = rows.rows.length === sanitizedLimit && total > rows.rows.length
+        ? lastRow?.event_key || null
+        : null;
+      return {
+        events: rows.rows.map(toRawEvent),
+        total,
+        nextCursor,
+      };
+    }
+
+    const pageParams = [...params, sanitizedLimit];
+      const rows = await withRetry(() => this.pool.query(
+        `SELECT raw_event, event_key FROM chainhook_events ${whereClause} ${orderClause} LIMIT $${paramIdx}`,
+        pageParams
+    ), this.retryOptions);
+    const lastRow = rows.rows[rows.rows.length - 1];
+    const nextCursor = rows.rows.length === sanitizedLimit && total > rows.rows.length
+      ? lastRow?.event_key || null
+      : null;
+
+    return {
+      events: rows.rows.map(toRawEvent),
       total,
       nextCursor,
     };
