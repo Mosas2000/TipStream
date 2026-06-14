@@ -592,6 +592,61 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // GET /api/tips/search -- search tips with multiple filter criteria
+  if (req.method === "GET" && path === "/api/tips/search") {
+    const store = await getEventStore();
+    const query = url.searchParams.get("q") || "";
+    const sender = url.searchParams.get("sender") || "";
+    const recipient = url.searchParams.get("recipient") || "";
+    const minAmount = url.searchParams.get("minAmount");
+    const maxAmount = url.searchParams.get("maxAmount");
+    const category = url.searchParams.get("category");
+    const startDate = url.searchParams.get("startDate");
+    const endDate = url.searchParams.get("endDate");
+    const sortBy = url.searchParams.get("sort") || "newest";
+    const limit = sanitizeQueryInt(url.searchParams.get("limit") || "50", 1, 100);
+    const cursor = sanitizeCursor(url.searchParams.get("cursor"));
+
+    if (isNaN(limit)) {
+      return sendError(res, new BadRequestError("limit must be between 1 and 100"), requestId, {
+        path,
+        query: "limit",
+      });
+    }
+
+    const validSortOptions = ["newest", "oldest", "amount-high", "amount-low"];
+    if (!validSortOptions.includes(sortBy)) {
+      return sendError(res, new BadRequestError(`sort must be one of: ${validSortOptions.join(", ")}`), requestId, {
+        path,
+        query: "sort",
+        value: sortBy,
+      });
+    }
+
+    const searchParams = {
+      query,
+      sender,
+      recipient,
+      minAmount: minAmount !== null ? Number(minAmount) : null,
+      maxAmount: maxAmount !== null ? Number(maxAmount) : null,
+      category: category !== null ? Number(category) : null,
+      startDate: startDate !== null ? Number(startDate) : null,
+      endDate: endDate !== null ? Number(endDate) : null,
+      sortBy,
+      limit,
+      cursor,
+    };
+
+    const result = await store.searchTips(searchParams);
+    const tips = result.events.map(parseTipEvent).filter(Boolean);
+
+    return sendJson(res, 200, {
+      tips,
+      total: result.total,
+      nextCursor: result.nextCursor,
+    });
+  }
+
   // GET /api/analytics -- detailed analytics with time-series data
   if (req.method === "GET" && path === "/api/analytics") {
     const store = await getEventStore();
