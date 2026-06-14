@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { fetchCallReadOnlyFunction, cvToJSON, principalCV } from '@stacks/transactions';
 import { network } from '../utils/stacks';
 import { CONTRACT_ADDRESS, CONTRACT_NAME, FN_GET_USER_STATS, STACKS_API_BASE } from '../config/contracts';
-import { formatSTX, formatAddress } from '../lib/utils';
+import { formatSTX, formatAddress, toMicroSTX } from '../lib/utils';
 import { getTipRowKey } from '../lib/tipRowKey';
 import CopyButton from './ui/copy-button';
 import ShareTip from './ShareTip';
@@ -10,6 +10,9 @@ import { useDemoMode } from '../context/DemoContext';
 import RefundRequest from './RefundRequest';
 import RefundApproval from './RefundApproval';
 import TipHistoryExport from './TipHistoryExport';
+import TipSearchInput from './TipSearchInput';
+import TipFilterControls from './TipFilterControls';
+import { useTipSearch } from '../hooks/useTipSearch';
 import { Download, Lock, Eye, EyeOff } from 'lucide-react';
 import { useEncryption } from '../hooks/useEncryption';
 
@@ -54,6 +57,24 @@ export default function TipHistory({ userAddress, addToast }) {
     const toast = addToast || noop;
     const { demoEnabled, getDemoData, demoTips: contextDemoTips } = useDemoMode();
     const { decrypt, isEncrypted } = useEncryption(userAddress);
+    const {
+        searchQuery,
+        categoryFilter,
+        sortBy,
+        minAmount,
+        maxAmount,
+        showFilters,
+        setSearchQuery,
+        setCategoryFilter,
+        setSortBy,
+        setMinAmount,
+        setMaxAmount,
+        setShowFilters,
+        clearFilters,
+        hasActiveFilters,
+        CATEGORY_LABELS: SEARCH_CATEGORY_LABELS,
+        SORT_OPTIONS,
+    } = useTipSearch();
     const [tips, setTips] = useState([]);
     const [decryptedMessages, setDecryptedMessages] = useState({});
     const [revealedMessages, setRevealedMessages] = useState({});
@@ -64,7 +85,6 @@ export default function TipHistory({ userAddress, addToast }) {
     const [stats, setStats] = useState(null);
     const [statsLoading, setStatsLoading] = useState(true);
     const [tab, setTab] = useState('all');
-    const [categoryFilter, setCategoryFilter] = useState('all');
     const [loadingMore, setLoadingMore] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
 
@@ -246,12 +266,43 @@ export default function TipHistory({ userAddress, addToast }) {
         try { await fetchTips(false); } finally { setLoadingMore(false); }
     };
 
-    const filteredTips = tips.filter(t => {
-        if (tab === 'sent' && t.direction !== 'sent') return false;
-        if (tab === 'received' && t.direction !== 'received') return false;
-        if (categoryFilter !== 'all' && t.category !== Number(categoryFilter)) return false;
-        return true;
-    });
+    const filteredTips = useMemo(() => {
+        let result = tips.filter(t => {
+            if (tab === 'sent' && t.direction !== 'sent') return false;
+            if (tab === 'received' && t.direction !== 'received') return false;
+            if (categoryFilter !== 'all' && t.category !== Number(categoryFilter)) return false;
+
+            if (searchQuery.trim()) {
+                const q = searchQuery.trim().toLowerCase();
+                const matchSender = (t.sender || '').toLowerCase().includes(q);
+                const matchRecipient = (t.recipient || '').toLowerCase().includes(q);
+                const matchMessage = (t.message || '').toLowerCase().includes(q);
+                if (!matchSender && !matchRecipient && !matchMessage) return false;
+            }
+
+            if (minAmount) {
+                const m = toMicroSTX(minAmount);
+                if (Number(t.amount) < m) return false;
+            }
+
+            if (maxAmount) {
+                const m = toMicroSTX(maxAmount);
+                if (Number(t.amount) > m) return false;
+            }
+
+            return true;
+        });
+
+        if (sortBy === 'oldest') {
+            result.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        } else if (sortBy === 'amount-high') {
+            result.sort((a, b) => Number(b.amount) - Number(a.amount));
+        } else if (sortBy === 'amount-low') {
+            result.sort((a, b) => Number(a.amount) - Number(b.amount));
+        }
+
+        return result;
+    }, [tips, tab, categoryFilter, searchQuery, minAmount, maxAmount, sortBy]);
 
     if (tipsLoading || statsLoading) return (
         <div className="flex flex-col items-center justify-center py-16">
@@ -316,6 +367,39 @@ export default function TipHistory({ userAddress, addToast }) {
                 </div>
             </div>
 
+            {/* Search & Filters */}
+            <div className="mb-5 space-y-3">
+                <div className="flex gap-2">
+                    <TipSearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        onClear={() => setSearchQuery('')}
+                        placeholder="Search by address or message..."
+                    />
+                    <TipFilterControls
+                        showFilters={showFilters}
+                        setShowFilters={setShowFilters}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={clearFilters}
+                        categoryFilter={categoryFilter}
+                        setCategoryFilter={setCategoryFilter}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                        minAmount={minAmount}
+                        setMinAmount={setMinAmount}
+                        maxAmount={maxAmount}
+                        setMaxAmount={setMaxAmount}
+                        categoryLabels={SEARCH_CATEGORY_LABELS}
+                        sortOptions={SORT_OPTIONS}
+                    />
+                </div>
+                {hasActiveFilters && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Showing {filteredTips.length} of {tips.length} tips
+                    </p>
+                )}
+            </div>
+
             {/* Tip list */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
                 <div className="flex flex-wrap items-center gap-2 mb-5">
@@ -330,12 +414,6 @@ export default function TipHistory({ userAddress, addToast }) {
                             </button>
                         ))}
                     </div>
-                    <label htmlFor="category-filter" className="sr-only">Filter by category</label>
-                    <select id="category-filter" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-none outline-none">
-                        <option value="all">All Categories</option>
-                        {Object.entries(CATEGORY_LABELS).map(([id, label]) => (<option key={id} value={id}>{label}</option>))}
-                    </select>
                 </div>
 
                 {filteredTips.length === 0 ? (
