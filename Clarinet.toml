@@ -31,6 +31,21 @@ path = "contracts/tipstream-multisig.clar"
 clarity_version = 2
 epoch = 3.0
 
+[contracts.tipstreams]
+path = "contracts/tipstream.clar"
+clarity_version = 2
+epoch = 3.0
+
+[contracts.tipstreams-analytics]
+path = "contracts/tipstream-analytics.clar"
+clarity_version = 2
+epoch = 3.0
+
+[contracts.tipstreams-auctions]
+path = "contracts/tipstream-auctions.clar"
+clarity_version = 2
+epoch = 3.0
+
 [repl]
 costs_version = 3
 parser_version = 2
