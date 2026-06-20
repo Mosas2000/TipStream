@@ -65,12 +65,12 @@ Content creators and community contributors lack a simple, transparent way to re
 
 | Field | Value |
 |---|---|
-| Contract | `SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream` |
+| Contract | `SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstreams` |
 | Version | v2.0.0 |
 | Network | Stacks Mainnet (Secured by Bitcoin) |
 | Deployment Block | 7940053 |
 | Status | Live |
-| Explorer | [View on Hiro Explorer](https://explorer.hiro.so/txid/SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream?chain=mainnet) |
+| Explorer | [View on Hiro Explorer](https://explorer.hiro.so/txid/SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstreams?chain=mainnet) |
 | Deploy TX | [0x8ebb6a...](https://explorer.hiro.so/txid/0x8ebb6a0469a0a29592e75bd09149147eecd4765f9eccb748c15194c2939a31a6?chain=mainnet) |
 | Traits Contract | `SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstream-traits` |
 
