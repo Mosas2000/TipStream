@@ -58,6 +58,7 @@ genesis:
     - pox-4
     - signers
     - signers-voting
+    - costs-4
 plan:
   batches:
     - id: 0
@@ -86,5 +87,20 @@ plan:
             contract-name: tipstream-v2
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/tipstream-v2.clar
+            clarity-version: 2
+        - emulated-contract-publish:
+            contract-name: tipstreams
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/tipstream.clar
+            clarity-version: 2
+        - emulated-contract-publish:
+            contract-name: tipstreams-analytics
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/tipstream-analytics.clar
+            clarity-version: 2
+        - emulated-contract-publish:
+            contract-name: tipstreams-auctions
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/tipstream-auctions.clar
             clarity-version: 2
       epoch: "3.0"
