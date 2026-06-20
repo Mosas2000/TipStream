@@ -7,7 +7,7 @@
     "mainnet": {
       "if_this": {
         "scope": "print_event",
-        "contract_identifier": "SP31PKQVQZVZCK3FM3NH67CGD6G1FMR17VQVS2W5T.tipstream",
+        "contract_identifier": "SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60.tipstreams",
         "contains": "event"
       },
       "then_that": {
