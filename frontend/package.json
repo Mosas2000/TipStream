@@ -11,7 +11,7 @@
   },
   "contract": {
     "address": "SP1W6XQZ6XVYGTVW32SJW2ZG48ZJBW9BATRD19N60",
-    "name": "tipstream",
+    "name": "tipstreams",
     "version": "v2.0.0",
     "deploymentBlock": 7940053
   },
