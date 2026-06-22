@@ -1563,3 +1563,300 @@ export async function createRefundStore(options = {}) {
 }
 
 export { MemoryRefundStore, PostgresRefundStore, REFUND_STATUSES, REFUND_WINDOW_MS };
+
+// ─── Creator Goals Store ────────────────────────────────────────────────
+
+class MemoryGoalStore {
+  constructor() {
+    this.goals = new Map();
+  }
+
+  async init() {
+    return this;
+  }
+
+  async upsertGoal(address, goal) {
+    const record = {
+      creatorAddress: address,
+      goalTitle: goal.goalTitle,
+      goalTarget: Number(goal.goalTarget),
+      goalDescription: goal.goalDescription || '',
+      goalSlug: goal.goalSlug,
+      currentProgress: Number(goal.currentProgress || 0),
+      active: goal.active ?? true,
+      createdAt: goal.createdAt || new Date(),
+      updatedAt: new Date(),
+    };
+    this.goals.set(address, record);
+    return record;
+  }
+
+  async getGoal(address) {
+    return this.goals.get(address) || null;
+  }
+
+  async deleteGoal(address) {
+    return this.goals.delete(address);
+  }
+
+  async incrementGoalProgress(address, amount) {
+    const goal = this.goals.get(address);
+    if (!goal) return null;
+    goal.currentProgress += Number(amount);
+    goal.updatedAt = new Date();
+    this.goals.set(address, goal);
+    return goal;
+  }
+
+  async close() {}
+}
+
+class PostgresGoalStore {
+  constructor(pool, poolConfig = {}, retryOptions = {}) {
+    this.pool = pool;
+    this.poolConfig = poolConfig;
+    this.retryOptions = { ...retryConfig, ...retryOptions };
+    this.ready = null;
+  }
+
+  async init() {
+    if (!this.ready) {
+      this.ready = this.#initialize();
+    }
+    return this.ready;
+  }
+
+  async #initialize() {
+    await withRetry(
+      () => this.pool.query('SELECT 1'),
+      { operationName: 'postgres_goal_connect', maxAttempts: 5, baseDelayMs: 500 }
+    );
+
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS creator_goals (
+        creator_address TEXT PRIMARY KEY,
+        goal_title TEXT NOT NULL,
+        goal_target BIGINT NOT NULL,
+        goal_description TEXT DEFAULT '',
+        goal_slug TEXT NOT NULL,
+        current_progress BIGINT NOT NULL DEFAULT 0,
+        active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+  }
+
+  async upsertGoal(address, goal) {
+    await this.init();
+    const query = `
+      INSERT INTO creator_goals (creator_address, goal_title, goal_target, goal_description, goal_slug, active, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      ON CONFLICT (creator_address) DO UPDATE
+      SET goal_title = EXCLUDED.goal_title,
+          goal_target = EXCLUDED.goal_target,
+          goal_description = EXCLUDED.goal_description,
+          goal_slug = EXCLUDED.goal_slug,
+          active = EXCLUDED.active,
+          updated_at = NOW()
+      RETURNING *;
+    `;
+    const values = [
+      address,
+      goal.goalTitle,
+      goal.goalTarget,
+      goal.goalDescription || '',
+      goal.goalSlug,
+      goal.active ?? true
+    ];
+    const result = await withRetry(
+      () => this.pool.query(query, values),
+      { ...this.retryOptions, operationName: 'postgres_upsert_goal' }
+    );
+    return this.#rowToGoal(result.rows[0]);
+  }
+
+  async getGoal(address) {
+    await this.init();
+    const result = await withRetry(
+      () => this.pool.query('SELECT * FROM creator_goals WHERE creator_address = $1', [address]),
+      { ...this.retryOptions, operationName: 'postgres_get_goal' }
+    );
+    if (result.rows.length === 0) return null;
+    return this.#rowToGoal(result.rows[0]);
+  }
+
+  async deleteGoal(address) {
+    await this.init();
+    const result = await withRetry(
+      () => this.pool.query('DELETE FROM creator_goals WHERE creator_address = $1', [address]),
+      { ...this.retryOptions, operationName: 'postgres_delete_goal' }
+    );
+    return result.rowCount > 0;
+  }
+
+  async incrementGoalProgress(address, amount) {
+    await this.init();
+    const query = `
+      UPDATE creator_goals
+      SET current_progress = current_progress + $2,
+          updated_at = NOW()
+      WHERE creator_address = $1
+      RETURNING *;
+    `;
+    const result = await withRetry(
+      () => this.pool.query(query, [address, amount]),
+      { ...this.retryOptions, operationName: 'postgres_increment_goal_progress' }
+    );
+    if (result.rows.length === 0) return null;
+    return this.#rowToGoal(result.rows[0]);
+  }
+
+  async close() {}
+
+  #rowToGoal(row) {
+    return {
+      creatorAddress: row.creator_address,
+      goalTitle: row.goal_title,
+      goalTarget: Number(row.goal_target),
+      goalDescription: row.goal_description || '',
+      goalSlug: row.goal_slug,
+      currentProgress: Number(row.current_progress),
+      active: row.active,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+}
+
+export async function createGoalStore(options = {}) {
+  const mode = options.mode || process.env.CHAINHOOK_STORAGE || (process.env.NODE_ENV === 'test' ? 'memory' : 'postgres');
+
+  if (mode === 'memory') {
+    return new MemoryGoalStore();
+  }
+
+  const databaseUrl = options.databaseUrl || process.env.DATABASE_URL;
+  const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
+  const poolConfig = options.poolConfig || parsePoolConfig(process.env);
+
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: ssl ? { rejectUnauthorized: false } : undefined,
+    max: poolConfig.max,
+    idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+    connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+    statement_timeout: poolConfig.statement_timeout,
+  });
+
+  return new PostgresGoalStore(pool, poolConfig, options.retryOptions || {});
+}
+
+export { MemoryGoalStore, PostgresGoalStore };
+
+// ─── Tip Messages Store ────────────────────────────────────────────────
+
+class MemoryMessageStore {
+  constructor() {
+    this.messages = new Map();
+  }
+
+  async init() {
+    return this;
+  }
+
+  async saveMessage(txId, message) {
+    this.messages.set(txId, message);
+    return true;
+  }
+
+  async getMessage(txId) {
+    return this.messages.get(txId) || null;
+  }
+
+  async close() {}
+}
+
+class PostgresMessageStore {
+  constructor(pool, poolConfig = {}, retryOptions = {}) {
+    this.pool = pool;
+    this.poolConfig = poolConfig;
+    this.retryOptions = { ...retryConfig, ...retryOptions };
+    this.ready = null;
+  }
+
+  async init() {
+    if (!this.ready) {
+      this.ready = this.#initialize();
+    }
+    return this.ready;
+  }
+
+  async #initialize() {
+    await withRetry(
+      () => this.pool.query('SELECT 1'),
+      { operationName: 'postgres_message_connect', maxAttempts: 5, baseDelayMs: 500 }
+    );
+
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS tip_messages (
+        tx_id TEXT PRIMARY KEY,
+        message TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+  }
+
+  async saveMessage(txId, message) {
+    await this.init();
+    const query = `
+      INSERT INTO tip_messages (tx_id, message)
+      VALUES ($1, $2)
+      ON CONFLICT (tx_id) DO UPDATE SET message = EXCLUDED.message
+      RETURNING *;
+    `;
+    const result = await withRetry(
+      () => this.pool.query(query, [txId, message]),
+      { ...this.retryOptions, operationName: 'postgres_save_message' }
+    );
+    return result.rowCount > 0;
+  }
+
+  async getMessage(txId) {
+    await this.init();
+    const result = await withRetry(
+      () => this.pool.query('SELECT message FROM tip_messages WHERE tx_id = $1', [txId]),
+      { ...this.retryOptions, operationName: 'postgres_get_message' }
+    );
+    if (result.rows.length === 0) return null;
+    return result.rows[0].message;
+  }
+
+  async close() {}
+}
+
+export async function createMessageStore(options = {}) {
+  const mode = options.mode || process.env.CHAINHOOK_STORAGE || (process.env.NODE_ENV === 'test' ? 'memory' : 'postgres');
+
+  if (mode === 'memory') {
+    return new MemoryMessageStore();
+  }
+
+  const databaseUrl = options.databaseUrl || process.env.DATABASE_URL;
+  const ssl = options.ssl ?? process.env.DATABASE_SSL === 'true';
+  const poolConfig = options.poolConfig || parsePoolConfig(process.env);
+
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: ssl ? { rejectUnauthorized: false } : undefined,
+    max: poolConfig.max,
+    idleTimeoutMillis: poolConfig.idleTimeoutMillis,
+    connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
+    statement_timeout: poolConfig.statement_timeout,
+  });
+
+  return new PostgresMessageStore(pool, poolConfig, options.retryOptions || {});
+}
+
+export { MemoryMessageStore, PostgresMessageStore };
+
