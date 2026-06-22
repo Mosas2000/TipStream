@@ -26,7 +26,8 @@ import { analytics } from '../lib/analytics';
 import ConfirmDialog from './ui/confirm-dialog';
 import TxStatus from './ui/tx-status';
 import AddressBook from './AddressBook';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, Target, Loader2 } from 'lucide-react';
+import { fetchCreatorGoal, registerTipMessage } from '../services/goals';
 
 const MIN_TIP_STX = 0.001; // minimum tip in STX
 const MAX_TIP_STX = 10000; // maximum tip in STX
@@ -71,6 +72,11 @@ export default function SendTip({ addToast }) {
     const [showAddressBook, setShowAddressBook] = useState(false);
     const [encryptMessage, setEncryptMessage] = useState(false);
   const cooldownRef = useRef(null);
+
+  // Goal States
+  const [recipientGoal, setRecipientGoal] = useState(null);
+  const [goalLoading, setGoalLoading] = useState(false);
+  const [contributeToGoal, setContributeToGoal] = useState(true);
 
   const walletSenderAddress = useSenderAddress();
   const senderAddress = demoEnabled ? getDemoData().mockWalletAddress : walletSenderAddress;
@@ -144,6 +150,35 @@ export default function SendTip({ addToast }) {
         });
     }, [recipient, validateRecipient]);
 
+    useEffect(() => {
+        let active = true;
+        const loadRecipientGoal = async () => {
+            if (recipient && isValidStacksPrincipal(recipient) && recipient.trim() !== senderAddress) {
+                setGoalLoading(true);
+                try {
+                    const goal = await fetchCreatorGoal(recipient.trim());
+                    if (active) {
+                        setRecipientGoal(goal);
+                        if (goal) {
+                            setContributeToGoal(true);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch recipient goal', e);
+                    if (active) setRecipientGoal(null);
+                } finally {
+                    if (active) setGoalLoading(false);
+                }
+            } else {
+                setRecipientGoal(null);
+            }
+        };
+        void loadRecipientGoal();
+        return () => {
+            active = false;
+        };
+    }, [recipient, senderAddress]);
+
     const handleRecipientChange = (value) => {
         setRecipient(value);
     };
@@ -210,19 +245,42 @@ export default function SendTip({ addToast }) {
         setLoading(true);
 
         try {
-            let finalMessage = message || 'Thanks!';
+            let baseMessage = message.trim();
+            if (recipientGoal && recipientGoal.active && contributeToGoal) {
+                const hashtag = `#goal-${recipientGoal.goalSlug.toLowerCase()}`;
+                if (!baseMessage.toLowerCase().includes(hashtag)) {
+                    baseMessage = baseMessage ? `${baseMessage} ${hashtag}` : hashtag;
+                }
+            }
+            let finalMessage = baseMessage || 'Thanks!';
             
-            if (encryptMessage && message && canEncrypt) {
+            let registerMessage = finalMessage;
+            if (encryptMessage && baseMessage) {
+                registerMessage = (recipientGoal && recipientGoal.active && contributeToGoal)
+                    ? `#goal-${recipientGoal.goalSlug.toLowerCase()}`
+                    : '[Encrypted Message]';
+            }
+
+            if (encryptMessage && baseMessage && canEncrypt) {
                 try {
-                    finalMessage = await encrypt(message, recipient.trim());
+                    finalMessage = await encrypt(baseMessage, recipient.trim());
                 } catch (encryptError) {
                     addToast('Failed to encrypt message. Sending unencrypted.', 'warning');
-                    finalMessage = message;
+                    finalMessage = baseMessage || 'Thanks!';
+                    registerMessage = finalMessage;
                 }
             }
 
             if (demoEnabled) {
                 const result = await sendTipInDemo(recipient.trim(), amount, finalMessage, category);
+                
+                // Simulate updating the goal progress immediately in local storage for Demo Mode
+                if (recipientGoal && recipientGoal.active && contributeToGoal) {
+                    const localGoal = { ...recipientGoal };
+                    localGoal.currentProgress = (localGoal.currentProgress || 0) + parseFloat(amount);
+                    localStorage.setItem(`tipstream_demo_goal_${recipient.trim()}`, JSON.stringify(localGoal));
+                }
+
                 setPendingTx(result);
                 setRecipient('');
                 setAmount('');
@@ -259,6 +317,12 @@ export default function SendTip({ addToast }) {
                 onFinish: (data) => {
                     setLoading(false);
                     setPendingTx({ txId: data.txId, recipient, amount: parseFloat(amount) });
+                    
+                    // Register the tip message metadata with the indexer API
+                    registerTipMessage(data.txId, registerMessage).catch(err => {
+                        console.error('Failed to register tip message:', err);
+                    });
+
                     setRecipient('');
                     setAmount('');
                     setMessage('');
@@ -364,6 +428,57 @@ export default function SendTip({ addToast }) {
                             );
                         })()}
                     </div>
+
+                    {/* Tipping Goal Widget */}
+                    {goalLoading ? (
+                        <div className="flex items-center justify-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-750">
+                            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 animate-pulse">Checking creator goal...</span>
+                        </div>
+                    ) : recipientGoal && recipientGoal.active ? (
+                        <div className="p-4 bg-gradient-to-r from-violet-50/50 to-purple-50/30 dark:from-violet-950/10 dark:to-purple-950/10 border border-violet-100 dark:border-violet-900/50 rounded-2xl space-y-3 transition-all duration-300">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Target className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                                    <span className="text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-400">Creator Goal</span>
+                                </div>
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={contributeToGoal}
+                                        onChange={(e) => setContributeToGoal(e.target.checked)}
+                                        className="rounded border-gray-300 dark:border-gray-700 text-violet-600 focus:ring-violet-500 h-3.5 w-3.5 cursor-pointer"
+                                    />
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Contribute</span>
+                                </label>
+                            </div>
+                            
+                            <div>
+                                <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">{recipientGoal.goalTitle}</h4>
+                                {recipientGoal.goalDescription && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{recipientGoal.goalDescription}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                    <span>{Math.min(100, Math.round((recipientGoal.currentProgress / (recipientGoal.goalTarget || 1)) * 100))}% Raised</span>
+                                    <span>{recipientGoal.currentProgress.toFixed(2)} / {recipientGoal.goalTarget.toFixed(2)} STX</span>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                                    <div
+                                        className="bg-gradient-to-r from-violet-500 to-purple-600 h-full rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min(100, Math.round((recipientGoal.currentProgress / (recipientGoal.goalTarget || 1)) * 100))}%` }}
+                                    />
+                                </div>
+                            </div>
+                            {contributeToGoal && (
+                                <p className="text-[10px] text-violet-600/80 dark:text-violet-400/80 font-medium">
+                                    ✨ Contribution hashtag <span className="font-mono bg-violet-100/50 dark:bg-violet-900/30 px-1 py-0.5 rounded text-violet-700 dark:text-violet-300">#goal-{recipientGoal.goalSlug}</span> will be appended to your message.
+                                </p>
+                            )}
+                        </div>
+                    ) : null}
 
                     {/* Amount */}
                     <div>
@@ -539,9 +654,14 @@ export default function SendTip({ addToast }) {
                         <p>Send <strong>{amount} STX</strong> to:</p>
                         <p className="font-mono text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded-lg break-all">{recipient}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Category: <strong>{TIP_CATEGORIES.find(c => c.id === category)?.label}</strong></p>
-                        {message && (
+                        {(message || (recipientGoal && recipientGoal.active && contributeToGoal)) && (
                             <div>
-                                <p className="italic text-gray-500">"{message}"</p>
+                                <p className="italic text-gray-500">
+                                    "{message.trim() ? message.trim() : ''}
+                                    {recipientGoal && recipientGoal.active && contributeToGoal 
+                                        ? `${message.trim() ? ' ' : ''}#goal-${recipientGoal.goalSlug}` 
+                                        : ''}"
+                                </p>
                                 {encryptMessage && canEncrypt && (
                                     <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
                                         <Lock className="w-3 h-3" />
