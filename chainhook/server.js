@@ -9,7 +9,7 @@ import { parseAllowedOrigins, getCorsHeaders } from "./cors.js";
 import { RateLimiter, getClientIp, validateRateLimitConfig, AddressRateLimiter, parseAddressWhitelist, validateAddressRateLimitConfig } from "./rate-limit.js";
 import { logger } from "./logging.js";
 import { setupGracefulShutdown, isShuttingDown } from "./graceful-shutdown.js";
-import { createEventStore, createScheduledTipStore, createRefundStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
+import { createEventStore, createScheduledTipStore, createRefundStore, createGoalStore, createMessageStore, getRetentionCutoff, parseRetentionDays } from "./storage.js";
 import { normalizeClarityEventFields } from "../shared/clarityValues.js";
 import { BadRequestError, PayloadTooLargeError, RateLimitError, UnauthorizedError, ServiceUnavailableError, classifyError, toErrorResponse } from "./errors.js";
 import { ScheduledTip, validateScheduledTipParams, SCHEDULED_TIP_STATUSES } from "./scheduler.js";
@@ -49,6 +49,8 @@ let eventStore = null;
 let scheduledTipStore = null;
 let refundStore = null;
 let notificationPreferencesStore = null;
+let goalStore = null;
+let messageStore = null;
 
 /**
  * Get the rate limiter instance for runtime configuration.
@@ -105,6 +107,34 @@ async function getRefundStore() {
     await refundStore.init();
   }
   return refundStore;
+}
+
+async function getGoalStore() {
+  if (!goalStore) {
+    if (STORAGE_MODE === "postgres" && !DATABASE_URL) {
+      throw new Error("DATABASE_URL is required when CHAINHOOK_STORAGE=postgres");
+    }
+    goalStore = await createGoalStore({
+      mode: STORAGE_MODE,
+      databaseUrl: DATABASE_URL,
+    });
+    await goalStore.init();
+  }
+  return goalStore;
+}
+
+async function getMessageStore() {
+  if (!messageStore) {
+    if (STORAGE_MODE === "postgres" && !DATABASE_URL) {
+      throw new Error("DATABASE_URL is required when CHAINHOOK_STORAGE=postgres");
+    }
+    messageStore = await createMessageStore({
+      mode: STORAGE_MODE,
+      databaseUrl: DATABASE_URL,
+    });
+    await messageStore.init();
+  }
+  return messageStore;
 }
 
 async function getNotificationPreferencesStore() {
@@ -327,7 +357,7 @@ function parseTipEvent(event) {
   };
 }
 
-export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, getAddressRateLimiter, wsManager, getRefundStore, getNotificationPreferencesStore };
+export { parseBody, extractEvents, parseTipEvent, sendJson, getEventStore, checkShutdownState, validatePayloadStructure, validateBlock, validateTransaction, getRateLimiter, getAddressRateLimiter, wsManager, getRefundStore, getNotificationPreferencesStore, getGoalStore, getMessageStore };
 
 function checkShutdownState(res, requestId) {
   if (isShuttingDown()) {
@@ -458,6 +488,30 @@ const server = http.createServer(async (req, res) => {
           const tip = parseTipEvent(evt);
           if (tip) {
             wsManager.broadcast(tip);
+
+            // Process creator goal progress if a message exists for the transaction
+            try {
+              const msgStore = await getMessageStore();
+              const message = await msgStore.getMessage(tip.txId);
+              if (message) {
+                const gStore = await getGoalStore();
+                const goal = await gStore.getGoal(tip.recipient);
+                if (goal && goal.active) {
+                  const hashtag = `#goal-${goal.goalSlug.toLowerCase()}`;
+                  if (message.toLowerCase().includes(hashtag)) {
+                    await gStore.incrementGoalProgress(tip.recipient, Number(tip.amount));
+                    logger.info("Goal progress updated on tip event", {
+                      recipient: tip.recipient,
+                      amount: tip.amount,
+                      goalSlug: goal.goalSlug,
+                      txId: tip.txId,
+                    });
+                  }
+                }
+              }
+            } catch (goalErr) {
+              logger.error("Failed to process goal progress on tip event", goalErr);
+            }
           }
         }
 
@@ -1477,6 +1531,139 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // GET /api/goals/:address -- get active creator goal
+  if (req.method === "GET" && path.match(/^\/api\/goals\/[^/]+$/)) {
+    try {
+      const address = path.split("/api/goals/")[1];
+
+      if (!address || address.trim() === "") {
+        return sendError(res, new BadRequestError("address parameter is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path, address });
+      }
+
+      const store = await getGoalStore();
+      const goal = await store.getGoal(address);
+      return sendJson(res, 200, { goal });
+    } catch (err) {
+      return sendError(res, err, requestId, { path });
+    }
+  }
+
+  // PUT /api/goals/:address -- create or update creator goal
+  if (req.method === "PUT" && path.match(/^\/api\/goals\/[^/]+$/)) {
+    const startTime = Date.now();
+    try {
+      const address = path.split("/api/goals/")[1];
+
+      if (!address || address.trim() === "") {
+        return sendError(res, new BadRequestError("address parameter is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path, address });
+      }
+
+      const body = await parseBody(req);
+      if (!body || typeof body !== "object") {
+        return sendError(res, new BadRequestError("request body must be an object"), requestId, { path });
+      }
+      if (!body.goalTitle || typeof body.goalTitle !== "string") {
+        return sendError(res, new BadRequestError("goalTitle is required and must be a string"), requestId, { path });
+      }
+      if (body.goalTarget === undefined || isNaN(Number(body.goalTarget))) {
+        return sendError(res, new BadRequestError("goalTarget is required and must be a number"), requestId, { path });
+      }
+      if (!body.goalSlug || typeof body.goalSlug !== "string") {
+        return sendError(res, new BadRequestError("goalSlug is required and must be a string"), requestId, { path });
+      }
+
+      const store = await getGoalStore();
+      const goal = await store.upsertGoal(address, body);
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Creator goal updated", {
+        address,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, { ok: true, goal });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // DELETE /api/goals/:address -- delete creator goal
+  if (req.method === "DELETE" && path.match(/^\/api\/goals\/[^/]+$/)) {
+    const startTime = Date.now();
+    try {
+      const address = path.split("/api/goals/")[1];
+
+      if (!address || address.trim() === "") {
+        return sendError(res, new BadRequestError("address parameter is required"), requestId, { path });
+      }
+      if (!isValidStacksAddress(address)) {
+        return sendError(res, new BadRequestError("invalid address format"), requestId, { path, address });
+      }
+
+      const store = await getGoalStore();
+      const deleted = await store.deleteGoal(address);
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Creator goal deleted", {
+        address,
+        deleted,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, { ok: true, deleted });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
+  // POST /api/tips/message -- register tip message
+  if (req.method === "POST" && path === "/api/tips/message") {
+    const startTime = Date.now();
+    try {
+      const body = await parseBody(req);
+      if (!body || typeof body !== "object") {
+        return sendError(res, new BadRequestError("request body must be an object"), requestId, { path });
+      }
+      if (!body.txId || typeof body.txId !== "string") {
+        return sendError(res, new BadRequestError("txId is required and must be a string"), requestId, { path });
+      }
+      if (body.message === undefined || typeof body.message !== "string") {
+        return sendError(res, new BadRequestError("message is required and must be a string"), requestId, { path });
+      }
+
+      const store = await getMessageStore();
+      const saved = await store.saveMessage(body.txId, body.message);
+
+      const processingMs = Date.now() - startTime;
+      logger.info("Tip message registered", {
+        txId: body.txId,
+        request_id: requestId,
+        processing_ms: processingMs,
+      });
+
+      metrics.recordRequest(true);
+      return sendJson(res, 200, { ok: true, saved });
+    } catch (err) {
+      const processingMs = Date.now() - startTime;
+      metrics.recordRequest(false);
+      return sendError(res, err, requestId, { path, processing_ms: processingMs });
+    }
+  }
+
   sendJson(res, 404, { error: "not found", path: path });
 });
 
@@ -1507,6 +1694,12 @@ if (isMain) {
       await store.close();
       if (notificationPreferencesStore) {
         await notificationPreferencesStore.close();
+      }
+      if (goalStore) {
+        await goalStore.close();
+      }
+      if (messageStore) {
+        await messageStore.close();
       }
       logger.info("Shutdown initiated");
     });
